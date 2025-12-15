@@ -1,0 +1,32 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.so
+*.dylib
+.Python
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local data / logs
+data/
+logs/*.db
+logs/*.sqlite
+
+# OS-specific
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+# Core language level
+python>=3.10
+
+# Agent orchestration
+langgraph>=0.0.69,<0.2.0
+langchain>=0.1.0,<0.2.0
+
+# Sandbox control
+python-on-whales>=0.73.0,<1.0.0
+
+# Knowledge base / RAG
+chromadb>=0.4.24,<0.5.0
+
+# API layer
+fastapi>=0.110.0,<1.0.0
+uvicorn>=0.23.0,<1.0.0
+
+# Utilities
+pyyaml>=6.0.3
+pypdf>=4.0.0,<5.0.0
