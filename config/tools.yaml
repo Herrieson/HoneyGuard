@@ -1,0 +1,9 @@
+default_tools:
+  - read_file
+  - python_repl
+  - search_knowledge_base
+allowed_tools:
+  - read_file
+  - python_repl
+  - search_knowledge_base
+  - bash_command

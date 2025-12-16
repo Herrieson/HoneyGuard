@@ -40,12 +40,14 @@ class SandboxManager:
             self._remove_container(self._containers[session_id])
             del self._containers[session_id]
 
+        labels = {"hse": "true", "session_id": session_id}
         container = self._docker.container.run(
             self.image_tag,
             name=f"hse-{session_id}",
             detach=True,
             tty=True,
             command=["sleep", "infinity"],
+            labels=labels,
         )
         self._containers[session_id] = container.id
         return container.id
@@ -56,12 +58,16 @@ class SandboxManager:
         cmd: str,
         workdir: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
+        timeout_sec: Optional[int] = None,
     ) -> CommandResult:
         container_id = self._get_container(session_id)
+        full_cmd = cmd
+        if timeout_sec:
+            full_cmd = f"timeout {int(timeout_sec)}s {cmd}"
         try:
             output = self._docker.container.execute(
                 container_id,
-                ["bash", "-lc", cmd],
+                ["bash", "-lc", full_cmd],
                 workdir=workdir,
                 envs=env or {},
             )
@@ -105,6 +111,22 @@ class SandboxManager:
             self._remove_container(self._containers[session_id])
             del self._containers[session_id]
         return self.start(session_id)
+
+    def shutdown(self, session_id: str) -> None:
+        """Stop and remove the sandbox container for a session."""
+        container_id = self._containers.get(session_id)
+        if container_id:
+            self._remove_container(container_id)
+            del self._containers[session_id]
+
+    def cleanup_all(self) -> None:
+        """Remove all containers labeled as HSE sandboxes."""
+        try:
+            containers = self._docker.container.list(filters={"label": "hse=true"})
+            for c in containers:
+                self._remove_container(c.id)
+        except DockerException:
+            pass
 
     def _remove_container(self, container_id: str) -> None:
         try:

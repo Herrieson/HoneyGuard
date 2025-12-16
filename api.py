@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+import time
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -10,11 +11,13 @@ from pydantic import BaseModel, Field
 from environment.sandbox import SandboxManager
 from knowledge import Document, KnowledgeManager
 from logs.logger import SqliteLogger
+from orchestration.agent import SimpleAgent
 from orchestration.runner import EnvironmentRunner
 from orchestration.state import AgentState
 from tools import ToolRegistry
 
 app = FastAPI(title="HoneyGuard Simulation Environment (HSE)")
+SESSION_TTL_SECONDS = 30 * 60  # 30 minutes default
 
 
 @dataclass
@@ -24,6 +27,9 @@ class SessionContext:
     container_id: str
     runner: EnvironmentRunner
     tools_enabled: List[str]
+    tools_by_name: Dict[str, object]
+    files: Dict[str, str]
+    created_at: float
 
 
 class InitializeRequest(BaseModel):
@@ -63,7 +69,13 @@ def _pre_execution_hook(session_id: str):
 
 
 def _default_tools(tools_enabled: List[str]) -> List[str]:
-    return tools_enabled or ["read_file", "python_repl", "search_knowledge_base"]
+    from config.tool_config import load_tool_config
+
+    cfg = load_tool_config()
+    default_list = cfg.get("default_tools") or ["read_file", "python_repl", "search_knowledge_base"]
+    allowed = set(cfg.get("allowed_tools") or default_list)
+    requested = tools_enabled or default_list
+    return [t for t in requested if t in allowed]
 
 
 @app.post("/v1/environment/initialize", response_model=InitializeResponse)
@@ -80,6 +92,7 @@ def initialize_environment(payload: InitializeRequest) -> InitializeResponse:
         knowledge_manager.ingest_documents(docs)
 
     tools = tool_registry.build(_default_tools(payload.tools_enabled), session_id=session_id)
+    tools_by_name = {tool.name: tool for tool in tools}
     runner = EnvironmentRunner(tools=tools, pre_execution_hook=_pre_execution_hook(session_id))
 
     SESSIONS[session_id] = SessionContext(
@@ -88,6 +101,9 @@ def initialize_environment(payload: InitializeRequest) -> InitializeResponse:
         container_id=container_id,
         runner=runner,
         tools_enabled=_default_tools(payload.tools_enabled),
+        tools_by_name=tools_by_name,
+        files=payload.files,
+        created_at=time.time(),
     )
 
     return InitializeResponse(session_id=session_id)
@@ -100,19 +116,64 @@ def run_step(payload: RunStepRequest) -> RunStepResponse:
         raise HTTPException(status_code=404, detail="Session not found")
 
     trace_id = uuid.uuid4().hex
-    # Placeholder agent execution; integrate with LLM + tools in future.
-    state: AgentState = {
-        "messages": [{"role": "user", "content": payload.user_instruction}],
-        "scratchpad": "",
-        "env_status": {"session_id": payload.session_id, "scenario": session.scenario},
-    }
-    _ = session.runner.run(state)
+    agent = SimpleAgent(session.tools_by_name, known_files=list(session.files.keys()))
+    agent_response, tool_calls_raw = agent.run(payload.user_instruction)
 
-    agent_response = f"[stub] Received instruction: {payload.user_instruction}"
-    tool_calls: List[Dict[str, object]] = []
+    tool_calls: List[Dict[str, object]] = [
+        {"name": call.name, "args": call.args, "output": call.output} for call in tool_calls_raw
+    ]
+    for call in tool_calls_raw:
+        logger.log_tool_call(payload.session_id, trace_id, call.name, call.args, call.output, status="ok")
+
     logger.log_trace(
         payload.session_id,
         trace_id,
         {"user_instruction": payload.user_instruction, "agent_response": agent_response, "tool_calls": tool_calls},
     )
     return RunStepResponse(agent_response=agent_response, tool_calls=tool_calls, trace_id=trace_id)
+
+
+@app.delete("/v1/environment/{session_id}")
+def cleanup_session(session_id: str) -> Dict[str, str]:
+    session = SESSIONS.pop(session_id, None)
+    if session:
+        sandbox_manager.shutdown(session_id)
+    else:
+        # Ensure no stray container remains even if session map is missing.
+        try:
+            sandbox_manager.shutdown(session_id)
+        except Exception:
+            pass
+    return {"status": "ok", "session_id": session_id}
+
+
+def _cleanup_expired_sessions() -> None:
+    now = time.time()
+    expired = [sid for sid, ctx in list(SESSIONS.items()) if now - ctx.created_at > SESSION_TTL_SECONDS]
+    for sid in expired:
+        cleanup_session(sid)
+
+
+@app.on_event("startup")
+async def _startup_tasks() -> None:
+    import asyncio
+
+    async def cleaner():
+        while True:
+            await asyncio.sleep(60)
+            _cleanup_expired_sessions()
+
+    # background task for session cleanup
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(cleaner())
+
+
+@app.on_event("shutdown")
+async def _shutdown_tasks() -> None:
+    # Cleanup all known sessions
+    for sid in list(SESSIONS.keys()):
+        cleanup_session(sid)
+    # Cleanup any stray containers labeled as HSE
+    sandbox_manager.cleanup_all()

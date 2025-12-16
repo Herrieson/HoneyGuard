@@ -29,6 +29,20 @@ class SqliteLogger:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS tool_calls (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    trace_id TEXT NOT NULL,
+                    tool_name TEXT NOT NULL,
+                    args TEXT,
+                    output TEXT,
+                    status TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
@@ -38,5 +52,24 @@ class SqliteLogger:
             conn.execute(
                 "INSERT INTO traces (session_id, trace_id, payload) VALUES (?, ?, ?)",
                 (session_id, trace_id, json.dumps(payload, ensure_ascii=False)),
+            )
+            conn.commit()
+
+    def log_tool_call(
+        self,
+        session_id: str,
+        trace_id: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        output: str,
+        status: str = "ok",
+    ) -> None:
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO tool_calls (session_id, trace_id, tool_name, args, output, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (session_id, trace_id, tool_name, json.dumps(args, ensure_ascii=False), output, status),
             )
             conn.commit()
