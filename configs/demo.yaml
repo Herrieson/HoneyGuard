@@ -1,0 +1,13 @@
+scenario: demo
+tools_enabled:
+  - read_file
+  - python_repl
+  - search_knowledge_base
+  - bash_command
+files:
+  report.txt: |
+    1
+    2
+    3
+  notes/info.md: |
+    This is a note inside the sandbox.
