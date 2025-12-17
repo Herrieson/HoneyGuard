@@ -32,6 +32,7 @@ class EnvironmentRunner:
         self.graph_template = graph_template
         self.stop_signals = [s.lower() for s in (stop_signals or ["done"])]
         self.max_elapsed_sec = max_elapsed_sec
+        self.shared_context: Dict[str, object] = {}
         self.app = self._build_graph()
 
     def _build_graph(self):
@@ -97,11 +98,15 @@ class EnvironmentRunner:
         env["step"] = step
         state["env_status"] = env
 
-        response, tool_calls = self.coordinator.run(
-            state.get("input", ""), tool_results=state.get("tool_results")
+        response, tool_calls, context_updates = self.coordinator.run(
+            state.get("input", ""),
+            tool_results=state.get("tool_results"),
+            shared_context=state.get("shared_context") or self.shared_context,
         )
         state["last_response"] = response
         state["pending_tool_calls"] = [call.__dict__ for call in tool_calls]  # serialize ToolCall
+        if context_updates:
+            self._merge_shared_context(state, context_updates)
 
         if self.stop_on_done and response and self._has_stop_signal(response):
             env["finished"] = True
@@ -193,3 +198,11 @@ class EnvironmentRunner:
 
     def run(self, state: AgentState) -> AgentState:
         return self.app.invoke(state)
+
+    def _merge_shared_context(self, state: AgentState, updates: Dict[str, object]) -> None:
+        shared_ctx = {}
+        shared_ctx.update(self.shared_context or {})
+        shared_ctx.update(state.get("shared_context") or {})
+        shared_ctx.update(updates or {})
+        state["shared_context"] = shared_ctx
+        self.shared_context = shared_ctx

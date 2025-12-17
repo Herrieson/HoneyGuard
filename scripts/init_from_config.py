@@ -96,6 +96,15 @@ def load_config(config_path: Path) -> dict:
         llm_cfg = item.get("llm_config")
         if llm_cfg is not None and not isinstance(llm_cfg, dict):
             raise ValueError("agent.llm_config must be a mapping when provided")
+        memory_mode = (item.get("memory_mode") or "window").lower()
+        if memory_mode not in {"window", "none"}:
+            raise ValueError("agent.memory_mode must be 'window' or 'none'")
+        bb_read = item.get("blackboard_read_keys")
+        if bb_read is not None and not isinstance(bb_read, list):
+            raise ValueError("blackboard_read_keys must be a list when provided")
+        bb_write = item.get("blackboard_write_keys")
+        if bb_write is not None and not isinstance(bb_write, list):
+            raise ValueError("blackboard_write_keys must be a list when provided")
         normalized_agents.append(
             {
                 "name": name,
@@ -105,8 +114,15 @@ def load_config(config_path: Path) -> dict:
                 "impl": impl,
                 "tool_timeout_sec": tool_timeout_sec,
                 "llm_config": llm_cfg,
+                "memory_mode": memory_mode,
+                "blackboard_read_keys": bb_read,
+                "blackboard_write_keys": bb_write,
             }
         )
+
+    shared_context = data.get("shared_context") or {}
+    if shared_context and not isinstance(shared_context, dict):
+        raise ValueError("shared_context must be a mapping when provided")
 
     return {
         "scenario": scenario,
@@ -121,6 +137,7 @@ def load_config(config_path: Path) -> dict:
         "graph_template": graph_template,
         "stop_signals": stop_signals,
         "max_elapsed_sec": max_elapsed_sec,
+        "shared_context": shared_context,
     }
 
 

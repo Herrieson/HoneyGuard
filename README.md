@@ -36,7 +36,7 @@ curl -X DELETE http://127.0.0.1:8000/v1/environment/<session_id>
 - 会话隔离：`SandboxManager` 为每个 session 启停 Docker 容器，支持命令执行、文件挂载、reset/cleanup。
 - 工具层：read_file、bash_command、python_repl、search_knowledge_base；白名单和默认集由配置决定，工具配额与写操作白名单可配置。工具执行与 Agent 解耦：Agent 产出 tool call，独立工具节点顺序执行并记录状态/耗时，便于扩展并行/投票/回退。
 - 知识库：Chroma 封装，内置轻量哈希 embedding，支持 metadata 过滤查询。
-- 代理/编排：FastAPI 对外暴露 `/v1/environment/*`；支持单/多代理（规则或 LLM），LangGraph 驱动迭代调用，支持自定义 graph 模板（`graph_template`，module:function）。终止条件可配置 `stop_signals`、`max_steps`、工具累计耗时上限。
+- 代理/编排：FastAPI 对外暴露 `/v1/environment/*`；支持单/多代理（规则或 LLM），LangGraph 驱动迭代调用，支持自定义 graph 模板（`graph_template`，module:function）。终止条件可配置 `stop_signals`、`max_steps`、工具累计耗时上限。支持 per-agent 记忆策略（窗口/关闭）与共享黑板（`shared_context`，可按读写键限制）。
 - 审计：所有 run_step 和工具调用写入 sqlite（`logs/hse.db`）。
 - 安全与稳定：可选鉴权/限流、工具配额，沙箱命令支持默认超时/资源限制，后台定期清理日志与残留容器。
 
@@ -46,21 +46,22 @@ Agent 选项
 - LLM 代理（可选）：`agent_mode="llm"`，需要安装 `langchain-openai` 并提供 `OPENAI_API_KEY`（或环境变量 `HSE_LLM_MODEL` 指定模型，默认 gpt-3.5-turbo-0125）。  
   初始化示例：`{"scenario":"demo","files":{"report.txt":"1\n2\n3"},"tools_enabled":["read_file"],"agent_mode":"llm"}`
 - 多代理：在配置中提供 `agents` 列表（每个包含 `name`、`mode`，可选 `system_prompt`、`tools_allowed`、`impl`、`llm_config`），可指定 `coordination_pattern`（sequential/round_robin/planner_executor_verifier）与 `max_cycles`。示例见 `configs/multi_agent.yaml`。
-- 自定义 Agent：在 agent 配置里加 `impl: "mypkg.agent:MyAgent"`（需符合 `run(user_instruction, history=None, tool_results=None) -> (response, tool_calls)` 接口）。
+- 自定义 Agent：在 agent 配置里加 `impl: "mypkg.agent:MyAgent"`（需符合 `run(user_instruction, history=None, tool_results=None, shared_context=None) -> (response, tool_calls[, context_updates])` 接口）。
 - LLM 提供商配置：在配置中设置全局 `llm_config`（provider/model/api_key/base_url/api_version/deployment_name），支持 OpenAI/兼容接口和 Azure OpenAI；也可在某个 agent 下写 `llm_config` 覆盖全局。
-- 记忆：`memory_limit` 控制每个 agent 保留的历史消息条数，用于上下文传递；默认 10。
+- 记忆/黑板：`memory_limit` 控制每个 agent 保留的历史消息条数，`memory_mode` 可设为 window/none；`shared_context` 黑板可按 agent 声明读写键（blackboard_read_keys/blackboard_write_keys），默认全开。
 
 配置驱动初始化（方案 A）
 ------------------------
-- 配置示例：`configs/demo.yaml`，定义 `scenario`、`files`、`tools_enabled`，可按注释开启多代理字段（agents、coordination_pattern、max_cycles、impl、自定义 agent、agent 级 llm_config）及全局 `llm_config`（provider/model/api_key/base_url/...），并可指定 `stop_signals`、`max_steps`、`max_elapsed_sec`、`graph_template`（可选自定义图模板 module:function），以及 `initial_instructions`（缺省 user_instruction 时按队列消费）。
+- 配置示例：`configs/demo.yaml`，定义 `scenario`、`files`、`tools_enabled`，可按注释开启多代理字段（agents、coordination_pattern、max_cycles、impl、自定义 agent、agent 级 llm_config）及全局 `llm_config`（provider/model/api_key/base_url/...），并可指定 `stop_signals`、`max_steps`、`max_elapsed_sec`、`graph_template`（可选自定义图模板 module:function），`memory_mode`、`blackboard_read_keys`/`blackboard_write_keys`，以及 `initial_instructions`（缺省 user_instruction 时按队列消费）。
 - 多智能体示例：`configs/multi_agent.yaml`（planner: llm, executor: rule，自定义 system_prompt/tools_allowed，round_robin 2 轮，可扩展 verifier）。
+- 真实场景模板：`configs/finance_report.yaml`（财报分析）、`configs/code_audit.yaml`（代码审计）、`configs/data_analysis.yaml`（数据分析）、`configs/red_blue.yaml`（红蓝对抗推演）。
 - 命令：`python scripts/init_from_config.py --config configs/demo.yaml --base-url http://127.0.0.1:8000`
 - 产出：打印 `session_id`，后续用它调用 `/v1/environment/run_step`。
 
 HTTP API 速览
 -------------
 - 认证/限流：若设置 `HSE_API_TOKEN`，所有请求需头部 `X-API-Token: <token>`；内置 60 req/min/IP 限速。
-- 初始化：`POST /v1/environment/initialize`，body `{scenario, files, tools_enabled?, agent_mode?, agents?, coordination_pattern?, max_cycles?, llm_config?, memory_limit?, max_steps?, stop_signals?, max_elapsed_sec?, graph_template?, initial_instructions?}` → `{session_id}`
+- 初始化：`POST /v1/environment/initialize`，body `{scenario, files, tools_enabled?, agent_mode?, agents?, coordination_pattern?, max_cycles?, llm_config?, memory_limit?, max_steps?, stop_signals?, max_elapsed_sec?, graph_template?, initial_instructions?, shared_context?}` → `{session_id}`
 - 运行一步：`POST /v1/environment/run_step`，body `{session_id, user_instruction?}`（可省略以消费 initial_instructions 队列）→ `{agent_response, tool_calls, trace_id}`。tool_calls 记录 name/args/output/error/status/elapsed_sec。
 - 清理：`DELETE /v1/environment/{session_id}`
 - 健康：`GET /health`（需鉴权）；残留容器清理：`POST /admin/cleanup_containers`
@@ -75,6 +76,7 @@ Agent 与编排
 ------------
 - 当前代理：`orchestration/agent.py` 为规则示范，按指令关键词或前缀生成工具调用计划；LLM Agent 在 `orchestration/llm_agent.py`。
 - LangGraph：`orchestration/runner.py` 构建 agent→tools 流（可被 `graph_template` 覆盖）；agent 节点只产出 tool_calls，tools 节点统一执行并写入 state（含状态/耗时）。
+- 记忆/黑板：Coordinator 支持 per-agent 记忆策略（window/none），共享黑板 `shared_context` 可按读写键限制；Agent 可返回 `context_updates` 写入黑板，后续 Agent 可读取结构化字段。
 - 替换代理：在 `api.py/run_step` 注入自定义 Agent（传入 `tools_by_name`、`known_files`）。
 
 审计与数据

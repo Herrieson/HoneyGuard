@@ -35,6 +35,7 @@ class SimpleAgent:
         user_instruction: str,
         history: Optional[List[Dict[str, str]]] = None,
         tool_results: Optional[List[Dict[str, object]]] = None,
+        shared_context: Optional[Dict[str, object]] = None,
     ) -> (str, List[ToolCall]):
         # If we already have tool results, summarize instead of issuing new calls.
         if tool_results:
@@ -45,7 +46,10 @@ class SimpleAgent:
                 output = item.get("output") or item.get("error") or ""
                 lines.append(f"{name}({args}) => {output}")
             summary = "\n".join(lines) if lines else "No tool results."
-            return summary, []
+            updates = {}
+            if shared_context is not None:
+                updates["last_tool_summary"] = summary
+            return summary, [], updates
 
         tool_calls: List[ToolCall] = []
         instruction = user_instruction
@@ -76,7 +80,7 @@ class SimpleAgent:
         else:
             response = f"[stub] Received instruction: {user_instruction}"
 
-        return response, tool_calls
+        return response, tool_calls, {}
 
     def _has_tool(self, name: str) -> bool:
         return name in self.tools_by_name

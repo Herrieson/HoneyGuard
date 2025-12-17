@@ -15,3 +15,4 @@ class AgentState(TypedDict, total=False):
     last_tool_calls: list[Dict[str, object]]
     pending_tool_calls: list[Dict[str, object]]
     tool_results: list[Dict[str, object]]
+    shared_context: Dict[str, object]

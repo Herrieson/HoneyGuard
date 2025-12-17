@@ -12,6 +12,7 @@ max_steps: 4
 stop_signals: ["done", "DONE", "完成"]
 # max_elapsed_sec: 20  # Optional: cumulative tool time budget (seconds)
 # graph_template: "mypkg.graphs:finance_flow"  # Optional custom LangGraph builder (module:function)
+# shared_context: {}  # Optional: pre-seeded blackboard for all agents
 llm_config:
   provider: openai
   model: gpt-3.5-turbo-0125
@@ -32,10 +33,14 @@ agents:
     mode: llm
     system_prompt: "Plan analysis steps for finance report; do not call tools. Output numbered plan."
     tools_allowed: []
+    # memory_mode: window
+    # blackboard_read_keys: ["*"]
+    # blackboard_write_keys: ["plan"]
   - name: executor
     mode: llm
     system_prompt: "Execute the plan using tools. Use python_repl to compute metrics and read_file to inspect data. Output concise findings."
     tools_allowed: [read_file, python_repl]
+    # blackboard_write_keys: ["findings"]
   - name: verifier
     mode: rule
     system_prompt: "Verify the executor output, ensure expense ratio check is covered. Reply DONE when satisfied."

@@ -33,10 +33,14 @@ agent_mode: rule
 #       deployment_name: my-azure-deployment
 #       api_key: <azure-key>
 #       api_version: 2024-02-15-preview
+#     memory_mode: window  # window 或 none
+#     blackboard_read_keys: ["*"]  # 可选，限制可读黑板键
+#     blackboard_write_keys: ["*"] # 可选，限制可写黑板键
 # graph_template: "mypkg.graphs:build_graph"  # Optional: custom LangGraph builder (module:function)
 stop_signals: ["done", "DONE"]  # terminate early if agent response包含这些字符串（不区分大小写）
 max_steps: 3  # LangGraph 最大步数
 # max_elapsed_sec: 15  # Optional: 工具累计耗时上限（秒）
+# shared_context: {}  # Optional: 预置共享黑板
 initial_instructions:
   - "读取 report.txt 并输出全部内容。"
 tools_enabled:

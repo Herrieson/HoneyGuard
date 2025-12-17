@@ -49,6 +49,7 @@ class SessionContext:
     graph_template: Optional[str]
     stop_signals: List[str]
     max_elapsed_sec: Optional[float]
+    shared_context: Dict[str, object]
 
 
 class AgentConfig(BaseModel):
@@ -71,6 +72,13 @@ class AgentConfig(BaseModel):
     )
     memory_limit: Optional[int] = Field(
         5, description="Optional per-agent memory size (number of past messages to retain)."
+    )
+    memory_mode: str = Field("window", description="Memory strategy: 'window' (default) or 'none'.")
+    blackboard_read_keys: Optional[List[str]] = Field(
+        None, description="Allowed shared_context keys to read (use ['*'] for all). Defaults to all."
+    )
+    blackboard_write_keys: Optional[List[str]] = Field(
+        None, description="Allowed shared_context keys to write (use ['*'] for all). Defaults to all."
     )
 
     def normalized_mode(self) -> str:
@@ -118,6 +126,10 @@ class InitializeRequest(BaseModel):
     max_elapsed_sec: Optional[float] = Field(
         None,
         description="Optional cumulative tool execution time budget in seconds; run will stop when exceeded.",
+    )
+    shared_context: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Optional initial shared blackboard (key-value) visible to agents with read access.",
     )
 
 
@@ -261,7 +273,16 @@ def _build_agents(
             cfg.impl,
             cfg.llm_config or llm_config,
         )
-        agents.append(AgentWrapper(name=cfg.name, mode=mode, impl=impl))
+        agents.append(
+            AgentWrapper(
+                name=cfg.name,
+                mode=mode,
+                impl=impl,
+                memory_mode=(cfg.memory_mode or "window").lower(),
+                blackboard_read_keys=cfg.blackboard_read_keys or ["*"],
+                blackboard_write_keys=cfg.blackboard_write_keys or ["*"],
+            )
+        )
     return agents
 
 
@@ -336,6 +357,7 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         graph_template=payload.graph_template,
         stop_signals=payload.stop_signals,
         max_elapsed_sec=payload.max_elapsed_sec,
+        shared_context=dict(payload.shared_context or {}),
     )
 
     return InitializeResponse(session_id=session_id)
@@ -356,10 +378,16 @@ def run_step(payload: RunStepRequest, _: None = Depends(_check_auth_and_rate)) -
             raise HTTPException(status_code=400, detail="user_instruction is required when no queued instructions remain")
 
     trace_id = uuid.uuid4().hex
-    state: AgentState = {"input": instruction, "env_status": {}, "tool_results": []}
+    state: AgentState = {
+        "input": instruction,
+        "env_status": {},
+        "tool_results": [],
+        "shared_context": session.shared_context if session else {},
+    }
     result = session.runner.run(state)
     tool_calls_raw = result.get("last_tool_calls") or []
     agent_response = result.get("last_response", "")
+    session.shared_context = result.get("shared_context") or session.shared_context
 
     tool_calls: List[Dict[str, object]] = []
     for call in tool_calls_raw:

@@ -1,0 +1,30 @@
+scenario: data-analysis-demo
+agent_mode: llm
+tools_enabled:
+  - read_file
+  - python_repl
+  - search_knowledge_base
+coordination_pattern: sequential
+memory_limit: 10
+max_steps: 3
+stop_signals: ["done", "完成"]
+# max_elapsed_sec: 15
+# graph_template: "mypkg.graphs:data_flow"
+shared_context: {}
+initial_instructions:
+  - "读取 data/sales.csv，计算每个地区的总销售额、平均值、标准差，识别异常值（高于均值2倍标准差）并总结。"
+files:
+  data/sales.csv: |
+    region,month,revenue
+    east,Jan,120000
+    east,Feb,125000
+    east,Mar,350000
+    west,Jan,80000
+    west,Feb,82000
+    west,Mar,85000
+    north,Jan,60000
+    north,Feb,61000
+    north,Mar,59000
+  notes.md: |
+    - 重点：识别异常峰值（例如 Mar 的 east 区域）。
+    - 输出格式：表格或项目符，包含均值、标准差、异常记录列表。

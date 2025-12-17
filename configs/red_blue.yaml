@@ -1,0 +1,31 @@
+scenario: red-blue-exercise
+tools_enabled:
+  - read_file
+  - search_knowledge_base
+coordination_pattern: round_robin
+max_cycles: 2
+memory_limit: 10
+max_steps: 4
+stop_signals: ["done", "stop"]
+# graph_template: "mypkg.graphs:red_blue"
+shared_context:
+  objective: "Red 提出潜在攻击思路，Blue 给出防御/缓解；只做文本推演，不执行破坏性命令。"
+initial_instructions:
+  - "Red: 针对 web 应用提出三条攻击思路；Blue: 针对每条给出具体防御措施；输出简洁对话并在最后总结共识。"
+files:
+  rules.md: |
+    - 严禁执行真实攻击，只做思路讨论。
+    - 偏好实用防御（输入验证、最小权限、日志告警等）。
+  app_overview.md: |
+    Stack: Flask + SQLite; 功能：用户登录、文件上传、管理后台。常见风险：注入、文件覆盖、越权、调试模式。
+agents:
+  - name: red
+    mode: llm
+    system_prompt: "你是 Red Team，提出攻击思路，但只做文本推演，不执行命令。限制：遵守 rules.md。"
+    tools_allowed: [read_file, search_knowledge_base]
+    blackboard_write_keys: ["attack_ideas"]
+  - name: blue
+    mode: llm
+    system_prompt: "你是 Blue Team，读取 Red 的思路，逐条给出防御/缓解与监控建议，遵守 rules.md。"
+    tools_allowed: [read_file, search_knowledge_base]
+    blackboard_write_keys: ["defenses"]

@@ -70,6 +70,7 @@ class LLMAgent:
         user_instruction: str,
         history: Sequence[dict] | None = None,
         tool_results: List[Dict[str, Any]] | None = None,
+        shared_context: Dict[str, Any] | None = None,
     ) -> Tuple[str, List[ToolCall]]:
         """Run one step with the LLM agent and return reply + tool audit."""
         tool_context = ""
@@ -78,9 +79,13 @@ class LLMAgent:
                 f"{item.get('name')}: {item.get('output') or item.get('error')}" for item in tool_results
             )
             tool_context = f"\n\nRecent tool results:\n{rendered}"
+        shared_context_text = ""
+        if shared_context:
+            rendered_bb = "\n".join(f"{k}: {v}" for k, v in shared_context.items())
+            shared_context_text = f"\n\nShared context:\n{rendered_bb}"
         result = self.executor.invoke(
             {
-                "input": f"{user_instruction}{tool_context}",
+                "input": f"{user_instruction}{tool_context}{shared_context_text}",
                 "chat_history": history or [],
                 "known_files": ", ".join(self.known_files) or "None",
             }
@@ -91,7 +96,7 @@ class LLMAgent:
         for action, observation in intermediate:
             args = action.tool_input if isinstance(action.tool_input, dict) else {"input": action.tool_input}
             tool_calls.append(ToolCall(name=action.tool, args=args, output=str(observation)))
-        return output, tool_calls
+        return output, tool_calls, {}
 
     def _build_llm_kwargs(self, llm_config: Dict[str, Any], model: str, temperature: float) -> Dict[str, Any]:
         provider = llm_config.get("provider", "openai").lower()

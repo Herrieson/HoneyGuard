@@ -19,11 +19,17 @@ agents:
     mode: llm  # requires langchain-openai + OPENAI_API_KEY
     system_prompt: "You plan the steps, do not call tools, output the plan clearly."
     tools_allowed: []
+    # memory_mode: window  # default window, set none to disable history
+    # blackboard_read_keys: ["*"]
+    # blackboard_write_keys: ["plan"]
   - name: executor
     mode: rule
     system_prompt: "Execute the plan using allowed tools only."
     tools_allowed: [read_file, python_repl]
+    # blackboard_write_keys: ["execution_notes"]
   # - name: verifier
   #   mode: rule
   #   system_prompt: "Check the executor's output, no tools."
   #   tools_allowed: []
+# shared_context:
+#   plan: "Initial shared plan text"
