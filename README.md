@@ -58,6 +58,56 @@ Agent 选项
 - 命令：`python scripts/init_from_config.py --config configs/demo.yaml --base-url http://127.0.0.1:8000`
 - 产出：打印 `session_id`，后续用它调用 `/v1/environment/run_step`。
 
+HoneyGuard/configs 配置编写指南
+-----------------------------
+以下键均为顶层 YAML 字段（见 `configs/demo.yaml`、`configs/multi_agent.yaml` 等示例）。
+- `scenario`：场景名称（任意字符串，用于日志/识别）。
+- `files`：写入沙箱的初始文件映射，键为路径，值为内容。
+- `tools_enabled`：启用的工具名列表（受 `config/tools.yaml` 的 `allowed_tools` 白名单约束）。不填则使用默认 `default_tools`。
+- `agent_mode`：单代理模式下的类型，`rule`（默认）或 `llm`。若同时提供 `agents` 列表则忽略此字段。
+- `agents`（可选）：多代理配置，元素包含 `name`、`mode`（rule/llm）、`system_prompt`（可选）、`tools_allowed`（可选，限制可用工具子集）、`impl`（可选自定义类 `pkg.module:Class`）、`llm_config`（可选覆盖全局）、`memory_mode`（window/none）、`memory_limit`（历史条数）、`blackboard_read_keys`/`blackboard_write_keys`（限制共享黑板读写键，`["*"]` 表示全开）。
+- `coordination_pattern`（多代理）：`sequential`（默认）、`round_robin`、`planner_executor_verifier` 等；`max_cycles` 控制 round_robin 循环次数。
+- `llm_config`：全局 LLM 提供商设置（provider/model/api_key/base_url/api_version/deployment_name），可被单个 agent 的同名字段覆盖。
+- `stop_signals`：列表，若 Agent 回复包含任一字符串（不区分大小写）则提前终止。
+- `max_steps`：LangGraph 最大步数（防止无限循环）。
+- `max_elapsed_sec`（可选）：工具累计耗时上限，超出即终止。
+- `graph_template`（可选）：自定义 LangGraph 构造函数，格式 `module:function`。
+- `initial_instructions`：队列式初始指令，`run_step` 未提供 `user_instruction` 时按顺序消费。
+- `shared_context`（可选）：预置共享黑板键值，多代理间按各自的读写权限访问。
+
+快速模板（可删减未用字段）：
+```yaml
+scenario: my-experiment
+agent_mode: rule  # 或 llm；若使用 agents 列表则忽略
+tools_enabled: [read_file, python_repl, search_knowledge_base, bash_command]
+stop_signals: ["done"]
+max_steps: 4
+# max_elapsed_sec: 20
+# graph_template: "mypkg.graphs:build_custom_app"
+initial_instructions:
+  - "读取 report.txt 并总结"
+files:
+  report.txt: |
+    hello
+# 多代理示例（如不需要可删除整个 agents 块）
+# agents:
+#   - name: planner
+#     mode: llm
+#     system_prompt: "Plan steps, do not call tools."
+#     tools_allowed: []
+#   - name: executor
+#     mode: rule
+#     tools_allowed: [read_file, python_repl]
+# coordination_pattern: round_robin
+# max_cycles: 2
+# llm_config:
+#   provider: openai
+#   model: gpt-3.5-turbo-0125
+#   api_key: sk-...
+# shared_context:
+#   plan: ""
+```
+
 HTTP API 速览
 -------------
 - 认证/限流：若设置 `HSE_API_TOKEN`，所有请求需头部 `X-API-Token: <token>`；内置 60 req/min/IP 限速。
