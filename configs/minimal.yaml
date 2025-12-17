@@ -1,0 +1,10 @@
+scenario: minimal
+agent_mode: rule
+tools_enabled: [read_file]
+stop_signals: ["done"]
+max_steps: 2
+initial_instructions:
+  - "读取 hello.txt 并输出内容"
+files:
+  hello.txt: |
+    Hello HoneyGuard!

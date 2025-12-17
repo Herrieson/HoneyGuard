@@ -68,13 +68,15 @@ class SandboxManager:
         if timeout_sec:
             full_cmd = f"timeout {int(timeout_sec)}s {cmd}"
         try:
+            # python-on-whales container.execute does not accept cpu/memory limits; set those at container start if needed
+            exec_kwargs = {
+                "workdir": workdir,
+                "envs": env or {},
+            }
             output = self._docker.container.execute(
                 container_id,
                 ["bash", "-lc", full_cmd],
-                workdir=workdir,
-                envs=env or {},
-                cpus=cpu_limit,
-                memory=mem_limit,
+                **{k: v for k, v in exec_kwargs.items() if v},
             )
             stdout = output if isinstance(output, str) else "".join(
                 chunk.decode() if isinstance(chunk, bytes) else str(chunk) for _, chunk in output  # type: ignore[arg-type]
@@ -128,7 +130,11 @@ class SandboxManager:
         """Remove all containers labeled as HSE sandboxes."""
         try:
             containers = self._docker.container.list(filters={"label": "hse=true"})
+            active_ids = set(self._containers.values())
             for c in containers:
+                # skip containers we still track as active sessions
+                if c.id in active_ids:
+                    continue
                 self._remove_container(c.id)
         except DockerException:
             pass
