@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 from environment.sandbox.manager import SandboxManager
 from tools.base import SandboxTool
+from orchestration.policy import enforce_tool_quota, is_write_allowed
+from config.tool_config import get_default_limits
 
 
 class BashCommandArgs(BaseModel):
@@ -24,7 +26,18 @@ class BashCommandTool(SandboxTool):
         super().__init__(sandbox=sandbox, session_id=session_id, name="bash_command", description="Execute an arbitrary bash command inside the sandbox container.")
 
     def _run(self, command: str, workdir: Optional[str] = None) -> str:
-        result = self.sandbox.execute_command(self.session_id, command, workdir=workdir)
+        enforce_tool_quota(self.session_id)
+        if not is_write_allowed(self.name):
+            return "[bash_command] denied: write-capable tool not allowed by policy"
+        limits = get_default_limits()
+        result = self.sandbox.execute_command(
+            self.session_id,
+            command,
+            workdir=workdir,
+            timeout_sec=limits.get("timeout_sec"),
+            cpu_limit=limits.get("cpu_limit"),
+            mem_limit=limits.get("mem_limit"),
+        )
         output_parts = []
         if result.stdout:
             output_parts.append(result.stdout)

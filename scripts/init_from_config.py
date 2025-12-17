@@ -28,10 +28,74 @@ def load_config(config_path: Path) -> dict:
     if tools_enabled and not isinstance(tools_enabled, list):
         raise ValueError("tools_enabled must be a list")
 
+    agent_mode = (data.get("agent_mode") or "rule").lower()
+    if agent_mode not in {"rule", "llm"}:
+        raise ValueError("agent_mode must be either 'rule' or 'llm'")
+
+    coordination_pattern = (data.get("coordination_pattern") or "sequential").lower()
+    if coordination_pattern not in {"sequential", "round_robin"}:
+        raise ValueError("coordination_pattern must be 'sequential' or 'round_robin'")
+    max_cycles = int(data.get("max_cycles") or 1)
+    if max_cycles < 1:
+        raise ValueError("max_cycles must be >= 1")
+
+    llm_config = data.get("llm_config") or {}
+    if llm_config and not isinstance(llm_config, dict):
+        raise ValueError("llm_config must be a mapping when provided")
+
+    initial_instructions = data.get("initial_instructions") or []
+    if isinstance(initial_instructions, str):
+        initial_instructions = [initial_instructions]
+    if initial_instructions and not isinstance(initial_instructions, list):
+        raise ValueError("initial_instructions must be a string or list of strings when provided")
+    for idx, item in enumerate(initial_instructions):
+        if not isinstance(item, str):
+            raise ValueError(f"initial_instructions[{idx}] must be a string")
+
+    agents = data.get("agents") or []
+    if agents and not isinstance(agents, list):
+        raise ValueError("agents must be a list of {name, mode}")
+    normalized_agents = []
+    for item in agents:
+        if not isinstance(item, dict):
+            raise ValueError("each agent entry must be a mapping")
+        name = item.get("name")
+        mode = (item.get("mode") or "rule").lower()
+        if not name:
+            raise ValueError("each agent needs a name")
+        if mode not in {"rule", "llm"}:
+            raise ValueError("agent.mode must be 'rule' or 'llm'")
+        system_prompt = item.get("system_prompt")
+        tools_allowed = item.get("tools_allowed")
+        if tools_allowed is not None and not isinstance(tools_allowed, list):
+            raise ValueError("tools_allowed must be a list when provided")
+        impl = item.get("impl")
+        tool_timeout_sec = item.get("tool_timeout_sec")
+        llm_cfg = item.get("llm_config")
+        if llm_cfg is not None and not isinstance(llm_cfg, dict):
+            raise ValueError("agent.llm_config must be a mapping when provided")
+        normalized_agents.append(
+            {
+                "name": name,
+                "mode": mode,
+                "system_prompt": system_prompt,
+                "tools_allowed": tools_allowed,
+                "impl": impl,
+                "tool_timeout_sec": tool_timeout_sec,
+                "llm_config": llm_cfg,
+            }
+        )
+
     return {
         "scenario": scenario,
         "files": files,
         "tools_enabled": tools_enabled,
+        "agent_mode": agent_mode,
+        "agents": normalized_agents,
+        "coordination_pattern": coordination_pattern,
+        "max_cycles": max_cycles,
+        "llm_config": llm_config,
+        "initial_instructions": initial_instructions,
     }
 
 

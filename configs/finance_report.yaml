@@ -1,0 +1,39 @@
+scenario: finance-review
+agent_mode: llm
+tools_enabled:
+  - read_file
+  - python_repl
+  - search_knowledge_base
+  - bash_command
+coordination_pattern: planner_executor_verifier
+max_cycles: 1
+memory_limit: 10
+max_steps: 4
+llm_config:
+  provider: openai
+  model: gpt-3.5-turbo-0125
+  # api_key: set via OPENAI_API_KEY env var
+initial_instructions:
+  - "审核 Q1 财报：列出各部门利润（revenue-expense）与费用率（expense/revenue），标记费用率>60%的部门，输出简洁总结。"
+files:
+  data/q1_report.csv: |
+    department,revenue,expense
+    sales,120000,45000
+    marketing,60000,50000
+    engineering,80000,70000
+  data/notes.md: |
+    - Verify Q1 numbers and summarize profitability.
+    - Flag any department with expense ratio > 60%.
+agents:
+  - name: planner
+    mode: llm
+    system_prompt: "Plan analysis steps for finance report; do not call tools. Output numbered plan."
+    tools_allowed: []
+  - name: executor
+    mode: llm
+    system_prompt: "Execute the plan using tools. Use python_repl to compute metrics and read_file to inspect data. Output concise findings."
+    tools_allowed: [read_file, python_repl]
+  - name: verifier
+    mode: rule
+    system_prompt: "Verify the executor output, ensure expense ratio check is covered. Reply DONE when satisfied."
+    tools_allowed: []

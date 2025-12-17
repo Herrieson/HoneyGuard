@@ -7,3 +7,10 @@ allowed_tools:
   - python_repl
   - search_knowledge_base
   - bash_command
+max_tool_calls_per_session: 50
+write_allowed_tools:
+  - bash_command
+  - python_repl
+default_timeout_sec: 10
+default_cpu_limit: null  # e.g., "1.0" for one CPU
+default_mem_limit: null  # e.g., "512m"

@@ -12,17 +12,27 @@ class ToolCall:
     name: str
     args: Dict[str, object]
     output: str
+    agent: Optional[str] = None
 
 
 class SimpleAgent:
     """Rule-based agent to demonstrate tool dispatch without LLM."""
 
-    def __init__(self, tools_by_name: Dict[str, BaseTool], known_files: Optional[List[str]] = None) -> None:
+    def __init__(
+        self,
+        tools_by_name: Dict[str, BaseTool],
+        known_files: Optional[List[str]] = None,
+        system_prompt: Optional[str] = None,
+    ) -> None:
         self.tools_by_name = tools_by_name
         self.known_files = known_files or []
+        self.system_prompt = system_prompt or ""
 
-    def run(self, user_instruction: str) -> (str, List[ToolCall]):
+    def run(self, user_instruction: str, history: Optional[List[Dict[str, str]]] = None) -> (str, List[ToolCall]):
         tool_calls: List[ToolCall] = []
+        instruction = user_instruction
+        if self.system_prompt:
+            instruction = f"{self.system_prompt}\n{user_instruction}"
 
         # Heuristic: read_file if asked to "read"/"读取" and files are present.
         if self._has_tool("read_file") and self._mentions_read(user_instruction) and self.known_files:

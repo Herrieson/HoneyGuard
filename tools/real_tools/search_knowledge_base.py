@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from knowledge import KnowledgeManager
 from langchain.tools import BaseTool
+from orchestration.policy import enforce_tool_quota
 
 
 class SearchKnowledgeArgs(BaseModel):
@@ -23,11 +24,13 @@ class SearchKnowledgeBaseTool(BaseTool):
     description: str = "Search documents in the knowledge base with optional metadata filtering."
     args_schema: Type[BaseModel] = SearchKnowledgeArgs
 
-    def __init__(self, knowledge: KnowledgeManager) -> None:
+    def __init__(self, knowledge: KnowledgeManager, session_id: str) -> None:
         super().__init__(name="search_knowledge_base", description="Search documents in the knowledge base with optional metadata filtering.")
         self.knowledge = knowledge
+        self.session_id = session_id
 
     def _run(self, query: str, top_k: int = 4, metadata_filter: Optional[Dict[str, object]] = None) -> str:
+        enforce_tool_quota(self.session_id)
         results = self.knowledge.query(query, top_k=top_k, metadata_filter=metadata_filter)
         if not results:
             return "No matches found."

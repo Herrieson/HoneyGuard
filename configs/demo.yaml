@@ -1,4 +1,38 @@
 scenario: demo
+# agent_mode can be "rule" or "llm". Using "llm" requires langchain-openai and OPENAI_API_KEY.
+agent_mode: rule
+# Optional: define agents list to enable multi-agent mode (overrides agent_mode).
+# agents:
+#   - name: planner
+#     mode: llm
+#     system_prompt: "Plan steps, do not call tools."
+#     tools_allowed: []
+#     impl: "mypkg.agent:MyPlanner"   # Optional custom agent class (needs run(user_instruction))
+#   - name: executor
+#     mode: rule
+#     system_prompt: "Execute with allowed tools."
+#     tools_allowed: [read_file, python_repl]
+#     impl: null
+# coordination_pattern: sequential  # or round_robin or planner_executor_verifier
+# max_cycles: 1
+# Optional LLM provider settings (apply to all LLM agents unless overridden per agent)
+# llm_config:
+#   provider: openai           # openai (default) or azure
+#   model: gpt-3.5-turbo-0125
+#   api_key: sk-...
+#   base_url: https://api.openai.com/v1
+#   api_version: 2024-02-15-preview  # for Azure
+#   deployment_name: my-deployment   # for Azure
+# Agent-level override example:
+# agents:
+#   - name: llm-agent
+#     mode: llm
+#     system_prompt: "Use Azure for this agent."
+#     llm_config:
+#       provider: azure
+#       deployment_name: my-azure-deployment
+#       api_key: <azure-key>
+#       api_version: 2024-02-15-preview
 tools_enabled:
   - read_file
   - python_repl

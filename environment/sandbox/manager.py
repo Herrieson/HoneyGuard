@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
 import os
+import subprocess
 
 from python_on_whales import DockerClient, docker
 from python_on_whales.exceptions import DockerException
@@ -59,6 +60,8 @@ class SandboxManager:
         workdir: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
         timeout_sec: Optional[int] = None,
+        cpu_limit: Optional[str] = None,
+        mem_limit: Optional[str] = None,
     ) -> CommandResult:
         container_id = self._get_container(session_id)
         full_cmd = cmd
@@ -70,6 +73,8 @@ class SandboxManager:
                 ["bash", "-lc", full_cmd],
                 workdir=workdir,
                 envs=env or {},
+                cpus=cpu_limit,
+                memory=mem_limit,
             )
             stdout = output if isinstance(output, str) else "".join(
                 chunk.decode() if isinstance(chunk, bytes) else str(chunk) for _, chunk in output  # type: ignore[arg-type]

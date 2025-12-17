@@ -31,5 +31,5 @@ class ToolRegistry:
             "read_file": lambda session_id: ReadFileTool(self.sandbox, session_id),
             "bash_command": lambda session_id: BashCommandTool(self.sandbox, session_id),
             "python_repl": lambda session_id: PythonReplTool(self.sandbox, session_id),
-            "search_knowledge_base": lambda session_id: SearchKnowledgeBaseTool(self.knowledge),
+            "search_knowledge_base": lambda session_id: SearchKnowledgeBaseTool(self.knowledge, session_id),
         }

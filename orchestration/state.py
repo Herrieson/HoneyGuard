@@ -6,7 +6,10 @@ from typing import Annotated, Dict, TypedDict
 from langgraph.graph.message import AnyMessage
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     messages: Annotated[list[AnyMessage], operator.add]
     scratchpad: str
     env_status: Dict[str, object]
+    input: str
+    last_response: str
+    last_tool_calls: list[Dict[str, object]]

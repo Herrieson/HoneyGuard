@@ -43,6 +43,9 @@ class SqliteLogger:
                 )
                 """
             )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_traces_session ON traces(session_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tool_calls_session ON tool_calls(session_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tool_calls_trace ON tool_calls(trace_id)")
 
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
@@ -71,5 +74,20 @@ class SqliteLogger:
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (session_id, trace_id, tool_name, json.dumps(args, ensure_ascii=False), output, status),
+            )
+            conn.commit()
+
+    def prune(self, max_age_days: int = 7) -> None:
+        """Delete traces/tool_calls older than max_age_days."""
+        if max_age_days <= 0:
+            return
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "DELETE FROM traces WHERE created_at < datetime('now', ?)",
+                (f"-{int(max_age_days)} days",),
+            )
+            conn.execute(
+                "DELETE FROM tool_calls WHERE created_at < datetime('now', ?)",
+                (f"-{int(max_age_days)} days",),
             )
             conn.commit()

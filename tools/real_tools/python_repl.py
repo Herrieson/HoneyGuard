@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 from environment.sandbox import SandboxManager
 from tools.base import SandboxTool
+from orchestration.policy import enforce_tool_quota, is_write_allowed
+from config.tool_config import get_default_limits
 
 
 class PythonReplArgs(BaseModel):
@@ -24,8 +26,19 @@ class PythonReplTool(SandboxTool):
         super().__init__(sandbox=sandbox, session_id=session_id, name="python_repl", description="Execute Python code inside the sandboxed container.")
 
     def _run(self, code: str, workdir: Optional[str] = None) -> str:
+        enforce_tool_quota(self.session_id)
+        if not is_write_allowed(self.name):
+            return "[python_repl] denied: write-capable tool not allowed by policy"
+        limits = get_default_limits()
         command = "python - <<'PY'\n" + code + "\nPY"
-        result = self.sandbox.execute_command(self.session_id, command, workdir=workdir)
+        result = self.sandbox.execute_command(
+            self.session_id,
+            command,
+            workdir=workdir,
+            timeout_sec=limits.get("timeout_sec"),
+            cpu_limit=limits.get("cpu_limit"),
+            mem_limit=limits.get("mem_limit"),
+        )
         output_parts = []
         if result.stdout:
             output_parts.append(result.stdout)
