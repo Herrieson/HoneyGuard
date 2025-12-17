@@ -14,7 +14,6 @@ class ToolCall:
     output: Optional[str] = None
     error: Optional[str] = None
     agent: Optional[str] = None
-    agent: Optional[str] = None
 
 
 class SimpleAgent:

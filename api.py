@@ -327,14 +327,6 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         max_elapsed_sec=payload.max_elapsed_sec,
     )
     policy.reset_session(session_id)
-    coordinator = AgentCoordinator(
-        agents,
-        pattern=(payload.coordination_pattern or "sequential"),
-        max_cycles=payload.max_cycles or 1,
-        stop_on_done=True,
-        memory_limit=payload.memory_limit,
-        stop_signals=payload.stop_signals,
-    )
 
     SESSIONS[session_id] = SessionContext(
         session_id=session_id,
