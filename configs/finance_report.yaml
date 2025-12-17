@@ -9,6 +9,9 @@ coordination_pattern: planner_executor_verifier
 max_cycles: 1
 memory_limit: 10
 max_steps: 4
+stop_signals: ["done", "DONE", "完成"]
+# max_elapsed_sec: 20  # Optional: cumulative tool time budget (seconds)
+# graph_template: "mypkg.graphs:finance_flow"  # Optional custom LangGraph builder (module:function)
 llm_config:
   provider: openai
   model: gpt-3.5-turbo-0125

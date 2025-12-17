@@ -33,8 +33,8 @@ def load_config(config_path: Path) -> dict:
         raise ValueError("agent_mode must be either 'rule' or 'llm'")
 
     coordination_pattern = (data.get("coordination_pattern") or "sequential").lower()
-    if coordination_pattern not in {"sequential", "round_robin"}:
-        raise ValueError("coordination_pattern must be 'sequential' or 'round_robin'")
+    if coordination_pattern not in {"sequential", "round_robin", "planner_executor_verifier", "parallel"}:
+        raise ValueError("coordination_pattern must be one of sequential, round_robin, planner_executor_verifier, parallel")
     max_cycles = int(data.get("max_cycles") or 1)
     if max_cycles < 1:
         raise ValueError("max_cycles must be >= 1")
@@ -42,6 +42,28 @@ def load_config(config_path: Path) -> dict:
     llm_config = data.get("llm_config") or {}
     if llm_config and not isinstance(llm_config, dict):
         raise ValueError("llm_config must be a mapping when provided")
+
+    graph_template = data.get("graph_template")
+    if graph_template is not None and not isinstance(graph_template, str):
+        raise ValueError("graph_template must be a string when provided")
+
+    stop_signals = data.get("stop_signals") or ["done"]
+    if isinstance(stop_signals, str):
+        stop_signals = [stop_signals]
+    if stop_signals and not isinstance(stop_signals, list):
+        raise ValueError("stop_signals must be a string or list of strings")
+    for idx, sig in enumerate(stop_signals):
+        if not isinstance(sig, str):
+            raise ValueError(f"stop_signals[{idx}] must be a string")
+
+    max_elapsed_sec = data.get("max_elapsed_sec")
+    if max_elapsed_sec is not None:
+        try:
+            max_elapsed_sec = float(max_elapsed_sec)
+        except Exception as exc:
+            raise ValueError("max_elapsed_sec must be numeric") from exc
+        if max_elapsed_sec <= 0:
+            raise ValueError("max_elapsed_sec must be > 0 when provided")
 
     initial_instructions = data.get("initial_instructions") or []
     if isinstance(initial_instructions, str):
@@ -96,6 +118,9 @@ def load_config(config_path: Path) -> dict:
         "max_cycles": max_cycles,
         "llm_config": llm_config,
         "initial_instructions": initial_instructions,
+        "graph_template": graph_template,
+        "stop_signals": stop_signals,
+        "max_elapsed_sec": max_elapsed_sec,
     }
 
 

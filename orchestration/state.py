@@ -13,3 +13,5 @@ class AgentState(TypedDict, total=False):
     input: str
     last_response: str
     last_tool_calls: list[Dict[str, object]]
+    pending_tool_calls: list[Dict[str, object]]
+    tool_results: list[Dict[str, object]]

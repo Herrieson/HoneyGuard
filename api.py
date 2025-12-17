@@ -46,6 +46,9 @@ class SessionContext:
     max_steps: int
     queued_instructions: List[str]
     instruction_cursor: int
+    graph_template: Optional[str]
+    stop_signals: List[str]
+    max_elapsed_sec: Optional[float]
 
 
 class AgentConfig(BaseModel):
@@ -103,6 +106,18 @@ class InitializeRequest(BaseModel):
     initial_instructions: List[str] = Field(
         default_factory=list,
         description="Optional queued user instructions; used in order when run_step is called without user_instruction.",
+    )
+    graph_template: Optional[str] = Field(
+        None,
+        description="Optional graph template name or import path (module:function) returning a compiled LangGraph app.",
+    )
+    stop_signals: List[str] = Field(
+        default_factory=lambda: ["done"],
+        description="Strings that will trigger early termination when found in agent responses (case-insensitive).",
+    )
+    max_elapsed_sec: Optional[float] = Field(
+        None,
+        description="Optional cumulative tool execution time budget in seconds; run will stop when exceeded.",
     )
 
 
@@ -278,12 +293,17 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         max_cycles=payload.max_cycles or 1,
         stop_on_done=True,
         memory_limit=payload.memory_limit,
+        stop_signals=payload.stop_signals,
     )
     runner = EnvironmentRunner(
         coordinator=coordinator,
         pre_execution_hook=_pre_execution_hook(session_id),
+        tools_by_name=tools_by_name,
         max_steps=payload.max_steps,
         stop_on_done=True,
+        graph_template=payload.graph_template,
+        stop_signals=payload.stop_signals,
+        max_elapsed_sec=payload.max_elapsed_sec,
     )
     policy.reset_session(session_id)
     coordinator = AgentCoordinator(
@@ -292,6 +312,7 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         max_cycles=payload.max_cycles or 1,
         stop_on_done=True,
         memory_limit=payload.memory_limit,
+        stop_signals=payload.stop_signals,
     )
 
     SESSIONS[session_id] = SessionContext(
@@ -312,6 +333,9 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         max_steps=payload.max_steps,
         queued_instructions=list(payload.initial_instructions or []),
         instruction_cursor=0,
+        graph_template=payload.graph_template,
+        stop_signals=payload.stop_signals,
+        max_elapsed_sec=payload.max_elapsed_sec,
     )
 
     return InitializeResponse(session_id=session_id)
@@ -332,20 +356,34 @@ def run_step(payload: RunStepRequest, _: None = Depends(_check_auth_and_rate)) -
             raise HTTPException(status_code=400, detail="user_instruction is required when no queued instructions remain")
 
     trace_id = uuid.uuid4().hex
-    state: AgentState = {"input": instruction, "env_status": {}}
+    state: AgentState = {"input": instruction, "env_status": {}, "tool_results": []}
     result = session.runner.run(state)
     tool_calls_raw = result.get("last_tool_calls") or []
     agent_response = result.get("last_response", "")
 
     tool_calls: List[Dict[str, object]] = []
     for call in tool_calls_raw:
-        tool_calls.append(
-            {"name": call.get("name"), "args": call.get("args"), "output": call.get("output"), "agent": call.get("agent")}
-        )
+        entry = {
+            "name": call.get("name"),
+            "args": call.get("args"),
+            "output": call.get("output"),
+            "error": call.get("error"),
+            "elapsed_sec": call.get("elapsed_sec"),
+            "status": call.get("status") or ("error" if call.get("error") else "ok"),
+            "agent": call.get("agent"),
+        }
+        tool_calls.append(entry)
         args_with_agent = dict(call.get("args") or {})
         if call.get("agent"):
             args_with_agent["_agent"] = call.get("agent")
-        logger.log_tool_call(payload.session_id, trace_id, call.get("name", ""), args_with_agent, call.get("output", ""), status="ok")
+        logger.log_tool_call(
+            payload.session_id,
+            trace_id,
+            call.get("name", ""),
+            args_with_agent,
+            call.get("output", "") or call.get("error", ""),
+            status=entry["status"],
+        )
 
     logger.log_trace(
         payload.session_id,

@@ -3,8 +3,14 @@ tools_enabled:
   - read_file
   - python_repl
   - search_knowledge_base
-coordination_pattern: round_robin
+coordination_pattern: round_robin  # 支持 sequential / round_robin / planner_executor_verifier / parallel
 max_cycles: 2
+stop_signals: ["done"]  # Agent 回复包含这些标记则提前终止（大小写不敏感）
+max_steps: 4
+# max_elapsed_sec: 20  # 可选：工具累计耗时上限（秒）
+# graph_template: "mypkg.graphs:custom_round_robin"  # 可选自定义图模板（module:function）
+initial_instructions:
+  - "阅读 report.txt，规划并执行两轮协作后总结发现。"
 files:
   report.txt: |
     This is a shared report for multi-agent.

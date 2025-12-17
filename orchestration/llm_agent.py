@@ -65,11 +65,22 @@ class LLMAgent:
             return_intermediate_steps=True,
         )
 
-    def run(self, user_instruction: str, history: Sequence[dict] | None = None) -> Tuple[str, List[ToolCall]]:
+    def run(
+        self,
+        user_instruction: str,
+        history: Sequence[dict] | None = None,
+        tool_results: List[Dict[str, Any]] | None = None,
+    ) -> Tuple[str, List[ToolCall]]:
         """Run one step with the LLM agent and return reply + tool audit."""
+        tool_context = ""
+        if tool_results:
+            rendered = "\n".join(
+                f"{item.get('name')}: {item.get('output') or item.get('error')}" for item in tool_results
+            )
+            tool_context = f"\n\nRecent tool results:\n{rendered}"
         result = self.executor.invoke(
             {
-                "input": user_instruction,
+                "input": f"{user_instruction}{tool_context}",
                 "chat_history": history or [],
                 "known_files": ", ".join(self.known_files) or "None",
             }

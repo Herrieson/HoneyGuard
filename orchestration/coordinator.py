@@ -23,6 +23,7 @@ class AgentCoordinator:
         max_cycles: int = 1,
         stop_on_done: bool = True,
         memory_limit: int = 10,
+        stop_signals: Sequence[str] | None = None,
     ) -> None:
         self.agents = list(agents)
         self.pattern = (pattern or "sequential").lower()
@@ -30,8 +31,9 @@ class AgentCoordinator:
         self.stop_on_done = stop_on_done
         self.memory_limit = max(memory_limit, 1)
         self._memories: dict[str, list[dict]] = {}
+        self.stop_signals = [s.lower() for s in (stop_signals or ["done"])]
 
-    def run(self, user_instruction: str) -> Tuple[str, List[ToolCall]]:
+    def run(self, user_instruction: str, tool_results: List[dict] | None = None) -> Tuple[str, List[ToolCall]]:
         transcript: List[dict] = []
         tool_calls: List[ToolCall] = []
         stop = False
@@ -39,8 +41,10 @@ class AgentCoordinator:
         if self.pattern == "round_robin":
             for _ in range(self.max_cycles):
                 for agent in self.agents:
-                    prompt = self._build_prompt(user_instruction, transcript)
-                    response, calls = agent.impl.run(prompt, history=self._memory_for(agent.name))
+                    prompt = self._build_prompt(user_instruction, transcript, tool_results)
+                    response, calls = agent.impl.run(
+                        prompt, history=self._memory_for(agent.name), tool_results=tool_results
+                    )
                     self._record(agent.name, response)
                     transcript.append({"agent": agent.name, "content": response})
                     self._append_calls(tool_calls, calls, agent.name)
@@ -50,9 +54,11 @@ class AgentCoordinator:
                 if stop:
                     break
         elif self.pattern == "parallel":
-            prompt = self._build_prompt(user_instruction, transcript)
+            prompt = self._build_prompt(user_instruction, transcript, tool_results)
             for agent in self.agents:
-                response, calls = agent.impl.run(prompt, history=self._memory_for(agent.name))
+                response, calls = agent.impl.run(
+                    prompt, history=self._memory_for(agent.name), tool_results=tool_results
+                )
                 self._record(agent.name, response)
                 transcript.append({"agent": agent.name, "content": response})
                 self._append_calls(tool_calls, calls, agent.name)
@@ -62,8 +68,10 @@ class AgentCoordinator:
             verifier = self.agents[2] if len(self.agents) > 2 else None
 
             # Planner step
-            plan_prompt = self._build_prompt(user_instruction, transcript)
-            plan_resp, plan_calls = planner.impl.run(plan_prompt, history=self._memory_for(planner.name))
+            plan_prompt = self._build_prompt(user_instruction, transcript, tool_results)
+            plan_resp, plan_calls = planner.impl.run(
+                plan_prompt, history=self._memory_for(planner.name), tool_results=tool_results
+            )
             self._record(planner.name, plan_resp)
             transcript.append({"agent": planner.name, "content": plan_resp})
             self._append_calls(tool_calls, plan_calls, planner.name)
@@ -72,8 +80,10 @@ class AgentCoordinator:
 
             # Executor step(s)
             if not stop:
-                exec_prompt = self._build_prompt(plan_resp, transcript)
-                exec_resp, exec_calls = executor.impl.run(exec_prompt, history=self._memory_for(executor.name))
+                exec_prompt = self._build_prompt(plan_resp, transcript, tool_results)
+                exec_resp, exec_calls = executor.impl.run(
+                    exec_prompt, history=self._memory_for(executor.name), tool_results=tool_results
+                )
                 self._record(executor.name, exec_resp)
                 transcript.append({"agent": executor.name, "content": exec_resp})
                 self._append_calls(tool_calls, exec_calls, executor.name)
@@ -82,15 +92,19 @@ class AgentCoordinator:
 
             # Verifier step (optional)
             if verifier and not stop:
-                ver_prompt = self._build_prompt(exec_resp, transcript)
-                ver_resp, ver_calls = verifier.impl.run(ver_prompt, history=self._memory_for(verifier.name))
+                ver_prompt = self._build_prompt(exec_resp, transcript, tool_results)
+                ver_resp, ver_calls = verifier.impl.run(
+                    ver_prompt, history=self._memory_for(verifier.name), tool_results=tool_results
+                )
                 self._record(verifier.name, ver_resp)
                 transcript.append({"agent": verifier.name, "content": ver_resp})
                 self._append_calls(tool_calls, ver_calls, verifier.name)
         else:  # sequential default
             for agent in self.agents:
-                prompt = self._build_prompt(user_instruction, transcript)
-                response, calls = agent.impl.run(prompt, history=self._memory_for(agent.name))
+                prompt = self._build_prompt(user_instruction, transcript, tool_results)
+                response, calls = agent.impl.run(
+                    prompt, history=self._memory_for(agent.name), tool_results=tool_results
+                )
                 self._record(agent.name, response)
                 transcript.append({"agent": agent.name, "content": response})
                 self._append_calls(tool_calls, calls, agent.name)
@@ -100,11 +114,17 @@ class AgentCoordinator:
         final_response = "\n".join(f"{m['agent']}: {m['content']}" for m in transcript) if transcript else ""
         return final_response, tool_calls
 
-    def _build_prompt(self, user_instruction: str, transcript: List[dict]) -> str:
-        if not transcript:
-            return user_instruction
-        history = "\n".join(f"{m['agent']}: {m['content']}" for m in transcript)
-        return f"{user_instruction}\n\nContext from previous agents:\n{history}"
+    def _build_prompt(self, user_instruction: str, transcript: List[dict], tool_results: List[dict] | None) -> str:
+        base = user_instruction
+        if transcript:
+            history = "\n".join(f"{m['agent']}: {m['content']}" for m in transcript)
+            base = f"{user_instruction}\n\nContext from previous agents:\n{history}"
+        if tool_results:
+            rendered = "\n".join(
+                f"{item.get('name')}: {item.get('output') or item.get('error')}" for item in tool_results
+            )
+            base = f"{base}\n\nRecent tool results:\n{rendered}"
+        return base
 
     def _append_calls(self, tool_calls: List[ToolCall], calls: List[ToolCall], agent_name: str) -> None:
         for call in calls:
@@ -121,4 +141,5 @@ class AgentCoordinator:
         return list(self._memories.get(agent_name, []))
 
     def _is_done(self, text: str) -> bool:
-        return "done" in text.lower()
+        lowered = text.lower() if text else ""
+        return any(sig in lowered for sig in self.stop_signals)

@@ -11,7 +11,9 @@ from langchain.tools import BaseTool
 class ToolCall:
     name: str
     args: Dict[str, object]
-    output: str
+    output: Optional[str] = None
+    error: Optional[str] = None
+    agent: Optional[str] = None
     agent: Optional[str] = None
 
 
@@ -28,7 +30,23 @@ class SimpleAgent:
         self.known_files = known_files or []
         self.system_prompt = system_prompt or ""
 
-    def run(self, user_instruction: str, history: Optional[List[Dict[str, str]]] = None) -> (str, List[ToolCall]):
+    def run(
+        self,
+        user_instruction: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        tool_results: Optional[List[Dict[str, object]]] = None,
+    ) -> (str, List[ToolCall]):
+        # If we already have tool results, summarize instead of issuing new calls.
+        if tool_results:
+            lines = []
+            for item in tool_results:
+                name = item.get("name")
+                args = item.get("args")
+                output = item.get("output") or item.get("error") or ""
+                lines.append(f"{name}({args}) => {output}")
+            summary = "\n".join(lines) if lines else "No tool results."
+            return summary, []
+
         tool_calls: List[ToolCall] = []
         instruction = user_instruction
         if self.system_prompt:
@@ -37,28 +55,24 @@ class SimpleAgent:
         # Heuristic: read_file if asked to "read"/"读取" and files are present.
         if self._has_tool("read_file") and self._mentions_read(user_instruction) and self.known_files:
             path = self.known_files[0]
-            output = self._invoke_tool("read_file", {"path": path})
-            tool_calls.append(ToolCall(name="read_file", args={"path": path}, output=output))
+            tool_calls.append(ToolCall(name="read_file", args={"path": path}))
 
         # Heuristic: search knowledge base if "search"/"查询".
         if self._has_tool("search_knowledge_base") and self._mentions_search(user_instruction):
-            output = self._invoke_tool("search_knowledge_base", {"query": user_instruction})
-            tool_calls.append(ToolCall(name="search_knowledge_base", args={"query": user_instruction}, output=output))
+            tool_calls.append(ToolCall(name="search_knowledge_base", args={"query": user_instruction}))
 
         # Heuristic: bash_command if pattern "bash: <cmd>" present.
         bash_cmd = self._extract_after_prefix(user_instruction, "bash:")
         if self._has_tool("bash_command") and bash_cmd:
-            output = self._invoke_tool("bash_command", {"command": bash_cmd})
-            tool_calls.append(ToolCall(name="bash_command", args={"command": bash_cmd}, output=output))
+            tool_calls.append(ToolCall(name="bash_command", args={"command": bash_cmd}))
 
         # Heuristic: python_repl if pattern "python: <code>" present.
         py_code = self._extract_after_prefix(user_instruction, "python:")
         if self._has_tool("python_repl") and py_code:
-            output = self._invoke_tool("python_repl", {"code": py_code})
-            tool_calls.append(ToolCall(name="python_repl", args={"code": py_code}, output=output))
+            tool_calls.append(ToolCall(name="python_repl", args={"code": py_code}))
 
         if tool_calls:
-            response = "\n".join([f"{call.name} -> {call.output}" for call in tool_calls])
+            response = "Planned tool calls: " + ", ".join(call.name for call in tool_calls)
         else:
             response = f"[stub] Received instruction: {user_instruction}"
 
