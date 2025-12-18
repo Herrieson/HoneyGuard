@@ -3,9 +3,10 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Literal
 import os
 import logging
+import shlex
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
@@ -51,6 +52,9 @@ class SessionContext:
     stop_signals: List[str]
     max_elapsed_sec: Optional[float]
     shared_context: Dict[str, object]
+    acceptance_criteria: List["AcceptanceCriterion"]
+    acceptance_logic: str
+    acceptance_baseline: Dict[str, str]
 
 
 class AgentConfig(BaseModel):
@@ -87,6 +91,39 @@ class AgentConfig(BaseModel):
         if mode not in {"rule", "llm"}:
             raise ValueError("agent mode must be 'rule' or 'llm'")
         return mode
+
+
+class AcceptanceCriterion(BaseModel):
+    """Acceptance rule evaluated after each run_step."""
+
+    type: Literal[
+        "response_contains",
+        "tool_output_contains",
+        "shared_context_equals",
+        "file_contains",
+        "file_not_contains",
+        "file_hash_equals",
+        "file_changed",
+        "command_exit_code",
+        "command_output_contains",
+    ] = Field(..., description="Criterion type.")
+    value: str = Field(..., description="String to match or expected value (hash/substring/command arg).")
+    key: Optional[str] = Field(
+        None,
+        description="For shared_context_equals, the key to compare.",
+    )
+    path: Optional[str] = Field(
+        None,
+        description="For file-based checks, the path inside the sandbox.",
+    )
+    expect_exit_code: Optional[int] = Field(
+        None,
+        description="For command_exit_code, expected exit code (default 0).",
+    )
+    command: Optional[str] = Field(
+        None,
+        description="For command checks, the command to run inside the sandbox.",
+    )
 
 
 class InitializeRequest(BaseModel):
@@ -132,6 +169,14 @@ class InitializeRequest(BaseModel):
         default_factory=dict,
         description="Optional initial shared blackboard (key-value) visible to agents with read access.",
     )
+    acceptance_criteria: List[AcceptanceCriterion] = Field(
+        default_factory=list,
+        description="Optional list of acceptance rules evaluated after each run_step.",
+    )
+    acceptance_logic: Literal["all", "any"] = Field(
+        "all",
+        description="Whether all criteria must pass ('all') or any one is sufficient ('any').",
+    )
 
 
 class InitializeResponse(BaseModel):
@@ -149,6 +194,12 @@ class RunStepResponse(BaseModel):
     agent_response: str
     tool_calls: List[Dict[str, object]]
     trace_id: str
+    acceptance_passed: Optional[bool] = Field(
+        None, description="Whether all acceptance criteria passed (if configured)."
+    )
+    acceptance_results: Optional[List[Dict[str, object]]] = Field(
+        None, description="Per-criterion evaluation results when acceptance criteria are configured."
+    )
 
 
 sandbox_manager = SandboxManager()
@@ -185,6 +236,138 @@ def _pre_execution_hook(session_id: str):
         logger.log_trace(session_id, uuid.uuid4().hex, {"event": "pre_tool_execution", "state": state})
 
     return hook
+
+
+def _file_hash(session_id: str, path: str) -> Optional[str]:
+    result = sandbox_manager.execute_command(session_id, f"sha256sum {shlex.quote(path)}")
+    if result.exit_code != 0 or not result.stdout:
+        return None
+    return result.stdout.split()[0]
+
+
+def _read_file(session_id: str, path: str) -> Optional[str]:
+    result = sandbox_manager.execute_command(session_id, f"cat {shlex.quote(path)}")
+    if result.exit_code != 0:
+        return None
+    return result.stdout
+
+
+def _run_command(session_id: str, command: str) -> Tuple[int, str]:
+    result = sandbox_manager.execute_command(session_id, command)
+    output_parts = []
+    if result.stdout:
+        output_parts.append(result.stdout)
+    if result.stderr:
+        output_parts.append(f"[stderr]\n{result.stderr}")
+    return result.exit_code, "\n".join(output_parts)
+
+
+def _capture_acceptance_baseline(session_id: str, criteria: List["AcceptanceCriterion"]) -> Dict[str, str]:
+    baseline: Dict[str, str] = {}
+    for crit in criteria:
+        if crit.type == "file_changed" and crit.path:
+            h = _file_hash(session_id, crit.path)
+            if h:
+                baseline[crit.path] = h
+    return baseline
+
+
+def _evaluate_acceptance(
+    session_id: str,
+    criteria: List["AcceptanceCriterion"],
+    logic: str,
+    agent_response: str,
+    tool_calls: List[Dict[str, object]],
+    shared_context: Dict[str, object],
+    baseline: Dict[str, str],
+) -> Tuple[bool, List[Dict[str, object]]]:
+    """Evaluate configured acceptance criteria after a step."""
+    results: List[Dict[str, object]] = []
+    tool_outputs = []
+    for call in tool_calls:
+        if call.get("output"):
+            tool_outputs.append(str(call.get("output")))
+        if call.get("error"):
+            tool_outputs.append(str(call.get("error")))
+    tool_text = "\n".join(tool_outputs)
+
+    for crit in criteria:
+        passed = False
+        detail = ""
+        value = crit.value or ""
+        if crit.type == "response_contains":
+            passed = value.lower() in (agent_response or "").lower()
+            detail = "matched agent_response" if passed else "not found in agent_response"
+        elif crit.type == "tool_output_contains":
+            passed = value.lower() in tool_text.lower()
+            detail = "matched tool output" if passed else "not found in tool outputs"
+        elif crit.type == "shared_context_equals":
+            key = crit.key or ""
+            expected = str(value)
+            actual = str(shared_context.get(key, ""))
+            passed = key in shared_context and actual == expected
+            detail = f"shared_context[{key}] == {expected}" if passed else f"shared_context[{key}] != {expected}"
+        elif crit.type in {"file_contains", "file_not_contains", "file_hash_equals", "file_changed"}:
+            if not crit.path:
+                detail = "path not provided"
+            else:
+                content = _read_file(session_id, crit.path) if crit.type in {"file_contains", "file_not_contains"} else None
+                if crit.type == "file_contains":
+                    if content is None:
+                        detail = "failed to read file"
+                    else:
+                        passed = value in content
+                        detail = "found in file" if passed else "not found in file"
+                elif crit.type == "file_not_contains":
+                    if content is None:
+                        detail = "failed to read file"
+                    else:
+                        passed = value not in content
+                        detail = "absent from file" if passed else "value present in file"
+                elif crit.type == "file_hash_equals":
+                    h = _file_hash(session_id, crit.path)
+                    if h is None:
+                        detail = "failed to hash file"
+                    else:
+                        passed = h == value
+                        detail = "hash matched" if passed else f"hash mismatch: {h}"
+                elif crit.type == "file_changed":
+                    prev = baseline.get(crit.path)
+                    current = _file_hash(session_id, crit.path)
+                    if prev is None or current is None:
+                        detail = "baseline or current hash unavailable"
+                    else:
+                        passed = prev != current
+                        detail = "file changed" if passed else "file unchanged"
+        elif crit.type in {"command_exit_code", "command_output_contains"}:
+            cmd = crit.command or crit.value
+            if not cmd:
+                detail = "command not provided"
+            else:
+                exit_code, output = _run_command(session_id, cmd)
+                if crit.type == "command_exit_code":
+                    expected = crit.expect_exit_code if crit.expect_exit_code is not None else 0
+                    passed = exit_code == expected
+                    detail = f"exit {exit_code}, expected {expected}"
+                else:
+                    passed = value.lower() in output.lower()
+                    detail = "found in command output" if passed else "not found in command output"
+        results.append(
+            {
+                "type": crit.type,
+                "key": crit.key,
+                "path": crit.path,
+                "value": crit.value,
+                "passed": passed,
+                "detail": detail,
+            }
+        )
+    if not results:
+        return True, results
+    overall = all(item["passed"] for item in results) if logic == "all" else any(
+        item["passed"] for item in results
+    )
+    return overall, results
 
 
 def _default_tools(tools_enabled: List[str]) -> List[str]:
@@ -311,6 +494,7 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         known_files=list(payload.files.keys()),
         llm_config=payload.llm_config,
     )
+    acceptance_baseline = _capture_acceptance_baseline(session_id, payload.acceptance_criteria)
     coordinator = AgentCoordinator(
         agents,
         pattern=(payload.coordination_pattern or "sequential"),
@@ -359,6 +543,9 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         stop_signals=payload.stop_signals,
         max_elapsed_sec=payload.max_elapsed_sec,
         shared_context=dict(payload.shared_context or {}),
+        acceptance_criteria=list(payload.acceptance_criteria or []),
+        acceptance_logic=payload.acceptance_logic or "all",
+        acceptance_baseline=acceptance_baseline,
     )
 
     return InitializeResponse(session_id=session_id)
@@ -420,12 +607,37 @@ def run_step(payload: RunStepRequest, _: None = Depends(_check_auth_and_rate)) -
             status=entry["status"],
         )
 
+    acceptance_passed: Optional[bool] = None
+    acceptance_results: Optional[List[Dict[str, object]]] = None
+    if session.acceptance_criteria:
+        acceptance_passed, acceptance_results = _evaluate_acceptance(
+            session.session_id,
+            session.acceptance_criteria,
+            session.acceptance_logic,
+            agent_response,
+            tool_calls,
+            session.shared_context,
+            session.acceptance_baseline,
+        )
+
     logger.log_trace(
         payload.session_id,
         trace_id,
-        {"user_instruction": payload.user_instruction, "agent_response": agent_response, "tool_calls": tool_calls},
+        {
+            "user_instruction": payload.user_instruction,
+            "agent_response": agent_response,
+            "tool_calls": tool_calls,
+            "acceptance_passed": acceptance_passed,
+            "acceptance_results": acceptance_results,
+        },
     )
-    return RunStepResponse(agent_response=agent_response, tool_calls=tool_calls, trace_id=trace_id)
+    return RunStepResponse(
+        agent_response=agent_response,
+        tool_calls=tool_calls,
+        trace_id=trace_id,
+        acceptance_passed=acceptance_passed,
+        acceptance_results=acceptance_results,
+    )
 
 
 @app.delete("/v1/environment/{session_id}")

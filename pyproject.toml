@@ -13,4 +13,5 @@ dependencies = [
     "pyyaml",
     "uvicorn",
     "pypdf",
+    "openai>=2.13.0",
 ]

@@ -11,6 +11,14 @@ max_steps: 4
 # graph_template: "mypkg.graphs:custom_round_robin"  # 可选自定义图模板（module:function）
 initial_instructions:
   - "阅读 report.txt，规划并执行两轮协作后总结发现。"
+acceptance_logic: all
+acceptance_criteria:
+  - type: tool_output_contains
+    value: "This is a shared report"
+  - type: response_contains
+    value: "executor"
+  - type: command_exit_code
+    command: "test -f report.txt"
 files:
   report.txt: |
     This is a shared report for multi-agent.

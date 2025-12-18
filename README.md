@@ -74,6 +74,16 @@ HoneyGuard/configs 配置编写指南
 - `graph_template`（可选）：自定义 LangGraph 构造函数，格式 `module:function`。
 - `initial_instructions`：队列式初始指令，`run_step` 未提供 `user_instruction` 时按顺序消费。
 - `shared_context`（可选）：预置共享黑板键值，多代理间按各自的读写权限访问。
+- `acceptance_criteria`（可选）：验收标准列表，运行后自动评估，支持：
+  - `response_contains`：agent 回复包含 `value`
+  - `tool_output_contains`：任一工具输出/错误包含 `value`
+  - `shared_context_equals`：`shared_context[key] == value`
+  - `file_contains` / `file_not_contains`：沙箱文件包含 / 不包含 `value`（需 `path`）
+  - `file_hash_equals`：文件 sha256 等于 `value`（需 `path`）
+  - `file_changed`：文件相对初始化时已变更（需 `path`）
+  - `command_exit_code`：运行 `command`，退出码等于 `expect_exit_code`（默认 0）
+  - `command_output_contains`：运行 `command`，输出包含 `value`
+- `acceptance_logic`：验收通过逻辑，`all`（默认，全部通过）或 `any`（任一通过）。
 
 快速模板（可删减未用字段）：
 ```yaml
@@ -89,6 +99,15 @@ initial_instructions:
 files:
   report.txt: |
     hello
+acceptance_criteria:
+  - type: response_contains
+    value: "done"
+  - type: file_changed
+    path: "/tmp/result.txt"
+  - type: command_output_contains
+    command: "grep -c success /tmp/result.txt"
+    value: "1"
+acceptance_logic: all
 # 多代理示例（如不需要可删除整个 agents 块）
 # agents:
 #   - name: planner

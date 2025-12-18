@@ -43,6 +43,13 @@ max_steps: 3  # LangGraph 最大步数
 # shared_context: {}  # Optional: 预置共享黑板
 initial_instructions:
   - "读取 report.txt 并输出全部内容。"
+acceptance_logic: all
+acceptance_criteria:
+  - type: response_contains
+    value: "Planned"
+  - type: file_not_contains
+    path: "report.txt"
+    value: "forbidden"
 tools_enabled:
   - read_file
   - python_repl

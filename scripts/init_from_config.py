@@ -124,6 +124,62 @@ def load_config(config_path: Path) -> dict:
     if shared_context and not isinstance(shared_context, dict):
         raise ValueError("shared_context must be a mapping when provided")
 
+    acceptance_logic = (data.get("acceptance_logic") or "all").lower()
+    if acceptance_logic not in {"all", "any"}:
+        raise ValueError("acceptance_logic must be 'all' or 'any'")
+    acceptance_criteria = data.get("acceptance_criteria") or []
+    if acceptance_criteria and not isinstance(acceptance_criteria, list):
+        raise ValueError("acceptance_criteria must be a list when provided")
+    normalized_criteria = []
+    for idx, crit in enumerate(acceptance_criteria):
+        if not isinstance(crit, dict):
+            raise ValueError(f"acceptance_criteria[{idx}] must be a mapping")
+        ctype = crit.get("type")
+        valid_types = {
+            "response_contains",
+            "tool_output_contains",
+            "shared_context_equals",
+            "file_contains",
+            "file_not_contains",
+            "file_hash_equals",
+            "file_changed",
+            "command_exit_code",
+            "command_output_contains",
+        }
+        if ctype not in valid_types:
+            raise ValueError(f"acceptance_criteria[{idx}].type must be one of {sorted(valid_types)}")
+        value = crit.get("value")
+        if not isinstance(value, str):
+            raise ValueError(f"acceptance_criteria[{idx}].value must be a string")
+        key = crit.get("key")
+        path = crit.get("path")
+        command = crit.get("command")
+        expect_exit_code = crit.get("expect_exit_code")
+        if ctype == "shared_context_equals":
+            if not isinstance(key, str):
+                raise ValueError(f"acceptance_criteria[{idx}].key must be a string for shared_context_equals")
+        if ctype in {"file_contains", "file_not_contains", "file_hash_equals", "file_changed"}:
+            if not isinstance(path, str) or not path:
+                raise ValueError(f"acceptance_criteria[{idx}].path is required for file-based checks")
+        if ctype in {"command_exit_code", "command_output_contains"}:
+            if not isinstance(command, str) or not command:
+                raise ValueError(f"acceptance_criteria[{idx}].command is required for command checks")
+            if ctype == "command_exit_code" and expect_exit_code is not None:
+                try:
+                    expect_exit_code = int(expect_exit_code)
+                except Exception:
+                    raise ValueError(f"acceptance_criteria[{idx}].expect_exit_code must be int when provided")
+        normalized_criteria.append(
+            {
+                "type": ctype,
+                "value": value,
+                "key": key,
+                "path": path,
+                "command": command,
+                "expect_exit_code": expect_exit_code,
+            }
+        )
+
     return {
         "scenario": scenario,
         "files": files,
@@ -138,6 +194,8 @@ def load_config(config_path: Path) -> dict:
         "stop_signals": stop_signals,
         "max_elapsed_sec": max_elapsed_sec,
         "shared_context": shared_context,
+        "acceptance_criteria": normalized_criteria,
+        "acceptance_logic": acceptance_logic,
     }
 
 
