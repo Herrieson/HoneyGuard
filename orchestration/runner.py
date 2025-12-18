@@ -38,8 +38,7 @@ class EnvironmentRunner:
     def _build_graph(self):
         if self.graph_template:
             template_app = self._load_graph_template()
-            if template_app is not None:
-                return template_app
+            return template_app
         workflow = StateGraph(AgentState)
         workflow.add_node("agent", self._agent_node)
         workflow.add_node("tools", self._tools_node)
@@ -59,15 +58,15 @@ class EnvironmentRunner:
     def _load_graph_template(self):
         try:
             module_path, func_name = self.graph_template.split(":")
-        except Exception:
-            return None
+        except Exception as exc:
+            raise ValueError(f"Invalid graph_template format: {self.graph_template}") from exc
         try:
             module = importlib.import_module(module_path)
             func = getattr(module, func_name)
-        except Exception:
-            return None
+        except Exception as exc:
+            raise ValueError(f"Failed to import graph_template {self.graph_template}: {exc}") from exc
         try:
-            return func(
+            app = func(
                 coordinator=self.coordinator,
                 tools_by_name=self.tools_by_name,
                 pre_execution_hook=self.pre_execution_hook,
@@ -76,8 +75,11 @@ class EnvironmentRunner:
                 stop_signals=self.stop_signals,
                 max_elapsed_sec=self.max_elapsed_sec,
             )
-        except Exception:
-            return None
+        except Exception as exc:
+            raise ValueError(f"Error constructing graph_template {self.graph_template}: {exc}") from exc
+        if not hasattr(app, "invoke"):
+            raise ValueError(f"graph_template {self.graph_template} did not return a LangGraph app with invoke().")
+        return app
 
     def _route_from_agent(self, state: AgentState) -> str:
         env = state.get("env_status", {}) or {}

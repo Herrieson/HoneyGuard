@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import time
 from typing import Any, Dict, List, Optional, Tuple
 import os
+import logging
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
@@ -154,6 +155,7 @@ sandbox_manager = SandboxManager()
 knowledge_manager = KnowledgeManager()
 tool_registry = ToolRegistry(sandbox_manager, knowledge_manager)
 logger = SqliteLogger()
+log = logging.getLogger(__name__)
 
 SESSIONS: Dict[str, SessionContext] = {}
 
@@ -206,6 +208,7 @@ def _load_custom_agent(impl_path: str, tools_by_name: Dict[str, object], known_f
         agent_cls = getattr(module, class_name)
         return agent_cls(tools_by_name, known_files=known_files, system_prompt=system_prompt)
     except Exception as exc:  # pragma: no cover - dynamic import errors
+        log.exception("Failed to load custom agent %s", impl_path)
         raise HTTPException(status_code=500, detail=f"Failed to load custom agent {impl_path}: {exc}") from exc
 
 
@@ -316,16 +319,22 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         memory_limit=payload.memory_limit,
         stop_signals=payload.stop_signals,
     )
-    runner = EnvironmentRunner(
-        coordinator=coordinator,
-        pre_execution_hook=_pre_execution_hook(session_id),
-        tools_by_name=tools_by_name,
-        max_steps=payload.max_steps,
-        stop_on_done=True,
-        graph_template=payload.graph_template,
-        stop_signals=payload.stop_signals,
-        max_elapsed_sec=payload.max_elapsed_sec,
-    )
+    try:
+        runner = EnvironmentRunner(
+            coordinator=coordinator,
+            pre_execution_hook=_pre_execution_hook(session_id),
+            tools_by_name=tools_by_name,
+            max_steps=payload.max_steps,
+            stop_on_done=True,
+            graph_template=payload.graph_template,
+            stop_signals=payload.stop_signals,
+            max_elapsed_sec=payload.max_elapsed_sec,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        log.exception("Failed to build EnvironmentRunner for session %s", session_id)
+        raise HTTPException(status_code=500, detail=f"Failed to build EnvironmentRunner: {exc}") from exc
     policy.reset_session(session_id)
 
     SESSIONS[session_id] = SessionContext(
@@ -376,7 +385,13 @@ def run_step(payload: RunStepRequest, _: None = Depends(_check_auth_and_rate)) -
         "tool_results": [],
         "shared_context": session.shared_context if session else {},
     }
-    result = session.runner.run(state)
+    try:
+        result = session.runner.run(state)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Agent execution error: {exc}") from exc
+    except Exception as exc:
+        log.exception("Agent execution failed for session %s", payload.session_id)
+        raise HTTPException(status_code=500, detail=f"Agent execution failed: {exc}") from exc
     tool_calls_raw = result.get("last_tool_calls") or []
     agent_response = result.get("last_response", "")
     session.shared_context = result.get("shared_context") or session.shared_context

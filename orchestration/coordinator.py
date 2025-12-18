@@ -155,12 +155,7 @@ class AgentCoordinator:
         history = self._memory_for(agent.name) if agent.memory_mode != "none" else []
         readable = self._filter_reads(agent, self._shared_context or {})
         result = agent.impl.run(prompt, history=history, tool_results=tool_results, shared_context=readable)
-        if isinstance(result, tuple) and len(result) == 3:
-            response, calls, updates = result
-        else:
-            response, calls = result
-            updates = {}
-        return response, calls, updates
+        return self._validate_agent_result(agent.name, result)
 
     def _append_calls(self, tool_calls: List[ToolCall], calls: List[ToolCall], agent_name: str) -> None:
         for call in calls:
@@ -195,3 +190,24 @@ class AgentCoordinator:
         if "*" in keys:
             return dict(updates)
         return {k: v for k, v in updates.items() if k in keys}
+
+    def _validate_agent_result(self, agent_name: str, result) -> Tuple[str, List[ToolCall], Dict[str, object]]:
+        if not isinstance(result, tuple):
+            raise TypeError(
+                f"Agent '{agent_name}' must return a tuple: (response, tool_calls[, context_updates]). Got {type(result)}."
+            )
+        if len(result) not in (2, 3):
+            raise ValueError(
+                f"Agent '{agent_name}' must return 2 or 3 items: (response, tool_calls[, context_updates])."
+            )
+        response, calls, *rest = result
+        if not isinstance(response, str):
+            raise TypeError(f"Agent '{agent_name}' response must be str, got {type(response)}.")
+        if not isinstance(calls, list) or not all(isinstance(c, ToolCall) for c in calls):
+            raise TypeError(f"Agent '{agent_name}' tool_calls must be List[ToolCall], got {type(calls)}.")
+        updates = rest[0] if rest else {}
+        if rest and not isinstance(updates, dict):
+            raise TypeError(f"Agent '{agent_name}' context_updates must be dict, got {type(updates)}.")
+        if not rest:
+            updates = {}
+        return response, calls, updates

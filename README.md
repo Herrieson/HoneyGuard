@@ -119,7 +119,11 @@ HTTP API 速览
 工具与配置
 ----------
 - 工具白名单/默认：`config/tools.yaml`（字段 `allowed_tools` / `default_tools`）。
-- 注册新工具：在 `tools/real_tools/` 添加实现，并在 `tools/registry.py` 注册工厂。
+- 注册/扩展工具：
+  - 方式 1：在 `tools/real_tools/` 添加实现，并在 `tools/registry.py` 注册工厂。
+  - 方式 2：在配置 `tools_enabled` 里直接写类路径（`"pkg.module:Class"`），`ToolRegistry` 会动态导入并缓存。
+  - 运行期还可以调用 `ToolRegistry.register("my_tool", lambda sid: MyTool(...))` 覆盖/新增工厂，便于快速试验。
+- 示例工具：`tools/real_tools/echo.py` 提供最小模板（回显字符串）。
 - 沙箱镜像：`environment/sandbox/Dockerfile`（基础依赖）、`SandboxManager(image_tag, base_image)`。
 
 Agent 与编排
