@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 import time
-from typing import Any, Dict, List, Optional, Tuple, Literal
+from typing import Any, Dict, List, Optional, Tuple, Literal, Set
 import os
 import logging
 import shlex
@@ -18,6 +18,7 @@ from orchestration.agent import SimpleAgent
 from orchestration.runner import EnvironmentRunner
 from orchestration.state import AgentState
 from orchestration.coordinator import AgentCoordinator, AgentWrapper
+from orchestration.llm_config import resolve_llm_config
 from orchestration import policy
 from tools import ToolRegistry
 
@@ -91,6 +92,12 @@ class AgentConfig(BaseModel):
         if mode not in {"rule", "llm"}:
             raise ValueError("agent mode must be 'rule' or 'llm'")
         return mode
+
+
+class MockToolConfig(BaseModel):
+    name: str = Field(..., description="Name of the mock tool to expose.")
+    output: str = Field(..., description="Static output returned by the mock tool.")
+    description: Optional[str] = Field(None, description="Optional description for the mock tool.")
 
 
 class AcceptanceCriterion(BaseModel):
@@ -176,6 +183,10 @@ class InitializeRequest(BaseModel):
     acceptance_logic: Literal["all", "any"] = Field(
         "all",
         description="Whether all criteria must pass ('all') or any one is sufficient ('any').",
+    )
+    mock_tools: List[MockToolConfig] = Field(
+        default_factory=list,
+        description="Optional list of mock tools (name/output/description) to register for this session.",
     )
 
 
@@ -370,12 +381,14 @@ def _evaluate_acceptance(
     return overall, results
 
 
-def _default_tools(tools_enabled: List[str]) -> List[str]:
+def _default_tools(tools_enabled: List[str], extra_allowed: Optional[Set[str]] = None) -> List[str]:
     from config.tool_config import load_tool_config
 
     cfg = load_tool_config()
     default_list = cfg.get("default_tools") or ["read_file", "python_repl", "search_knowledge_base"]
     allowed = set(cfg.get("allowed_tools") or default_list)
+    if extra_allowed:
+        allowed.update(extra_allowed)
     requested = tools_enabled or default_list
     return [t for t in requested if t in allowed]
 
@@ -422,11 +435,12 @@ def _build_agent_with_options(
                 detail="LLM agent dependencies are missing. Install langchain-openai and set OPENAI_API_KEY.",
             ) from exc
         try:
+            resolved_llm = resolve_llm_config(llm_config or {})
             return LLMAgent(
                 list(tools_by_name.values()),
                 known_files=known_files,
                 system_prompt=system_prompt,
-                llm_config=llm_config or {},
+                llm_config=resolved_llm,
             )
         except Exception as exc:  # pragma: no cover - runtime initialization errors
             raise HTTPException(status_code=500, detail=f"Failed to initialize LLM agent: {exc}") from exc
@@ -485,7 +499,12 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
     if docs:
         knowledge_manager.ingest_documents(docs)
 
-    tools = tool_registry.build(_default_tools(payload.tools_enabled), session_id=session_id)
+    mock_defs = [m.dict() for m in payload.mock_tools or []]
+    mock_names = {item.get("name") for item in mock_defs if item.get("name")}
+    if mock_defs:
+        tool_registry.register_mocks(mock_defs)
+    tool_list = _default_tools(payload.tools_enabled, extra_allowed=mock_names)
+    tools = tool_registry.build(tool_list, session_id=session_id)
     tools_by_name = {tool.name: tool for tool in tools}
     agents = _build_agents(
         payload.agents,
@@ -526,7 +545,7 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         scenario=payload.scenario,
         container_id=container_id,
         runner=runner,
-        tools_enabled=_default_tools(payload.tools_enabled),
+        tools_enabled=tool_list,
         tools_by_name=tools_by_name,
         files=payload.files,
         created_at=time.time(),

@@ -8,10 +8,11 @@ dependencies = [
     "chromadb",
     "fastapi",
     "langchain",
+    "langchain-openai",
     "langgraph",
     "python-on-whales",
     "pyyaml",
     "uvicorn",
     "pypdf",
-    "openai>=2.13.0",
+    "openai",
 ]

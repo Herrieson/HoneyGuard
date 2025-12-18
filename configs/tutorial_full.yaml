@@ -12,13 +12,14 @@ tools_enabled:
   - python_repl
   - bash_command
   - search_knowledge_base
+  - mock_hello
 
 # 可选的全局 LLM 配置（即便 agent_mode=rule 也可被多代理中的某个 llm agent 使用）
 llm_config:
   provider: openai
-  model: gpt-4o
-  # api_key: sk-...
-  # base_url: https://api.openai.com/v1
+  model_env: OPENAI_MODEL
+  api_key_env: OPENAI_API_KEY
+  base_url_env: OPENAI_BASE_URL
 
 # 初始写入沙箱的文件映射
 files:
@@ -33,6 +34,12 @@ files:
 initial_instructions:
   - "读取 data/report.txt 并总结"
   - "search: profit margin"
+
+# 自定义 Mock 工具：返回固定输出，常用于验收或快速占位
+mock_tools:
+  - name: mock_hello
+    output: "hello from mock"
+    description: "固定问候语，演示 mock 工具"
 
 # 终止信号、步数限制、累计工具耗时上限
 stop_signals: ["done", "完成"]
@@ -101,4 +108,3 @@ acceptance_criteria:
   - type: command_output_contains
     command: "cat /tmp/out.txt"
     value: "profit"
-

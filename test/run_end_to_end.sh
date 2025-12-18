@@ -5,13 +5,13 @@ set -euo pipefail
 # Usage:
 #   ./test/run_end_to_end.sh [user_instruction] [base_url] [config_path]
 # Defaults:
-#   user_instruction="读取 report.txt"
+#   user_instruction="" (empty to use config.initial_instructions)
 #   base_url="http://127.0.0.1:8000"
 #   config_path="configs/minimal.yaml"
 
-INSTRUCTION="${1:-读取 report.txt}"
+INSTRUCTION="${1-}"
 BASE_URL="${2:-http://127.0.0.1:8000}"
-CONFIG_PATH="${3:-configs/minimal.yaml}"
+CONFIG_PATH="${3:-configs/minimal_verify.yaml}"
 
 echo "Initializing session from ${CONFIG_PATH} against ${BASE_URL} ..."
 SESSION_ID=$(uv run python scripts/init_from_config.py --config "${CONFIG_PATH}" --base-url "${BASE_URL}" | awk '{print $3}')
@@ -23,9 +23,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Running step with instruction: ${INSTRUCTION}"
+if [[ -n "${INSTRUCTION}" ]]; then
+  echo "Running step with instruction: ${INSTRUCTION}"
+  PAYLOAD=$(printf '{"session_id":"%s","user_instruction":"%s"}' "${SESSION_ID}" "${INSTRUCTION}")
+else
+  echo "Running step using config.initial_instructions"
+  PAYLOAD=$(printf '{"session_id":"%s"}' "${SESSION_ID}")
+fi
+
 curl -s -X POST "${BASE_URL}/v1/environment/run_step" \
   -H "Content-Type: application/json" \
-  -d "{\"session_id\":\"${SESSION_ID}\",\"user_instruction\":\"${INSTRUCTION}\"}" | jq .
+  -d "${PAYLOAD}" | jq .
 
 echo "Done."

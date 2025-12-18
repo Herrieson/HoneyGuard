@@ -7,6 +7,7 @@ from langchain.tools import BaseTool
 from environment.sandbox import SandboxManager
 from knowledge import KnowledgeManager
 from tools.real_tools import BashCommandTool, PythonReplTool, ReadFileTool, SearchKnowledgeBaseTool
+from tools.mock_tools import MockTool
 
 
 class ToolRegistry:
@@ -29,6 +30,16 @@ class ToolRegistry:
     def register(self, name: str, factory: callable) -> None:
         """Register or override a tool factory at runtime."""
         self._factories[name] = factory
+
+    def register_mocks(self, mock_defs: Sequence[Dict[str, str]]) -> None:
+        """Register mock tools from config (each with name/output/optional description)."""
+        for item in mock_defs:
+            name = item.get("name")
+            output = item.get("output")
+            desc = item.get("description")
+            if not name or output is None:
+                continue
+            self.register(name, lambda session_id, _n=name, _o=output, _d=desc: MockTool(_n, _o, session_id, _d))
 
     def _default_factories(self) -> Dict[str, callable]:
         return {

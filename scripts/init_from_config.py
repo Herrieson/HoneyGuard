@@ -28,6 +28,33 @@ def load_config(config_path: Path) -> dict:
     if tools_enabled and not isinstance(tools_enabled, list):
         raise ValueError("tools_enabled must be a list")
 
+    mock_tools = data.get("mock_tools") or []
+    if mock_tools and not isinstance(mock_tools, list):
+        raise ValueError("mock_tools must be a list when provided")
+    normalized_mocks = []
+    seen_mock_names = set()
+    for idx, item in enumerate(mock_tools):
+        if not isinstance(item, dict):
+            raise ValueError(f"mock_tools[{idx}] must be a mapping")
+        name = item.get("name")
+        output = item.get("output")
+        description = item.get("description")
+        if not isinstance(name, str) or not name:
+            raise ValueError(f"mock_tools[{idx}].name must be a non-empty string")
+        if not isinstance(output, str):
+            raise ValueError(f"mock_tools[{idx}].output must be a string")
+        if description is not None and not isinstance(description, str):
+            raise ValueError(f"mock_tools[{idx}].description must be a string when provided")
+        if name in seen_mock_names:
+            raise ValueError(f"mock_tools contains duplicate name: {name}")
+        seen_mock_names.add(name)
+        normalized_mocks.append({"name": name, "output": output, "description": description})
+
+    # Ensure mock tools are enabled so they can be built.
+    for mock in normalized_mocks:
+        if mock["name"] not in tools_enabled:
+            tools_enabled.append(mock["name"])
+
     agent_mode = (data.get("agent_mode") or "rule").lower()
     if agent_mode not in {"rule", "llm"}:
         raise ValueError("agent_mode must be either 'rule' or 'llm'")
@@ -184,6 +211,7 @@ def load_config(config_path: Path) -> dict:
         "scenario": scenario,
         "files": files,
         "tools_enabled": tools_enabled,
+        "mock_tools": normalized_mocks,
         "agent_mode": agent_mode,
         "agents": normalized_agents,
         "coordination_pattern": coordination_pattern,

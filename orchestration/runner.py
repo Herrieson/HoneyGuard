@@ -83,10 +83,12 @@ class EnvironmentRunner:
 
     def _route_from_agent(self, state: AgentState) -> str:
         env = state.get("env_status", {}) or {}
+        pending = state.get("pending_tool_calls") or []
+        if pending:
+            return "tools"
         if env.get("finished"):
             return "end"
-        pending = state.get("pending_tool_calls") or []
-        return "tools" if pending else "end"
+        return "end"
 
     def _route_from_tools(self, state: AgentState) -> str:
         env = state.get("env_status", {}) or {}

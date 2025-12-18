@@ -1,0 +1,28 @@
+scenario: minimal-verify
+agent_mode: llm
+tools_enabled:
+  - read_file
+
+files:
+  report.txt: |
+    hello world, welcome to HoneyGuard!
+
+initial_instructions:
+  - "读取 report.txt，复述内容并在末尾加上 'done'."
+
+stop_signals: ["done"]
+max_steps: 3
+
+llm_config:
+  provider: azure
+  deployment_name_env: AZURE_OPENAI_DEPLOYMENT
+  api_key_env: AZURE_OPENAI_API_KEY
+  base_url_env: AZURE_OPENAI_ENDPOINT
+  api_version_env: AZURE_OPENAI_API_VERSION
+
+acceptance_logic: all
+acceptance_criteria:
+  - type: response_contains
+    value: "done"
+  - type: tool_output_contains
+    value: "hello world"

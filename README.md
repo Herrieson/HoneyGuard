@@ -68,12 +68,14 @@ HoneyGuard/configs 配置编写指南
 - `agents`（可选）：多代理配置，元素包含 `name`、`mode`（rule/llm）、`system_prompt`（可选）、`tools_allowed`（可选，限制可用工具子集）、`impl`（可选自定义类 `pkg.module:Class`）、`llm_config`（可选覆盖全局）、`memory_mode`（window/none）、`memory_limit`（历史条数）、`blackboard_read_keys`/`blackboard_write_keys`（限制共享黑板读写键，`["*"]` 表示全开）。
 - `coordination_pattern`（多代理）：`sequential`（默认）、`round_robin`、`planner_executor_verifier` 等；`max_cycles` 控制 round_robin 循环次数。
 - `llm_config`：全局 LLM 提供商设置（provider/model/api_key/base_url/api_version/deployment_name），可被单个 agent 的同名字段覆盖。
+  - 支持 `_env` 变体以引用环境变量，如 `model_env: OPENAI_MODEL`、`api_key_env: OPENAI_API_KEY`、`base_url_env: OPENAI_BASE_URL`；若两者并存，优先从环境变量读取。
 - `stop_signals`：列表，若 Agent 回复包含任一字符串（不区分大小写）则提前终止。
 - `max_steps`：LangGraph 最大步数（防止无限循环）。
 - `max_elapsed_sec`（可选）：工具累计耗时上限，超出即终止。
 - `graph_template`（可选）：自定义 LangGraph 构造函数，格式 `module:function`。
 - `initial_instructions`：队列式初始指令，`run_step` 未提供 `user_instruction` 时按顺序消费。
 - `shared_context`（可选）：预置共享黑板键值，多代理间按各自的读写权限访问。
+- `mock_tools`（可选）：自定义 Mock 工具列表（`name`/`output`/`description`），用于快速返回固定输出；名字会自动加入 `tools_enabled`。
 - `acceptance_criteria`（可选）：验收标准列表，运行后自动评估，支持：
   - `response_contains`：agent 回复包含 `value`
   - `tool_output_contains`：任一工具输出/错误包含 `value`
