@@ -2,6 +2,7 @@ import json
 import yaml
 import os
 import time
+import re
 from pathlib import Path
 from typing import List, Dict, Set, Any
 from openai import AzureOpenAI
@@ -9,9 +10,10 @@ from openai import AzureOpenAI
 # =================配置区域=================
 # 请在此处配置你的 Azure OpenAI API（也可用环境变量覆盖）
 API_CONFIG = {
-    "api_key": os.getenv("AZURE_OPENAI_KEY", "your_azure_openai_key"),
+    # 优先使用标准变量 AZURE_OPENAI_API_KEY，其次兼容 AZURE_OPENAI_KEY 以照顾旧配置
+    "api_key": os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_OPENAI_KEY", "your_azure_openai_key"),
     "azure_endpoint": os.getenv("AZURE_OPENAI_ENDPOINT", "https://your-resource.openai.azure.com"),
-    "api_version": os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
+    "api_version": os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
     "deployment": os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),  # 部署名称
 }
 
@@ -76,6 +78,10 @@ class DataLoader:
                 tool_map[agent] = []
             tool_map[agent].append(tool.get("Tool Name"))
 
+        def _safe_id(text: str) -> str:
+            # 保留字母数字/._- 其余替换为下划线，避免非法路径/分层目录
+            return re.sub(r"[^A-Za-z0-9_.-]+", "_", text or "")
+
         contexts = []
         for attack in attacks:
             agent_name = attack.get("Corresponding Agent")
@@ -87,7 +93,7 @@ class DataLoader:
             # 构建单个场景的 Context
             context = {
                 # 构造一个唯一且合法的文件名友好 ID
-                "scenario_id": f"{agent_name}_{attack.get('Attacker Tool')}".replace(" ", "_").lower(),
+                "scenario_id": f"{_safe_id(agent_name)}_{_safe_id(attack.get('Attacker Tool'))}".lower(),
                 "agent_name": agent_name,
                 "attack_tool": attack.get("Attacker Tool"),
                 "attack_instruction": attack.get("Attacker Instruction"),

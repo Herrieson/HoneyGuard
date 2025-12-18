@@ -1,0 +1,104 @@
+# 教程示例配置：演示 HoneyGuard 支持的主要选项
+# 可用作 init 脚本输入：python scripts/init_from_config.py --config configs/tutorial_full.yaml --base-url http://127.0.0.1:8000
+
+scenario: tutorial-all-options
+
+# 单代理模式下的默认 agent 类型（rule / llm）。当 agents 列表存在时会被忽略。
+agent_mode: rule
+
+# 启用的工具；若留空则使用 config/tools.yaml 的 default_tools。
+tools_enabled:
+  - read_file
+  - python_repl
+  - bash_command
+  - search_knowledge_base
+
+# 可选的全局 LLM 配置（即便 agent_mode=rule 也可被多代理中的某个 llm agent 使用）
+llm_config:
+  provider: openai
+  model: gpt-4o
+  # api_key: sk-...
+  # base_url: https://api.openai.com/v1
+
+# 初始写入沙箱的文件映射
+files:
+  notes/todo.txt: |
+    - read specs
+    - run tests
+  data/report.txt: |
+    revenue: 100
+    profit: 25
+
+# 初始指令队列（run_step 未传 user_instruction 时按顺序消费）
+initial_instructions:
+  - "读取 data/report.txt 并总结"
+  - "search: profit margin"
+
+# 终止信号、步数限制、累计工具耗时上限
+stop_signals: ["done", "完成"]
+max_steps: 6
+max_elapsed_sec: 20
+
+# 可选自定义 graph（保持默认可注释掉）
+# graph_template: "mypkg.graphs:build_custom_app"
+
+# 多代理示例：planner (llm) + executor (rule) + verifier (rule)
+agents:
+  - name: planner
+    mode: llm
+    system_prompt: "Plan steps concisely, do not call tools."
+    tools_allowed: []  # 规划不调用工具
+    llm_config:
+      provider: openai
+      model: gpt-4o-mini
+    memory_mode: window
+    memory_limit: 4
+    blackboard_write_keys: ["plan"]
+  - name: executor
+    mode: rule
+    tools_allowed: [read_file, python_repl, bash_command, search_knowledge_base]
+    memory_mode: window
+    memory_limit: 3
+    blackboard_read_keys: ["plan"]
+    blackboard_write_keys: ["result"]
+  - name: verifier
+    mode: rule
+    system_prompt: "[Verifier] Review executor output and decide done/redo."
+    tools_allowed: [read_file]
+    memory_mode: none
+    blackboard_read_keys: ["plan", "result"]
+
+# 多代理调度策略与轮数
+coordination_pattern: planner_executor_verifier
+max_cycles: 2
+
+# 共享黑板初值
+shared_context:
+  plan: ""
+  result: ""
+
+# 验收标准示例：任一满足即可通过
+acceptance_logic: any
+acceptance_criteria:
+  - type: response_contains
+    value: "done"
+  - type: tool_output_contains
+    value: "profit"
+  - type: file_contains
+    path: "/tmp/out.txt"
+    value: "summary"
+  - type: file_not_contains
+    path: "/tmp/out.txt"
+    value: "ERROR"
+  - type: file_changed
+    path: "/tmp/out.txt"
+  - type: shared_context_equals
+    key: result
+    value: "ok"
+  - type: command_exit_code
+    command: "test -f /tmp/out.txt"
+    expect_exit_code: 0
+  - type: command_output_contains
+    command: "cat /tmp/out.txt"
+    value: "profit"
+
