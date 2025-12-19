@@ -28,6 +28,8 @@ API_TOKEN = None
 RATE_WINDOW = 60  # seconds
 RATE_LIMIT = 60  # requests per IP per window
 _RATE_STATE: Dict[str, Tuple[float, int]] = {}
+# Default log retention in days; can be overridden via env HSE_LOG_RETENTION_DAYS
+DEFAULT_LOG_RETENTION_DAYS = 180
 
 
 @dataclass
@@ -686,7 +688,7 @@ async def _startup_tasks() -> None:
     import asyncio
 
     async def cleaner():
-        log_retention_days = int(os.getenv("HSE_LOG_RETENTION_DAYS", "7"))
+        log_retention_days = int(os.getenv("HSE_LOG_RETENTION_DAYS", str(DEFAULT_LOG_RETENTION_DAYS)))
         while True:
             await asyncio.sleep(60)
             _cleanup_expired_sessions()
