@@ -30,6 +30,9 @@ RATE_LIMIT = 60  # requests per IP per window
 _RATE_STATE: Dict[str, Tuple[float, int]] = {}
 # Default log retention in days; can be overridden via env HSE_LOG_RETENTION_DAYS
 DEFAULT_LOG_RETENTION_DAYS = 180
+# Feature toggles (env-driven) for risky behaviors
+ALLOW_CUSTOM_IMPL = os.getenv("HSE_ALLOW_CUSTOM_IMPL", "false").lower() in {"1", "true", "yes"}
+ALLOW_GRAPH_TEMPLATE = os.getenv("HSE_ALLOW_GRAPH_TEMPLATE", "false").lower() in {"1", "true", "yes"}
 
 
 @dataclass
@@ -242,6 +245,19 @@ def _check_auth_and_rate(request: Request) -> None:
     if count > RATE_LIMIT:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
     _RATE_STATE[client_id] = (window_start, count)
+
+
+def _assert_custom_impl_allowed(payload: InitializeRequest) -> None:
+    """Deny custom agent impl or graph template unless explicitly enabled by env."""
+    has_custom_agent = any(cfg.impl for cfg in payload.agents)
+    has_graph_template = bool(payload.graph_template)
+    if (has_custom_agent and not ALLOW_CUSTOM_IMPL) or (has_graph_template and not ALLOW_GRAPH_TEMPLATE):
+        detail_parts = []
+        if has_custom_agent and not ALLOW_CUSTOM_IMPL:
+            detail_parts.append("custom agent impl is disabled (set HSE_ALLOW_CUSTOM_IMPL=true to allow)")
+        if has_graph_template and not ALLOW_GRAPH_TEMPLATE:
+            detail_parts.append("graph_template is disabled (set HSE_ALLOW_GRAPH_TEMPLATE=true to allow)")
+        raise HTTPException(status_code=400, detail="; ".join(detail_parts))
 
 
 def _pre_execution_hook(session_id: str):
@@ -490,6 +506,7 @@ def _build_agents(
 
 @app.post("/v1/environment/initialize", response_model=InitializeResponse)
 def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_auth_and_rate)) -> InitializeResponse:
+    _assert_custom_impl_allowed(payload)
     session_id = uuid.uuid4().hex
     container_id = sandbox_manager.start(session_id)
 

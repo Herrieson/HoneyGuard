@@ -39,6 +39,7 @@ curl -X DELETE http://127.0.0.1:8000/v1/environment/<session_id>
 - 代理/编排：FastAPI 对外暴露 `/v1/environment/*`；支持单/多代理（规则或 LLM），LangGraph 驱动迭代调用，支持自定义 graph 模板（`graph_template`，module:function）。终止条件可配置 `stop_signals`、`max_steps`、工具累计耗时上限。支持 per-agent 记忆策略（窗口/关闭）与共享黑板（`shared_context`，可按读写键限制）。
 - 审计：所有 run_step 和工具调用写入 sqlite（`logs/hse.db`）。
 - 安全与稳定：可选鉴权/限流、工具配额，沙箱命令支持默认超时/资源限制，后台定期清理日志与残留容器。
+- 安全开关：默认禁止自定义 Agent 实现和自定义图模板（`agents[].impl` / `graph_template`），需显式设置 `HSE_ALLOW_CUSTOM_IMPL=true`、`HSE_ALLOW_GRAPH_TEMPLATE=true` 开启；自定义工具动态导入（`pkg.module:Class`）默认开启（可通过 `HSE_ALLOW_DYNAMIC_TOOLS=false` 关闭），导入的代码会在沙箱容器内执行而非宿主进程。
 
 Agent 选项
 ----------
@@ -47,6 +48,7 @@ Agent 选项
   初始化示例：`{"scenario":"demo","files":{"report.txt":"1\n2\n3"},"tools_enabled":["read_file"],"agent_mode":"llm"}`
 - 多代理：在配置中提供 `agents` 列表（每个包含 `name`、`mode`，可选 `system_prompt`、`tools_allowed`、`impl`、`llm_config`），可指定 `coordination_pattern`（sequential/round_robin/planner_executor_verifier）与 `max_cycles`。示例见 `configs/multi_agent.yaml`。
 - 自定义 Agent：在 agent 配置里加 `impl: "mypkg.agent:MyAgent"`（需符合 `run(user_instruction, history=None, tool_results=None, shared_context=None) -> (response, tool_calls[, context_updates])` 接口）。
+  - 安全默认：`impl`/`graph_template` 默认被拒绝，需在服务端设置 `HSE_ALLOW_CUSTOM_IMPL=true` 和/或 `HSE_ALLOW_GRAPH_TEMPLATE=true` 才放行。
 - LLM 提供商配置：在配置中设置全局 `llm_config`（provider/model/api_key/base_url/api_version/deployment_name），支持 OpenAI/兼容接口和 Azure OpenAI；也可在某个 agent 下写 `llm_config` 覆盖全局。
 - 记忆/黑板：`memory_limit` 控制每个 agent 保留的历史消息条数，`memory_mode` 可设为 window/none；`shared_context` 黑板可按 agent 声明读写键（blackboard_read_keys/blackboard_write_keys），默认全开。
 
@@ -144,6 +146,7 @@ HTTP API 速览
   - 方式 1：在 `tools/real_tools/` 添加实现，并在 `tools/registry.py` 注册工厂。
   - 方式 2：在配置 `tools_enabled` 里直接写类路径（`"pkg.module:Class"`），`ToolRegistry` 会动态导入并缓存。
   - 运行期还可以调用 `ToolRegistry.register("my_tool", lambda sid: MyTool(...))` 覆盖/新增工厂，便于快速试验。
+  - 安全默认：动态导入（`pkg.module:Class`）默认开启，可用 `HSE_ALLOW_DYNAMIC_TOOLS=false` 关闭；导入的代码会复制到容器内并在沙箱中执行，宿主不再直接执行用户代码。
 - 示例工具：`tools/real_tools/echo.py` 提供最小模板（回显字符串）。
 - 沙箱镜像：`environment/sandbox/Dockerfile`（基础依赖）、`SandboxManager(image_tag, base_image)`。
 
