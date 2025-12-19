@@ -147,6 +147,7 @@ HTTP API 速览
   - 方式 2：在配置 `tools_enabled` 里直接写类路径（`"pkg.module:Class"`），`ToolRegistry` 会动态导入并缓存。
   - 运行期还可以调用 `ToolRegistry.register("my_tool", lambda sid: MyTool(...))` 覆盖/新增工厂，便于快速试验。
   - 安全默认：动态导入（`pkg.module:Class`）默认开启，可用 `HSE_ALLOW_DYNAMIC_TOOLS=false` 关闭；导入的代码会复制到容器内并在沙箱中执行，宿主不再直接执行用户代码。
+  - 网络与资源：沙箱容器默认断网（`HSE_SANDBOX_NETWORK` 未设置时使用 `none`，可改为 `bridge` 等）；可用 `HSE_SANDBOX_CPUS`（如 `1.0`）和 `HSE_SANDBOX_MEMORY`（如 `512m`）设置容器级 CPU/内存上限。
 - 示例工具：`tools/real_tools/echo.py` 提供最小模板（回显字符串）。
 - 沙箱镜像：`environment/sandbox/Dockerfile`（基础依赖）、`SandboxManager(image_tag, base_image)`。
 

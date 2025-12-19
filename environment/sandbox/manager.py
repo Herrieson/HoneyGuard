@@ -26,9 +26,19 @@ class SandboxManager:
         self,
         image_tag: str = "hse-sandbox:latest",
         base_image: str = "python:3.10-slim",
+        network_mode: str | None = None,
+        cpus: float | None = None,
+        memory: str | None = None,
     ) -> None:
         self.image_tag = image_tag
         self.base_image = base_image
+        # Default to no network unless explicitly allowed via env or argument.
+        env_network = os.getenv("HSE_SANDBOX_NETWORK")
+        self.network_mode = network_mode if network_mode is not None else (env_network if env_network is not None else "none")
+        # Optional container-level resource limits
+        env_cpus = os.getenv("HSE_SANDBOX_CPUS")
+        self.cpus = cpus if cpus is not None else (float(env_cpus) if env_cpus else None)
+        self.memory = memory if memory is not None else os.getenv("HSE_SANDBOX_MEMORY")
         self._containers: Dict[str, str] = {}
         self._docker: DockerClient = docker
         self.project_root = Path(__file__).resolve().parents[2]
@@ -42,6 +52,13 @@ class SandboxManager:
             del self._containers[session_id]
 
         labels = {"hse": "true", "session_id": session_id}
+        run_kwargs = {}
+        if self.network_mode:
+            run_kwargs["networks"] = [self.network_mode]
+        if self.cpus:
+            run_kwargs["cpus"] = self.cpus
+        if self.memory:
+            run_kwargs["memory"] = self.memory
         container = self._docker.container.run(
             self.image_tag,
             name=f"hse-{session_id}",
@@ -49,6 +66,7 @@ class SandboxManager:
             tty=True,
             command=["sleep", "infinity"],
             labels=labels,
+            **run_kwargs,
         )
         self._containers[session_id] = container.id
         return container.id
