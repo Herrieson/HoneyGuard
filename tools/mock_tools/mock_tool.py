@@ -19,12 +19,12 @@ class MockTool(BaseTool):
 
     name: str
     description: str
+    session_id: str
     args_schema: Type[BaseModel] = MockToolArgs
 
     def __init__(self, name: str, output: str, session_id: str, description: str | None = None) -> None:
-        super().__init__(name=name, description=description or f"Mock tool that returns '{output}'")
+        super().__init__(name=name, description=description or f"Mock tool that returns '{output}'", session_id=session_id)
         self._output = output
-        self.session_id = session_id
 
     def _run(self, dummy: str | None = None) -> str:
         enforce_tool_quota(self.session_id)
@@ -32,3 +32,6 @@ class MockTool(BaseTool):
 
     async def _arun(self, dummy: str | None = None) -> str:
         raise NotImplementedError("MockTool does not support async execution.")
+
+    class Config:
+        arbitrary_types_allowed = True
