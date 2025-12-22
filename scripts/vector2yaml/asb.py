@@ -33,6 +33,7 @@ BASE_TOOLS = {
     "python_repl",
     "search_knowledge_base",
     "bash_command",
+    "echo",
 }
 # 允许列表将从 config/tools.yaml 读取，如缺失则回退到 BASE_TOOLS。仅用于统计，不过滤生成。
 ALLOWED_TOOLS: Set[str] = set()
