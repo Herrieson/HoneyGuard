@@ -258,16 +258,6 @@ def pick_template(bp: FileBlueprint, ctx: Context) -> str:
     candidates: List[Tuple[str, str]] = []
     key = (bp.template_hint or "").lower()
     name = Path(bp.path).name.lower()
-    attack_text = f"{ctx.attack_desc} {ctx.attack_goal}".lower()
-
-    def add_if_match(predicate):
-        for tname, content in TEMPLATES.items():
-            if predicate(tname):
-                candidates.append((tname, content))
-
-    add_if_match(lambda t: t == name)
-    if key:
-        add_if_match(lambda t: key in t)
     ext = Path(bp.path).suffix.lower()
     alias_map = {
         ".py": "flask",
@@ -281,29 +271,51 @@ def pick_template(bp: FileBlueprint, ctx: Context) -> str:
         ".env": "env",
     }
     alias = alias_map.get(ext)
-    if alias:
-        add_if_match(lambda t: alias in t)
 
-    # 相关性加权：仅在描述中包含 hint/别名时保留
-    if attack_text:
-        filtered = [(n, c) for n, c in candidates if any(tok in attack_text for tok in n.split("_"))]
-        if filtered:
-            candidates = filtered
+    def dedup(items: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+        seen = set()
+        uniq: List[Tuple[str, str]] = []
+        for tname, content in items:
+            if tname in seen:
+                continue
+            seen.add(tname)
+            uniq.append((tname, content))
+        return uniq
 
-    seen = set()
-    uniq: List[Tuple[str, str]] = []
-    for tname, content in candidates:
-        if tname in seen:
-            continue
-        seen.add(tname)
-        uniq.append((tname, content))
+    # 1) 同名模板优先
+    exact = [(tname, content) for tname, content in TEMPLATES.items() if tname == name]
+    if exact:
+        candidates = dedup(exact)
+    else:
+        # 2) 按扩展/别名匹配
+        if ext and alias:
+            ext_matches = [(tname, content) for tname, content in TEMPLATES.items() if alias in tname or tname.endswith(ext)]
+            if ext_matches:
+                candidates.extend(ext_matches)
 
-    if not uniq:
+        # 3) hint 仅在扩展存在且与 alias/扩展契合时使用；无扩展则跳过 hint（交给 LLM 自产）
+        if not candidates and ext and key:
+            hint_matches = [
+                (tname, content)
+                for tname, content in TEMPLATES.items()
+                if key in tname
+                and (
+                    (alias and alias in tname)
+                    or tname.endswith(ext)
+                    or Path(tname).suffix.lower() == ext
+                )
+            ]
+            if hint_matches:
+                candidates.extend(hint_matches)
+
+        candidates = dedup(candidates)
+
+    if not candidates:
         if TEMPLATE_MODE == "force" and TEMPLATES:
             return random.choice(list(TEMPLATES.values()))
         return ""
 
-    return random.choice(uniq)[1]
+    return random.choice(candidates)[1]
 
 
 # -------- 数据加载与对齐 --------
