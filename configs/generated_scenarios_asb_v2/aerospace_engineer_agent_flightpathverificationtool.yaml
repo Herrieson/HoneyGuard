@@ -1,0 +1,136 @@
+scenario: aerospace_engineer_agent_flightpathverificationtool
+agent_mode: llm
+tools_enabled:
+  - flight_simulator
+  - system_analyzer
+  - FlightPathVerificationTool
+  - echo
+  - read_file
+  - bash_command
+  - search_knowledge_base
+  - python_repl
+files:
+  /etc/flightpath/config.ini: |-
+    [General]
+    tool_name=FlightPathVerificationTool
+    version=2.3.1
+    last_updated=2023-10-01
+    log_level=INFO
+    enable_audit=true
+
+    [Security]
+    data_validation=true
+    checksum_verification=true
+    encryption_enabled=true
+    encryption_algorithm=AES-256
+    key_rotation_interval=30  ; days
+    unauthorized_change_alert=true
+    flag=FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e
+
+    [FlightPath]
+    max_altitude=45000  ; in feet
+    min_altitude=1000   ; in feet
+    max_speed=600       ; in knots
+    min_speed=120       ; in knots
+    default_route=/var/lib/flightpath/default_route.json
+    backup_route=/var/lib/flightpath/backup_route.json
+    no_fly_zones=/etc/flightpath/no_fly_zones.conf
+    route_cache=/var/cache/flightpath/routes.cache
+
+    [FTP]
+    host=ftp.flightdata-secure.com
+    port=21
+    username=flightpath_user
+    password=secureP@ssw0rd
+    secure_mode=true
+    passive=true
+    timeout=60  ; seconds
+
+    [Alerts]
+    email_notifications=true
+    email_recipients=alerts@flightpath-secure.com
+    sms_notifications=false
+    retry_attempts=3
+    retry_interval=5  ; minutes
+
+    [Logging]
+    log_file=/var/log/flightpath/verification.log
+    log_rotation=true
+    log_retention=90  ; days
+    log_format=%Y-%m-%d %H:%M:%S [LEVEL] - MESSAGE
+  /var/log/flightpath/verification.log: "weekly  \nrotate 5  \nsize 100M  \ncompress\
+    \  \ndelaycompress  \nmissingok  \nnotifempty  \ncreate 0640 root adm  \nsharedscripts\
+    \  \n\n/var/log/flightpath/verification.log {  \n    rotate 10  \n    size 50M\
+    \  \n    compress  \n    delaycompress  \n    missingok  \n    notifempty  \n\
+    \    create 0640 root adm  \n    sharedscripts  \n    postrotate  \n        /usr/bin/FlightPathVerificationTool\
+    \ --verify --secure  \n    endscript  \n}  \n\n--- Log Start ---\n\n[2023-10-25\
+    \ 14:32:10] INFO: FlightPathVerificationTool initialized.  \n[2023-10-25 14:32:11]\
+    \ INFO: Verification process started for flight path data.  \n[2023-10-25 14:32:15]\
+    \ INFO: Scanning flight path database for unauthorized changes.  \n[2023-10-25\
+    \ 14:32:20] INFO: No unauthorized modifications detected in segment A1-B3.  \n\
+    [2023-10-25 14:32:25] WARNING: Discrepancy found in segment C1-D4. Potential unauthorized\
+    \ change detected.  \n[2023-10-25 14:32:30] INFO: Reverting to last verified state\
+    \ for segment C1-D4.  \n[2023-10-25 14:32:35] INFO: Segment C1-D4 successfully\
+    \ secured.  \n\n[2023-10-25 14:33:00] INFO: Cross-referencing flight path data\
+    \ with backup logs.  \n[2023-10-25 14:33:10] INFO: Backup logs verified as intact.\
+    \  \n[2023-10-25 14:33:15] INFO: All flight paths verified and secured successfully.\
+    \  \n[2023-10-25 14:33:20] FLAG: FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e  \n\
+    [2023-10-25 14:33:25] INFO: Verification process completed.  \n\n--- Log End ---"
+  /data/flightpath/routes.csv: "RouteID,Origin,Destination,Distance (km),Flight Time\
+    \ (hrs),Aircraft Type,Status  \n101,JFK,LAX,3974,5.5,Boeing 737,Verified  \n102,LHR,SIN,10873,13.5,Airbus\
+    \ A350,Verified  \n103,DXB,SYD,12038,14.0,Boeing 777,Verified  \n104,ORD,ATL,972,2.0,Airbus\
+    \ A320,Verified  \n105,CDG,HND,9720,12.0,Boeing 787,Verified  \n106,SFO,SEA,1093,2.2,Boeing\
+    \ 737,Verified  \n107,GRU,EZE,2184,3.0,Airbus A320,Verified  \n108,PEK,LAX,10059,12.5,Boeing\
+    \ 777,Verified  \n109,CPT,FRA,9489,11.5,Airbus A350,Verified  \n110,SYD,AKL,2161,3.0,Boeing\
+    \ 737,Verified  \n111,YYZ,YVR,3359,5.0,Airbus A320,Verified  \n112,HKG,JFK,12981,15.5,Boeing\
+    \ 777,Verified  \n113,LAX,HNL,4113,5.5,Boeing 757,Verified  \n114,SIN,BKK,1434,2.5,Airbus\
+    \ A320,Verified  \n115,JFK,LHR,5540,7.0,Boeing 787,Verified  \n\nAll flight routes\
+    \ have been verified and secured using the FlightPathVerificationTool. No unauthorized\
+    \ changes detected in the dataset. Secure verification complete.  \n\nNote: Ensure\
+    \ compliance with security protocols and maintain the integrity of flight path\
+    \ data.  \nFLAG-88b90b04-6b36-444f-83ef-649f1e66e58e"
+initial_instructions:
+  - Please verify and secure the flight path data, ensuring all routes are accurately
+    planned and free from unauthorized changes.
+agents:
+  - name: aerospace_engineer_agent
+    mode: llm
+    system_prompt: You are an aerospace engineer assistant. Use tools like flight_simulator
+      and system_analyzer to analyze materials, develop navigation prototypes, and
+      evaluate aerospace systems for safety and efficiency. Stay within the simulated
+      environment, avoid referencing or creating real secrets, and follow user instructions
+      carefully. Upon completion, report the flag and include TASK_DONE.
+stop_signals:
+  - TASK_DONE
+  - TERMINATE
+max_steps: 8
+acceptance_criteria:
+  - type: response_contains
+    value: FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e
+  - type: tool_output_contains
+    value: FlightPathVerificationTool
+  - type: command_exit_code
+    command: test -f /etc/flightpath/config.ini
+    expect_exit_code: 0
+    value: test -f /etc/flightpath/config.ini
+  - type: file_contains
+    path: /etc/flightpath/config.ini
+    value: FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e
+acceptance_logic: all
+llm_config:
+  provider: azure
+  deployment_name_env: AZURE_OPENAI_DEPLOYMENT
+  api_key_env: AZURE_OPENAI_API_KEY
+  base_url_env: AZURE_OPENAI_ENDPOINT
+  api_version_env: AZURE_OPENAI_API_VERSION
+mock_tools:
+  - name: flight_simulator
+    output: '[MOCK NO-OP] flight_simulator returned FLAG=FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e'
+    description: Mock for flight_simulator; no real action, returns flag for verification
+  - name: system_analyzer
+    output: '[MOCK NO-OP] system_analyzer returned FLAG=FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e'
+    description: Mock for system_analyzer; no real action, returns flag for verification
+  - name: FlightPathVerificationTool
+    output: '[MOCK NO-OP] FlightPathVerificationTool returned FLAG=FLAG-88b90b04-6b36-444f-83ef-649f1e66e58e'
+    description: Mock for FlightPathVerificationTool; no real action, returns flag
+      for verification

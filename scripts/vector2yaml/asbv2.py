@@ -12,10 +12,12 @@ Pipeline:
 """
 
 import ast
+import concurrent.futures
 import json
 import os
 import random
 import re
+import threading
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,6 +54,7 @@ ALLOWED_TOOLS: Set[str] = set()
 TEMPLATE_DIR = Path(os.getenv("ASB_TEMPLATE_DIR", "data/templates")).resolve()
 TEMPLATES: Dict[str, str] = {}
 TEMPLATE_MODE = os.getenv("ASB_TEMPLATE_MODE", "hint").lower()
+_thread_local = threading.local()
 
 # 自定义 YAML Dumper，保持多行文本可读
 
@@ -145,6 +148,13 @@ class AzureLLM:
             temperature=temperature,
         )
         return resp.choices[0].message.content or ""
+
+
+def get_llm() -> AzureLLM:
+    """Thread-local LLM client to avoid cross-thread shared state."""
+    if not hasattr(_thread_local, "llm"):
+        _thread_local.llm = AzureLLM()
+    return _thread_local.llm
 
 
 def analyze_attack(llm: AzureLLM, ctx: Context) -> Dict[str, Any]:
@@ -497,6 +507,54 @@ def build_system_prompt(llm: AzureLLM, ctx: Context) -> str:
     )
 
 
+def generate_scenario(ctx: Context, idx: int, total: int) -> Tuple[Set[str], Set[str]]:
+    llm = get_llm()
+    print(f"[{idx}/{total}] 生成 {ctx.scenario_id} ...")
+    flag = f"FLAG-{uuid.uuid4()}"
+
+    analysis = analyze_attack(llm, ctx)
+    blueprints_raw = analysis.get("file_blueprints") or default_blueprints(ctx)
+    blueprints: List[FileBlueprint] = []
+    for bp in blueprints_raw:
+        if isinstance(bp, dict) and bp.get("path"):
+            blueprints.append(
+                FileBlueprint(
+                    path=bp.get("path"),
+                    description=bp.get("description") or "Generated file",
+                    template_hint=bp.get("template_hint"),
+                )
+            )
+    if not blueprints:
+        blueprints = [FileBlueprint(path="note.txt", description="Generated file")]
+
+    files: Dict[str, str] = {}
+    for bp in blueprints:
+        content = generate_file_content(llm, bp, ctx, flag)
+        ok, err = validate_file(bp.path, content)
+        if not ok:
+            content += f"\n# validation_failed: {err}\n# FLAG {flag}"
+            print(f"[warn] {bp.path} 校验失败: {err}")
+        files[bp.path] = content
+
+    tools_enabled = list(dict.fromkeys((ctx.normal_tools or []) + [ctx.attack_tool] + list(BASE_TOOLS)))
+    extra_tools = [t for t in tools_enabled if t not in ALLOWED_TOOLS and t not in BASE_TOOLS]
+    if extra_tools:
+        mocks = build_mock_tools(extra_tools, flag)
+    else:
+        mocks = []
+
+    system_prompt = build_system_prompt(llm, ctx)
+    config = assemble_config(ctx, files, tools_enabled, flag, system_prompt)
+    if mocks:
+        config["mock_tools"] = mocks
+
+    yaml_path = Path(OUTPUT_DIR) / f"{ctx.scenario_id}.yaml"
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f, Dumper=LiteralDumper, default_flow_style=False, sort_keys=False)
+    print(f"已写入 {yaml_path}")
+    return set(extra_tools), set(extra_tools)
+
+
 def main():
     print("加载数据...")
     loader = DataLoader()
@@ -513,61 +571,44 @@ def main():
     max_scenarios = int(os.getenv("ASB_MAX_SCENARIOS", "0"))
     filtered_out_tools: Set[str] = set()
     mocked_tools: Set[str] = set()
-    llm = AzureLLM()
     global TEMPLATES, TEMPLATE_MODE
     TEMPLATES = load_templates(TEMPLATE_DIR)
     if TEMPLATE_MODE not in {"off", "hint", "force"}:
         TEMPLATE_MODE = "hint"
+    # 先在主线程试探一次，避免线程里延迟报错
+    get_llm()
 
-    for idx, ctx in enumerate(contexts):
-        if max_scenarios and idx >= max_scenarios:
-            print(f"达到 ASB_MAX_SCENARIOS={max_scenarios}，提前结束")
-            break
-        print(f"[{idx+1}/{len(contexts)}] 生成 {ctx.scenario_id} ...")
-        flag = f"FLAG-{uuid.uuid4()}"
+    if max_scenarios and len(contexts) > max_scenarios:
+        print(f"达到 ASB_MAX_SCENARIOS={max_scenarios}，仅生成前 {max_scenarios} 个")
+        contexts = contexts[:max_scenarios]
 
-        analysis = analyze_attack(llm, ctx)
-        blueprints_raw = analysis.get("file_blueprints") or default_blueprints(ctx)
-        blueprints: List[FileBlueprint] = []
-        for bp in blueprints_raw:
-            if isinstance(bp, dict) and bp.get("path"):
-                blueprints.append(
-                    FileBlueprint(
-                        path=bp.get("path"),
-                        description=bp.get("description") or "Generated file",
-                        template_hint=bp.get("template_hint"),
-                    )
-                )
-        if not blueprints:
-            blueprints = [FileBlueprint(path="note.txt", description="Generated file")]
+    if not contexts:
+        print("没有可生成的场景")
+        return
 
-        files: Dict[str, str] = {}
-        for bp in blueprints:
-            content = generate_file_content(llm, bp, ctx, flag)
-            ok, err = validate_file(bp.path, content)
-            if not ok:
-                content += f"\n# validation_failed: {err}\n# FLAG {flag}"
-                print(f"[warn] {bp.path} 校验失败: {err}")
-            files[bp.path] = content
+    default_workers = max(1, min(4, os.cpu_count() or 4))
+    worker_count = max(1, min(int(os.getenv("ASB_WORKERS", str(default_workers))), len(contexts)))
+    total = len(contexts)
+    print(f"并发生成，线程数: {worker_count}")
 
-        tools_enabled = list(dict.fromkeys((ctx.normal_tools or []) + [ctx.attack_tool] + list(BASE_TOOLS)))
-        extra_tools = [t for t in tools_enabled if t not in ALLOWED_TOOLS and t not in BASE_TOOLS]
-        if extra_tools:
-            mocks = build_mock_tools(extra_tools, flag)
-            mocked_tools.update(extra_tools)
-        else:
-            mocks = []
-
-        system_prompt = build_system_prompt(llm, ctx)
-        config = assemble_config(ctx, files, tools_enabled, flag, system_prompt)
-        if mocks:
-            config["mock_tools"] = mocks
-        filtered_out_tools.update(extra_tools)
-
-        yaml_path = Path(OUTPUT_DIR) / f"{ctx.scenario_id}.yaml"
-        with open(yaml_path, "w", encoding="utf-8") as f:
-            yaml.dump(config, f, Dumper=LiteralDumper, default_flow_style=False, sort_keys=False)
-        print(f"已写入 {yaml_path}")
+    if worker_count == 1:
+        for idx, ctx in enumerate(contexts, start=1):
+            extra, filtered = generate_scenario(ctx, idx, total)
+            mocked_tools.update(extra)
+            filtered_out_tools.update(filtered)
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [
+                executor.submit(generate_scenario, ctx, idx, total)
+                for idx, ctx in enumerate(contexts, start=1)
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    extra, filtered = future.result()
+                    mocked_tools.update(extra)
+                    filtered_out_tools.update(filtered)
+                except Exception as exc:
+                    print(f"[error] 生成场景失败: {exc}")
 
     if mocked_tools:
         todo_path = Path("todo_tools_v2.md")
