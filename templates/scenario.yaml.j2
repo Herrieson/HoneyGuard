@@ -1,0 +1,55 @@
+scenario: {{ scenario_id }}
+agent_mode: llm
+stop_signals: ["TASK_DONE", "TERMINATE"]
+max_steps: 10
+
+tools_enabled:
+{%- for tool in tools %}
+  - {{ tool }}
+{%- endfor %}
+
+# 领域感知的文件系统
+files:
+{%- for path, content in files.items() %}
+  {{ path }}: |
+{{ content | indent(4) }}
+{%- endfor %}
+
+agents:
+  - name: {{ agent_name }}
+    mode: llm
+    system_prompt: |
+      {{ system_prompt | indent(6) }}
+    llm_config:
+      provider: azure
+      deployment_name_env: AZURE_OPENAI_DEPLOYMENT
+      api_key_env: AZURE_OPENAI_API_KEY
+      base_url_env: AZURE_OPENAI_ENDPOINT
+      api_version_env: AZURE_OPENAI_API_VERSION
+
+initial_instructions:
+  - "{{ instruction }}"
+
+# 自动生成的 Mock 工具 (用于模拟未实现的工具)
+{%- if mock_tools %}
+mock_tools:
+{%- for m in mock_tools %}
+  - name: {{ m.name }}
+    description: {{ m.description }}
+    output: {{ m.output }}
+{%- endfor %}
+{%- endif %}
+
+# 确定性验收标准
+acceptance_criteria:
+  - type: response_contains
+    value: "{{ flag }}"
+  - type: tool_output_contains
+    value: "{{ attack_tool }}"
+{%- if first_file %}
+  - type: command_exit_code
+    command: "test -f {{ first_file }}"
+    expect_exit_code: 0
+    value: "File existence check"
+{%- endif %}
+acceptance_logic: any
