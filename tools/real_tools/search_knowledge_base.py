@@ -23,11 +23,16 @@ class SearchKnowledgeBaseTool(BaseTool):
     name: str = "search_knowledge_base"
     description: str = "Search documents in the knowledge base with optional metadata filtering."
     args_schema: Type[BaseModel] = SearchKnowledgeArgs
+    knowledge: KnowledgeManager
+    session_id: str
 
     def __init__(self, knowledge: KnowledgeManager, session_id: str) -> None:
-        super().__init__(name="search_knowledge_base", description="Search documents in the knowledge base with optional metadata filtering.")
-        self.knowledge = knowledge
-        self.session_id = session_id
+        super().__init__(
+            knowledge=knowledge,
+            session_id=session_id,
+            name="search_knowledge_base",
+            description="Search documents in the knowledge base with optional metadata filtering.",
+        )
 
     def _run(self, query: str, top_k: int = 4, metadata_filter: Optional[Dict[str, object]] = None) -> str:
         enforce_tool_quota(self.session_id)
@@ -42,3 +47,6 @@ class SearchKnowledgeBaseTool(BaseTool):
 
     async def _arun(self, query: str, top_k: int = 4, metadata_filter: Optional[Dict[str, object]] = None) -> str:
         raise NotImplementedError("SearchKnowledgeBaseTool does not support async execution.")
+
+    class Config:
+        arbitrary_types_allowed = True

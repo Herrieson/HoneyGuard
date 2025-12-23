@@ -5,6 +5,11 @@ from typing import Any, Dict, List, Sequence, Tuple
 from orchestration.agent import ToolCall
 from orchestration.llm_config import resolve_llm_config
 
+try:
+    from openai import BadRequestError
+except Exception:  # pragma: no cover - optional dependency guard
+    BadRequestError = Exception  # type: ignore[assignment]
+
 _IMPORT_ERROR = None
 try:
     from langchain.tools import BaseTool
@@ -64,7 +69,18 @@ class LLMAgent:
 
         # Allow a small loop to handle tool -> model -> tool chains.
         for _ in range(3):
-            response = bound_llm.invoke(messages)
+            try:
+                response = bound_llm.invoke(messages)
+            except BadRequestError as exc:
+                # Surface request/content filter errors as user-facing validation issues.
+                detail = str(exc)
+                code = getattr(exc, "code", None)
+                body = getattr(exc, "body", None)
+                if isinstance(body, dict):
+                    code = code or (body.get("error") or {}).get("code")
+                if "content management policy" in detail or (isinstance(code, str) and "content" in code.lower()):
+                    raise ValueError(f"LLM blocked by content filter: {detail}") from exc
+                raise ValueError(f"LLM request failed: {detail}") from exc
             raw_calls = getattr(response, "tool_calls", None) or []
 
             if not raw_calls:

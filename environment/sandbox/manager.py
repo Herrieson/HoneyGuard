@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Optional
 import os
 import subprocess
+import logging
 
 from python_on_whales import DockerClient, docker
 from python_on_whales.exceptions import DockerException
@@ -30,6 +31,7 @@ class SandboxManager:
         cpus: float | None = None,
         memory: str | None = None,
     ) -> None:
+        self.log = logging.getLogger(__name__)
         self.image_tag = image_tag
         self.base_image = base_image
         # Default to no network unless explicitly allowed via env or argument.
@@ -113,7 +115,14 @@ class SandboxManager:
     def mount_file(self, session_id: str, path: str, content: str) -> None:
         """Copy a file into the sandbox container."""
         container_id = self._get_container(session_id)
-        directory = str(Path(path).parent)
+        target_path = Path(path)
+
+        # Skip virtual or protected filesystems where writes are not allowed.
+        if target_path.is_absolute() and len(target_path.parts) > 1 and target_path.parts[1] in {"proc", "sys", "dev"}:
+            self.log.warning("Skipping mount of %s into container %s (virtual filesystem)", path, container_id)
+            return
+
+        directory = str(target_path.parent)
         self.execute_command(session_id, f"mkdir -p {shlex.quote(directory)}")
 
         tmp_path = None
