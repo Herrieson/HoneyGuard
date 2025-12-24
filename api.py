@@ -7,6 +7,9 @@ from typing import Any, Dict, List, Optional, Tuple, Literal, Set
 import os
 import logging
 import shlex
+from pathlib import Path
+
+import yaml
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
@@ -411,6 +414,33 @@ def _default_tools(tools_enabled: List[str], extra_allowed: Optional[Set[str]] =
     return [t for t in requested if t in allowed]
 
 
+def _load_scenario_config(scenario: str) -> Dict[str, Any]:
+    """
+    Best-effort load of a scenario YAML file when the client passes a path string.
+    This keeps backward compatibility with clients that only send {"scenario": "<path>"}.
+    """
+    if not scenario:
+        return {}
+
+    candidates = []
+    path_obj = Path(scenario)
+    if path_obj.is_file():
+        candidates.append(path_obj)
+    else:
+        # Try relative to current working directory
+        cwd_path = Path.cwd() / path_obj
+        if cwd_path.is_file():
+            candidates.append(cwd_path)
+    if not candidates:
+        return {}
+
+    try:
+        with candidates[0].open("r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except Exception:
+        return {}
+
+
 def _load_custom_agent(impl_path: str, tools_by_name: Dict[str, object], known_files: List[str], system_prompt: Optional[str]):
     try:
         module_path, class_name = impl_path.split(":")
@@ -510,47 +540,95 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
     session_id = uuid.uuid4().hex
     container_id = sandbox_manager.start(session_id)
 
+    scenario_cfg = _load_scenario_config(payload.scenario)
+    fields_set = getattr(payload, "__fields_set__", set())
+
+    def _pick(key: str, default_value):
+        if key in fields_set:
+            return getattr(payload, key)
+        return scenario_cfg.get(key, default_value)
+
+    scenario_name = scenario_cfg.get("scenario", payload.scenario)
+    files = _pick("files", {})
+    tools_enabled = _pick("tools_enabled", [])
+    agent_mode = _pick("agent_mode", payload.agent_mode)
+    agents_cfg = _pick("agents", payload.agents)
+    coordination_pattern = _pick("coordination_pattern", payload.coordination_pattern)
+    max_cycles = _pick("max_cycles", payload.max_cycles)
+    llm_config = _pick("llm_config", payload.llm_config)
+    memory_limit = _pick("memory_limit", payload.memory_limit)
+    max_steps = _pick("max_steps", payload.max_steps)
+    initial_instructions = _pick("initial_instructions", payload.initial_instructions)
+    graph_template = _pick("graph_template", payload.graph_template)
+    stop_signals = _pick("stop_signals", payload.stop_signals)
+    max_elapsed_sec = _pick("max_elapsed_sec", payload.max_elapsed_sec)
+    shared_context = _pick("shared_context", payload.shared_context)
+    acceptance_criteria = _pick("acceptance_criteria", payload.acceptance_criteria)
+    acceptance_logic = _pick("acceptance_logic", payload.acceptance_logic)
+    mock_tools = _pick("mock_tools", payload.mock_tools)
+
+    def _normalize_agents(data: List[Any]) -> List[AgentConfig]:
+        normalized: List[AgentConfig] = []
+        for item in data or []:
+            if isinstance(item, AgentConfig):
+                normalized.append(item)
+            elif isinstance(item, dict):
+                normalized.append(AgentConfig(**item))
+        return normalized
+
+    def _normalize_acceptance(data: List[Any]) -> List[AcceptanceCriterion]:
+        normalized: List[AcceptanceCriterion] = []
+        for item in data or []:
+            if isinstance(item, AcceptanceCriterion):
+                normalized.append(item)
+            elif isinstance(item, dict):
+                normalized.append(AcceptanceCriterion(**item))
+        return normalized
+
+    agents_cfg = _normalize_agents(agents_cfg)
+    acceptance_criteria = _normalize_acceptance(acceptance_criteria)
+
     # Mount files into the sandbox and ingest into knowledge base.
     docs: List[Document] = []
-    for path, content in payload.files.items():
+    for path, content in files.items():
         sandbox_manager.mount_file(session_id, path, content)
-        docs.append(Document(content=content, metadata={"path": path, "scenario": payload.scenario}, doc_id=path))
+        docs.append(Document(content=content, metadata={"path": path, "scenario": scenario_name}, doc_id=path))
     if docs:
         knowledge_manager.ingest_documents(docs)
 
-    mock_defs = [m.dict() for m in payload.mock_tools or []]
+    mock_defs = [m.dict() if hasattr(m, "dict") else m for m in mock_tools or []]
     mock_names = {item.get("name") for item in mock_defs if item.get("name")}
     if mock_defs:
         tool_registry.register_mocks(mock_defs)
-    tool_list = _default_tools(payload.tools_enabled, extra_allowed=mock_names)
+    tool_list = _default_tools(tools_enabled, extra_allowed=mock_names)
     tools = tool_registry.build(tool_list, session_id=session_id)
     tools_by_name = {tool.name: tool for tool in tools}
     agents = _build_agents(
-        payload.agents,
-        payload.agent_mode,
+        agents_cfg,
+        agent_mode,
         tools_by_name,
-        known_files=list(payload.files.keys()),
-        llm_config=payload.llm_config,
+        known_files=list(files.keys()),
+        llm_config=llm_config,
     )
-    acceptance_baseline = _capture_acceptance_baseline(session_id, payload.acceptance_criteria)
+    acceptance_baseline = _capture_acceptance_baseline(session_id, acceptance_criteria)
     coordinator = AgentCoordinator(
         agents,
-        pattern=(payload.coordination_pattern or "sequential"),
-        max_cycles=payload.max_cycles or 1,
+        pattern=(coordination_pattern or "sequential"),
+        max_cycles=max_cycles or 1,
         stop_on_done=True,
-        memory_limit=payload.memory_limit,
-        stop_signals=payload.stop_signals,
+        memory_limit=memory_limit,
+        stop_signals=stop_signals,
     )
     try:
         runner = EnvironmentRunner(
             coordinator=coordinator,
             pre_execution_hook=_pre_execution_hook(session_id),
             tools_by_name=tools_by_name,
-            max_steps=payload.max_steps,
+            max_steps=max_steps,
             stop_on_done=True,
-            graph_template=payload.graph_template,
-            stop_signals=payload.stop_signals,
-            max_elapsed_sec=payload.max_elapsed_sec,
+            graph_template=graph_template,
+            stop_signals=stop_signals,
+            max_elapsed_sec=max_elapsed_sec,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -561,28 +639,28 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
 
     SESSIONS[session_id] = SessionContext(
         session_id=session_id,
-        scenario=payload.scenario,
+        scenario=scenario_name,
         container_id=container_id,
         runner=runner,
         tools_enabled=tool_list,
         tools_by_name=tools_by_name,
-        files=payload.files,
+        files=files,
         created_at=time.time(),
-        agent_mode=payload.agent_mode,
+        agent_mode=agent_mode,
         agent=agents[0].impl if agents else None,
         agents=agents,
         coordinator=coordinator,
-        coordination_pattern=payload.coordination_pattern,
-        memory_limit=payload.memory_limit,
-        max_steps=payload.max_steps,
-        queued_instructions=list(payload.initial_instructions or []),
+        coordination_pattern=coordination_pattern,
+        memory_limit=memory_limit,
+        max_steps=max_steps,
+        queued_instructions=list(initial_instructions or []),
         instruction_cursor=0,
-        graph_template=payload.graph_template,
-        stop_signals=payload.stop_signals,
-        max_elapsed_sec=payload.max_elapsed_sec,
-        shared_context=dict(payload.shared_context or {}),
-        acceptance_criteria=list(payload.acceptance_criteria or []),
-        acceptance_logic=payload.acceptance_logic or "all",
+        graph_template=graph_template,
+        stop_signals=stop_signals,
+        max_elapsed_sec=max_elapsed_sec,
+        shared_context=dict(shared_context or {}),
+        acceptance_criteria=list(acceptance_criteria or []),
+        acceptance_logic=acceptance_logic or "all",
         acceptance_baseline=acceptance_baseline,
     )
 
