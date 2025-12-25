@@ -27,6 +27,7 @@ data/
 logs/*.db
 logs/*.sqlite
 configs/generated_scenarios_asb_v2/
+configs/generated_scenarios_asb_v2_with_honeypots/
 
 # OS-specific
 .DS_Store
