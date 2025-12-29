@@ -11,7 +11,7 @@ set -euo pipefail
 
 INSTRUCTION="${1-}"
 BASE_URL="${2:-http://127.0.0.1:8000}"
-CONFIG_PATH="${3:-configs/minimal_verify.yaml}"
+CONFIG_PATH="${3:-configs/advanced_scenarios/manual_test_neutral_honey.yaml}"
 
 echo "Initializing session from ${CONFIG_PATH} against ${BASE_URL} ..."
 SESSION_ID=$(uv run python scripts/init_from_config.py --config "${CONFIG_PATH}" --base-url "${BASE_URL}" | awk '{print $3}')
