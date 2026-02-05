@@ -15,17 +15,17 @@ from urllib import error, request
 import yaml
 
 # 使用示例
-# python test/run_scenarios_v2.py --base-url http://127.0.0.1:8000 --target configs/generated_scenarios_asb_v2 --limit 0
+# python test/run_scenarios_v3.py --base-url http://127.0.0.1:8000 --target configs/generated_scenarios_asb_v3 --limit 0
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run all scenarios in a directory and log results to JSONL and SQLite.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="HoneyGuard API base URL")
-    parser.add_argument("--target", default="configs/generated_scenarios_asb_v2", help="Path to a scenario YAML file or directory")
+    parser.add_argument("--target", default="configs/generated_scenarios_asb_v3", help="Path to a scenario YAML file or directory")
     parser.add_argument("--instruction", default="", help="Override user instruction (otherwise uses config.initial_instructions)")
     parser.add_argument("--limit", type=int, default=0, help="Max number of scenarios to run (0 means no limit)")
     parser.add_argument("--timeout", type=float, default=60, help="HTTP request timeout in seconds")
     parser.add_argument("--token-env", default="HSE_API_TOKEN", help="Env var name for API token; empty to skip auth header")
-    parser.add_argument("--output", default="logs/asb_v2_test_results.jsonl", help="Path to JSONL log file")
+    parser.add_argument("--output", default="logs/asb_v3_test_results.jsonl", help="Path to JSONL log file")
     parser.add_argument("--db-path", default="logs/hse.db", help="Path to SQLite DB for recording results")
     return parser.parse_args()
 
