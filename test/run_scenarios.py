@@ -20,13 +20,13 @@ import yaml
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run all scenarios in a directory and log results to JSONL and SQLite.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="HoneyGuard API base URL")
-    parser.add_argument("--target", default="configs/generated_scenarios_asb_v3", help="Path to a scenario YAML file or directory")
+    parser.add_argument("--target", default="configs/advanced_scenarios", help="Path to a scenario YAML file or directory")
     parser.add_argument("--instruction", default="", help="Override user instruction (otherwise uses config.initial_instructions)")
     parser.add_argument("--limit", type=int, default=0, help="Max number of scenarios to run (0 means no limit)")
     parser.add_argument("--timeout", type=float, default=60, help="HTTP request timeout in seconds")
     parser.add_argument("--token-env", default="HSE_API_TOKEN", help="Env var name for API token; empty to skip auth header")
-    parser.add_argument("--output", default="logs/asb_v3_test_results.jsonl", help="Path to JSONL log file")
-    parser.add_argument("--db-path", default="logs/hse.db", help="Path to SQLite DB for recording results")
+    parser.add_argument("--output", default="logs/advanced_results.jsonl", help="Path to JSONL log file")
+    parser.add_argument("--db-path", default="logs/advanced_results.db", help="Path to SQLite DB for recording results")
     return parser.parse_args()
 
 
@@ -129,11 +129,9 @@ def run_scenario(config_path: Path, base_url: str, override_instr: str, headers:
             cfg_data = yaml.safe_load(f)
         
         user_instr = override_instr
-        if not user_instr:
-            # Use the first instruction from list
-            instrs = cfg_data.get("initial_instructions", [])
-            if instrs:
-                user_instr = instrs[0]
+        instrs = cfg_data.get("initial_instructions", [])
+        if not user_instr and not instrs:
+            user_instr = ""
         
         # Init API call
         init_payload = {"scenario": str(config_path)} 
@@ -157,44 +155,61 @@ def run_scenario(config_path: Path, base_url: str, override_instr: str, headers:
             record["error"] = "No session_id in response"
             return record
 
-        # 2. Run Step
-        run_payload = {
-            "session_id": session_id,
-            "user_instruction": user_instr
-        }
-        code, run_text = http_request(f"{base_url}/v1/environment/run_step", run_payload, headers, timeout)
-        record["run_response"] = run_text
-        
-        if code != 200:
-            record["status"] = "run_failed"
-            record["error"] = f"HTTP {code}: {run_text}"
-        else:
-            run_json = json.loads(run_text)
-            
-            # --- 关键修改：解析业务结果 ---
-            if run_json.get("acceptance_passed") is True:
-                record["status"] = "passed"
-            elif run_json.get("detail"):
-                # API usually returns {"detail": "..."} on error even with 200 OK sometimes, or 400/500
-                # But if we got 200 code, check if detail indicates LLM refusal or blocking?
-                # Actually standard HSE API returns 200 for normal runs.
-                # If acceptance_passed is False, it's a 'failed' test case.
-                pass 
-            
-            if record["status"] != "passed":
-                # Check if it was an API error masked as success or just failed criteria
-                if "error" in run_json or "detail" in run_json:
-                     # This might happen if 'detail' contains content filter message
-                     err_msg = run_json.get("detail") or run_json.get("error")
-                     if err_msg and "content filter" in str(err_msg):
-                         record["status"] = "api_error"
-                         record["error"] = str(err_msg)
-                     else:
-                         record["status"] = "failed"
-                         record["error"] = "acceptance not passed"
+        # 2. Run Step(s)
+        steps = [user_instr] if override_instr else (instrs or [user_instr])
+        record["run_responses"] = []
+        last_run_json: Dict[str, Any] = {}
+        for idx, step_instr in enumerate(steps, start=1):
+            run_payload = {
+                "session_id": session_id,
+                "user_instruction": step_instr,
+            }
+            code, run_text = http_request(f"{base_url}/v1/environment/run_step", run_payload, headers, timeout)
+            record["run_response"] = run_text
+            record["run_responses"].append(
+                {
+                    "step": idx,
+                    "instruction": step_instr,
+                    "status_code": code,
+                    "response": run_text,
+                }
+            )
+
+            if code != 200:
+                record["status"] = "run_failed"
+                record["error"] = f"HTTP {code}: {run_text}"
+                break
+
+            last_run_json = json.loads(run_text)
+
+        if record["status"] == "run_failed":
+            return record
+
+        # --- 关键修改：解析业务结果 ---
+        run_json = last_run_json or {}
+        if run_json.get("acceptance_passed") is True:
+            record["status"] = "passed"
+        elif run_json.get("detail"):
+            # API usually returns {"detail": "..."} on error even with 200 OK sometimes, or 400/500
+            # But if we got 200 code, check if detail indicates LLM refusal or blocking?
+            # Actually standard HSE API returns 200 for normal runs.
+            # If acceptance_passed is False, it's a 'failed' test case.
+            pass
+
+        if record["status"] != "passed":
+            # Check if it was an API error masked as success or just failed criteria
+            if "error" in run_json or "detail" in run_json:
+                # This might happen if 'detail' contains content filter message
+                err_msg = run_json.get("detail") or run_json.get("error")
+                if err_msg and "content filter" in str(err_msg):
+                    record["status"] = "api_error"
+                    record["error"] = str(err_msg)
                 else:
                     record["status"] = "failed"
                     record["error"] = "acceptance not passed"
+            else:
+                record["status"] = "failed"
+                record["error"] = "acceptance not passed"
 
     except Exception as e:
         record["status"] = "exception"
