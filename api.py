@@ -60,6 +60,12 @@ class SessionContext:
     graph_template: Optional[str]
     stop_signals: List[str]
     max_elapsed_sec: Optional[float]
+    max_tool_calls: Optional[int]
+    max_tool_repeats: Optional[int]
+    stop_on_repeat_tool_calls: bool
+    stop_on_no_new_tool_results: bool
+    tool_finish_signals: List[str]
+    planner_allow_tools: bool
     shared_context: Dict[str, object]
     acceptance_criteria: List["AcceptanceCriterion"]
     acceptance_logic: str
@@ -179,6 +185,30 @@ class InitializeRequest(BaseModel):
     max_elapsed_sec: Optional[float] = Field(
         None,
         description="Optional cumulative tool execution time budget in seconds; run will stop when exceeded.",
+    )
+    max_tool_calls: Optional[int] = Field(
+        None,
+        description="Optional cap on total tool calls during a run_step. If exceeded, execution stops.",
+    )
+    max_tool_repeats: Optional[int] = Field(
+        2,
+        description="Optional cap on repeats of identical tool calls (same tool+args).",
+    )
+    stop_on_repeat_tool_calls: bool = Field(
+        True,
+        description="Stop when the agent proposes the exact same tool call set as the previous step.",
+    )
+    stop_on_no_new_tool_results: bool = Field(
+        True,
+        description="Stop when tool outputs are identical to the previous tool batch (no new information).",
+    )
+    tool_finish_signals: List[str] = Field(
+        default_factory=lambda: ["done", "no-op", "noop"],
+        description="Tool output tokens that should terminate execution when observed.",
+    )
+    planner_allow_tools: bool = Field(
+        False,
+        description="When using planner_executor_verifier, allow planner to call tools (default: false).",
     )
     shared_context: Dict[str, Any] = Field(
         default_factory=dict,
@@ -562,6 +592,12 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
     graph_template = _pick("graph_template", payload.graph_template)
     stop_signals = _pick("stop_signals", payload.stop_signals)
     max_elapsed_sec = _pick("max_elapsed_sec", payload.max_elapsed_sec)
+    max_tool_calls = _pick("max_tool_calls", payload.max_tool_calls)
+    max_tool_repeats = _pick("max_tool_repeats", payload.max_tool_repeats)
+    stop_on_repeat_tool_calls = _pick("stop_on_repeat_tool_calls", payload.stop_on_repeat_tool_calls)
+    stop_on_no_new_tool_results = _pick("stop_on_no_new_tool_results", payload.stop_on_no_new_tool_results)
+    tool_finish_signals = _pick("tool_finish_signals", payload.tool_finish_signals)
+    planner_allow_tools = _pick("planner_allow_tools", payload.planner_allow_tools)
     shared_context = _pick("shared_context", payload.shared_context)
     acceptance_criteria = _pick("acceptance_criteria", payload.acceptance_criteria)
     acceptance_logic = _pick("acceptance_logic", payload.acceptance_logic)
@@ -618,6 +654,7 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         stop_on_done=True,
         memory_limit=memory_limit,
         stop_signals=stop_signals,
+        planner_allow_tools=planner_allow_tools,
     )
     try:
         runner = EnvironmentRunner(
@@ -629,6 +666,11 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
             graph_template=graph_template,
             stop_signals=stop_signals,
             max_elapsed_sec=max_elapsed_sec,
+            max_tool_calls=max_tool_calls,
+            max_tool_repeats=max_tool_repeats,
+            stop_on_repeat_tool_calls=stop_on_repeat_tool_calls,
+            stop_on_no_new_tool_results=stop_on_no_new_tool_results,
+            tool_finish_signals=tool_finish_signals,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -658,6 +700,12 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
         graph_template=graph_template,
         stop_signals=stop_signals,
         max_elapsed_sec=max_elapsed_sec,
+        max_tool_calls=max_tool_calls,
+        max_tool_repeats=max_tool_repeats,
+        stop_on_repeat_tool_calls=stop_on_repeat_tool_calls,
+        stop_on_no_new_tool_results=stop_on_no_new_tool_results,
+        tool_finish_signals=list(tool_finish_signals or []),
+        planner_allow_tools=planner_allow_tools,
         shared_context=dict(shared_context or {}),
         acceptance_criteria=list(acceptance_criteria or []),
         acceptance_logic=acceptance_logic or "all",

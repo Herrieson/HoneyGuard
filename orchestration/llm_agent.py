@@ -30,7 +30,7 @@ class LLMAgent:
         known_files: Sequence[str] | None = None,
         *,
         model: str | None = None,
-        temperature: float = 0.0,
+        temperature: float | None = 0.0,
         system_prompt: str | None = None,
         llm_config: Dict[str, Any] | None = None,
     ) -> None:
@@ -103,9 +103,17 @@ class LLMAgent:
         # Fallback: return last response content if loop limit hit.
         return getattr(response, "content", "") or "", tool_calls, {}
 
-    def _build_llm_kwargs(self, llm_config: Dict[str, Any], model: str, temperature: float) -> Dict[str, Any]:
+    def _build_llm_kwargs(self, llm_config: Dict[str, Any], model: str | None, temperature: float | None) -> Dict[str, Any]:
         provider = llm_config.get("provider", "openai").lower()
-        common = {"temperature": temperature}
+        common: Dict[str, Any] = {}
+        model_name = (
+            llm_config.get("deployment_name")
+            or model
+            or llm_config.get("model")
+            or ""
+        )
+        if temperature is not None and self._model_supports_temperature(model_name):
+            common["temperature"] = temperature
         if provider == "azure":
             return {
                 **common,
@@ -122,6 +130,12 @@ class LLMAgent:
             "base_url": llm_config.get("base_url"),
             "organization": llm_config.get("organization"),
         }
+
+    def _model_supports_temperature(self, model_name: str) -> bool:
+        name = (model_name or "").lower()
+        if not name:
+            return True
+        return "gpt-5" not in name
 
     def _build_messages(
         self,

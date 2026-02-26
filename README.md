@@ -74,10 +74,16 @@ HoneyGuard/configs 配置编写指南
 - `stop_signals`：列表，若 Agent 回复包含任一字符串（不区分大小写）则提前终止。
 - `max_steps`：LangGraph 最大步数（防止无限循环）。
 - `max_elapsed_sec`（可选）：工具累计耗时上限，超出即终止。
+- `max_tool_calls`（可选）：单次 run_step 允许的工具调用总数上限，超出即终止。
+- `max_tool_repeats`（可选）：相同工具+参数的重复次数上限，达到即终止。
+- `stop_on_repeat_tool_calls`（可选，默认 true）：若本轮工具调用与上一轮完全相同则终止。
+- `stop_on_no_new_tool_results`（可选，默认 true）：若本轮工具输出与上一轮完全相同则终止（避免重复探测）。
+- `tool_finish_signals`（可选）：当工具输出/错误包含这些 token（如 `done`/`no-op`）时终止。
 - `graph_template`（可选）：自定义 LangGraph 构造函数，格式 `module:function`。
 - `initial_instructions`：队列式初始指令，`run_step` 未提供 `user_instruction` 时按顺序消费。
 - `shared_context`（可选）：预置共享黑板键值，多代理间按各自的读写权限访问。
 - `mock_tools`（可选）：自定义 Mock 工具列表（`name`/`output`/`description`），用于快速返回固定输出；名字会自动加入 `tools_enabled`。
+- `planner_allow_tools`（可选，默认 false）：在 `planner_executor_verifier` 模式下允许 planner 调用工具（默认禁用，保证规划-执行分离）。
 - `acceptance_criteria`（可选）：验收标准列表，运行后自动评估，支持：
   - `response_contains`：agent 回复包含 `value`
   - `tool_output_contains`：任一工具输出/错误包含 `value`

@@ -92,6 +92,40 @@ def load_config(config_path: Path) -> dict:
         if max_elapsed_sec <= 0:
             raise ValueError("max_elapsed_sec must be > 0 when provided")
 
+    max_tool_calls = data.get("max_tool_calls")
+    if max_tool_calls is not None:
+        try:
+            max_tool_calls = int(max_tool_calls)
+        except Exception as exc:
+            raise ValueError("max_tool_calls must be an integer") from exc
+        if max_tool_calls <= 0:
+            raise ValueError("max_tool_calls must be > 0 when provided")
+
+    max_tool_repeats = data.get("max_tool_repeats")
+    if max_tool_repeats is not None:
+        try:
+            max_tool_repeats = int(max_tool_repeats)
+        except Exception as exc:
+            raise ValueError("max_tool_repeats must be an integer") from exc
+        if max_tool_repeats < 0:
+            raise ValueError("max_tool_repeats must be >= 0 when provided")
+
+    stop_on_repeat_tool_calls = data.get("stop_on_repeat_tool_calls", True)
+    if not isinstance(stop_on_repeat_tool_calls, bool):
+        raise ValueError("stop_on_repeat_tool_calls must be a boolean when provided")
+
+    stop_on_no_new_tool_results = data.get("stop_on_no_new_tool_results", True)
+    if not isinstance(stop_on_no_new_tool_results, bool):
+        raise ValueError("stop_on_no_new_tool_results must be a boolean when provided")
+
+    tool_finish_signals = data.get("tool_finish_signals") or ["done", "no-op", "noop"]
+    if tool_finish_signals is not None and not isinstance(tool_finish_signals, list):
+        raise ValueError("tool_finish_signals must be a list when provided")
+
+    planner_allow_tools = data.get("planner_allow_tools", False)
+    if not isinstance(planner_allow_tools, bool):
+        raise ValueError("planner_allow_tools must be a boolean when provided")
+
     initial_instructions = data.get("initial_instructions") or []
     if isinstance(initial_instructions, str):
         initial_instructions = [initial_instructions]
@@ -221,6 +255,12 @@ def load_config(config_path: Path) -> dict:
         "graph_template": graph_template,
         "stop_signals": stop_signals,
         "max_elapsed_sec": max_elapsed_sec,
+        "max_tool_calls": max_tool_calls,
+        "max_tool_repeats": max_tool_repeats,
+        "stop_on_repeat_tool_calls": stop_on_repeat_tool_calls,
+        "stop_on_no_new_tool_results": stop_on_no_new_tool_results,
+        "tool_finish_signals": tool_finish_signals,
+        "planner_allow_tools": planner_allow_tools,
         "shared_context": shared_context,
         "acceptance_criteria": normalized_criteria,
         "acceptance_logic": acceptance_logic,

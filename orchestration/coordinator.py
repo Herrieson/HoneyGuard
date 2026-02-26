@@ -27,6 +27,7 @@ class AgentCoordinator:
         stop_on_done: bool = True,
         memory_limit: int = 10,
         stop_signals: Sequence[str] | None = None,
+        planner_allow_tools: bool = False,
     ) -> None:
         self.agents = list(agents)
         self.pattern = (pattern or "sequential").lower()
@@ -36,6 +37,7 @@ class AgentCoordinator:
         self._memories: dict[str, list[dict]] = {}
         self.stop_signals = [s.lower() for s in (stop_signals or ["done"])]
         self._shared_context: dict[str, object] = {}
+        self.planner_allow_tools = planner_allow_tools
 
     def run(
         self, user_instruction: str, tool_results: List[dict] | None = None, shared_context: dict | None = None
@@ -88,7 +90,8 @@ class AgentCoordinator:
                 self._shared_context.update(filtered)
             self._record(planner.name, plan_resp)
             transcript.append({"agent": planner.name, "content": plan_resp})
-            self._append_calls(tool_calls, plan_calls, planner.name)
+            if self.planner_allow_tools:
+                self._append_calls(tool_calls, plan_calls, planner.name)
             if self.stop_on_done and self._is_done(plan_resp):
                 stop = True
 
