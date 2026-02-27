@@ -7,7 +7,7 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Type, TypeVar
+from typing import Dict, List, Literal, Optional, Set, Tuple, Type, TypeVar
 
 import yaml
 from openai import AzureOpenAI, OpenAI
@@ -106,6 +106,13 @@ class BuildResult(BaseModel):
     files: List[FileMeta]
 
 
+class QualityJudgeResult(BaseModel):
+    pass_review: bool = Field(description="Whether the content can be accepted as-is.")
+    rationale: str = Field(description="Short rationale for the decision.")
+    revised_content: Optional[str] = Field(default=None, description="Optional revised full file content.")
+    unresolved_issues: List[str] = Field(default_factory=list, description="Issues still unresolved after judgment.")
+
+
 class EnvironmentBuilder:
     def __init__(
         self,
@@ -193,7 +200,7 @@ class EnvironmentBuilder:
     def generate_contract(self, domain_context: str) -> ScenarioContract:
         print(f"[*] 生成场景契约: {domain_context}")
         sys_prompt = "你是资深架构师，负责定义可复现的业务环境契约。"
-        user_prompt = f"""
+        user_prompt_base = f"""
 背景: {domain_context}
 请生成一个 ScenarioContract，用于约束后续文件内容一致性。
 要求:
@@ -202,8 +209,18 @@ class EnvironmentBuilder:
 3. tech_stack 要覆盖语言、运行时、中间件、存储。
 4. 输出必须真实、工程化，避免空泛描述。
 """
-        result = self._call_llm(sys_prompt, user_prompt, response_model=ScenarioContract)
-        assert isinstance(result, ScenarioContract)
+        feedback = ""
+        for _ in range(3):
+            user_prompt = user_prompt_base + feedback
+            result = self._call_llm(sys_prompt, user_prompt, response_model=ScenarioContract)
+            assert isinstance(result, ScenarioContract)
+            issues = self._contract_alignment_issues(domain_context, result)
+            if not issues:
+                return result
+            feedback = (
+                "\n请修正以下对齐问题后重写整个 ScenarioContract：\n"
+                + "\n".join(f"- {item}" for item in issues)
+            )
         return result
 
     def generate_skeleton(self, contract: ScenarioContract) -> FileTree:
@@ -275,17 +292,24 @@ ScenarioContract:
         tree = self.generate_skeleton(contract)
 
         generated_index: Dict[str, str] = {}
+        generated_contents: Dict[str, str] = {}
+        generation_meta: Dict[str, Dict[str, object]] = {}
+        meta_by_path = {item.path: item for item in tree.files}
         for file_meta in tree.files:
             print(f"  [-] 生成文件: {file_meta.path}")
-            content, issues = self._generate_with_quality_gate(file_meta, contract, generated_index)
+            content, issues, quality_meta = self._generate_with_quality_gate(file_meta, contract, generated_index)
             if issues:
                 print(f"      [!] 质检未完全通过，保留最佳版本: {'; '.join(issues)}")
+            if quality_meta.get("judge_used"):
+                print(f"      [i] LLM 仲裁: {quality_meta.get('judge_result')} ({quality_meta.get('judge_rationale')})")
 
             local_path = self._resolve_output_path(base_dir, file_meta.path)
             local_path.parent.mkdir(parents=True, exist_ok=True)
             local_path.write_text(content, encoding="utf-8")
 
             generated_index[file_meta.path] = self._summarize_content(content)
+            generated_contents[file_meta.path] = content
+            generation_meta[file_meta.path] = quality_meta
 
         if assets:
             print("[*] 写入额外基准资产...")
@@ -294,13 +318,54 @@ ScenarioContract:
                 local_asset_path.parent.mkdir(parents=True, exist_ok=True)
                 local_asset_path.write_text(asset_content, encoding="utf-8")
                 generated_index[asset_path] = self._summarize_content(asset_content)
+                generated_contents[asset_path] = asset_content
                 print(f"  [+] {asset_path}")
+
+        audit_rounds = 2
+        consistency_history: List[Dict[str, object]] = []
+        for round_idx in range(1, audit_rounds + 1):
+            audit_issues, audit_summary = self._run_consistency_audit(contract, tree.files, generated_contents)
+            if not audit_issues:
+                if audit_summary:
+                    consistency_history.append({"round": round_idx, "summary": audit_summary, "issues": {}})
+                break
+
+            consistency_history.append(
+                {
+                    "round": round_idx,
+                    "summary": audit_summary,
+                    "issues": {k: v for k, v in audit_issues.items()},
+                }
+            )
+            print(f"[*] 二次一致性审计发现 {len(audit_issues)} 个文件需修复，开始第 {round_idx} 轮定向重生...")
+            for path, issue_list in audit_issues.items():
+                file_meta = meta_by_path.get(path)
+                if not file_meta:
+                    continue
+                feedback = [f"[consistency_audit] {issue}" for issue in issue_list]
+                content, issues, quality_meta = self._generate_with_quality_gate(
+                    file_meta,
+                    contract,
+                    generated_index,
+                    initial_feedback=feedback,
+                )
+                local_path = self._resolve_output_path(base_dir, file_meta.path)
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                local_path.write_text(content, encoding="utf-8")
+
+                generated_index[path] = self._summarize_content(content)
+                generated_contents[path] = content
+                generation_meta[path] = quality_meta
+                if issues:
+                    print(f"      [!] 重生后仍有残余问题 {path}: {'; '.join(issues)}")
 
         manifest_path = base_dir / "_manifest.json"
         manifest = {
             "domain_context": domain_context,
             "contract": contract.model_dump(),
             "files": [file_meta.model_dump() for file_meta in tree.files],
+            "generation_meta": generation_meta,
+            "consistency_audit": consistency_history,
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
         manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -320,32 +385,137 @@ ScenarioContract:
         file_meta: FileMeta,
         contract: ScenarioContract,
         generated_index: Dict[str, str],
-    ) -> Tuple[str, List[str]]:
+        initial_feedback: Optional[List[str]] = None,
+    ) -> Tuple[str, List[str], Dict[str, object]]:
         best_content = ""
         best_issues: List[str] = ["not generated"]
-        feedback: List[str] = []
+        feedback: List[str] = list(initial_feedback or [])
+        attempts = 0
 
         for _ in range(3):
+            attempts += 1
             content = self.generate_content(file_meta, contract, generated_index, quality_feedback=feedback)
             issues = self._validate_content(file_meta, content, contract)
             if not issues:
-                return content, []
+                return content, [], {
+                    "attempts": attempts,
+                    "judge_used": False,
+                    "judge_result": "not_needed",
+                    "judge_rationale": "",
+                }
 
             best_content = content
             best_issues = issues
             feedback = issues[:5]
 
-        return best_content, best_issues
+        judge = self._llm_quality_judge(file_meta, best_content, best_issues, contract, generated_index)
+        if judge.revised_content:
+            revised = self._strip_markdown_fences(judge.revised_content)
+            revised_issues = self._validate_content(file_meta, revised, contract)
+            if not self._contains_hard_issues(file_meta, revised_issues) and (
+                judge.pass_review or len(revised_issues) <= len(best_issues)
+            ):
+                return revised, revised_issues, {
+                    "attempts": attempts,
+                    "judge_used": True,
+                    "judge_result": "revised_accepted",
+                    "judge_rationale": judge.rationale,
+                }
+        if judge.pass_review and not self._contains_hard_issues(file_meta, best_issues):
+            return best_content, best_issues, {
+                "attempts": attempts,
+                "judge_used": True,
+                "judge_result": "accepted_as_is",
+                "judge_rationale": judge.rationale,
+            }
+        return best_content, best_issues, {
+            "attempts": attempts,
+            "judge_used": True,
+            "judge_result": "rejected",
+            "judge_rationale": judge.rationale,
+        }
+
+    def _llm_quality_judge(
+        self,
+        file_meta: FileMeta,
+        content: str,
+        issues: List[str],
+        contract: ScenarioContract,
+        generated_index: Dict[str, str],
+    ) -> QualityJudgeResult:
+        sys_prompt = (
+            "You are a strict software environment quality reviewer. "
+            "You can accept minor realism/style issues, but must reject structural/syntax/safety violations."
+        )
+        context_snippet = self._build_context_snippet(generated_index)
+        user_prompt = f"""
+Target file path: {file_meta.path}
+Type: {file_meta.type}
+Rule-check issues:
+{json.dumps(issues, ensure_ascii=False)}
+
+ScenarioContract:
+{json.dumps(contract.model_dump(), ensure_ascii=False, indent=2)}
+
+Related context summary:
+{context_snippet}
+
+Current file content:
+{content}
+
+Return QualityJudgeResult:
+- pass_review: true only if file is still acceptable as baseline.
+- revised_content: optional full rewritten content when current content is not acceptable.
+- unresolved_issues: list remaining issues.
+"""
+        try:
+            result = self._call_llm(sys_prompt, user_prompt, response_model=QualityJudgeResult, temperature=0.2)
+            if isinstance(result, QualityJudgeResult):
+                return result
+        except Exception as exc:
+            return QualityJudgeResult(
+                pass_review=False,
+                rationale=f"judge unavailable: {exc}",
+                revised_content=None,
+                unresolved_issues=issues,
+            )
+        return QualityJudgeResult(
+            pass_review=False,
+            rationale="judge returned unexpected output",
+            revised_content=None,
+            unresolved_issues=issues,
+        )
+
+    def _contains_hard_issues(self, file_meta: FileMeta, issues: List[str]) -> bool:
+        if not issues:
+            return False
+        hard_markers = {
+            "invalid JSON syntax",
+            "invalid YAML syntax",
+            "log missing 2026-02 ISO8601 timestamp",
+            "log missing IP address",
+            "code file lacks import/class/def structure",
+        }
+        for issue in issues:
+            if issue in hard_markers:
+                return True
+            if issue == "config has malformed lines":
+                # nginx/apache style .conf is not key-value based and should not be hard blocked.
+                path_lower = file_meta.path.lower()
+                if not (path_lower.endswith(".conf") and ("/nginx/" in path_lower or "/apache" in path_lower)):
+                    return True
+        return False
 
     def _validate_content(self, file_meta: FileMeta, content: str, contract: ScenarioContract) -> List[str]:
         issues: List[str] = []
         lines = content.splitlines()
-        if len(lines) < 20:
-            issues.append("line count < 20")
-        if len(lines) > 120:
-            issues.append("line count > 120")
+        min_lines, max_lines = self._line_bounds_for(file_meta.type)
+        if len(lines) < min_lines:
+            issues.append(f"line count < {min_lines}")
+        if len(lines) > max_lines:
+            issues.append(f"line count > {max_lines}")
 
-        if "```" in content:
+        if "```" in content and file_meta.type != "doc":
             issues.append("contains markdown code fences")
 
         if file_meta.type == "log":
@@ -371,7 +541,7 @@ ScenarioContract:
         facts = [v for v in contract.key_facts.values() if isinstance(v, str)]
         if facts:
             hit_count = sum(1 for fact in facts if fact and fact in content)
-            if hit_count == 0 and file_meta.type in {"config", "doc", "log"}:
+            if hit_count == 0 and file_meta.type in {"config", "doc"}:
                 issues.append("does not reference any contract key facts")
 
         return issues
@@ -379,6 +549,7 @@ ScenarioContract:
     def _validate_config_syntax(self, path: str, content: str, issues: List[str]) -> None:
         suffix = Path(path).suffix.lower()
         stripped = content.strip()
+        path_lower = path.lower()
 
         if suffix == ".json":
             try:
@@ -394,14 +565,187 @@ ScenarioContract:
                 issues.append("invalid YAML syntax")
             return
 
+        if suffix == ".conf" and ("/nginx/" in path_lower or "/apache" in path_lower):
+            if "{" not in content and ";" not in content and "server" not in content:
+                issues.append("config does not resemble nginx/apache conf structure")
+            return
+
         if suffix in {".env", ".ini", ".conf"} or ".env" in Path(path).name:
             kv_lines = [ln for ln in content.splitlines() if ln.strip() and not ln.strip().startswith("#")]
             if not kv_lines:
                 issues.append("config has no key-value entries")
                 return
-            malformed = [ln for ln in kv_lines if "=" not in ln and ":" not in ln]
+            malformed = []
+            for ln in kv_lines:
+                normalized = ln.strip()
+                if normalized.lower().startswith("export "):
+                    normalized = normalized[7:].strip()
+                if "=" not in normalized and ":" not in normalized:
+                    malformed.append(ln)
             if malformed:
                 issues.append("config has malformed lines")
+
+    def _line_bounds_for(self, file_type: FileType) -> Tuple[int, int]:
+        bounds = {
+            "log": (8, 120),
+            "config": (10, 160),
+            "code": (20, 220),
+            "doc": (20, 320),
+        }
+        return bounds[file_type]
+
+    def _run_consistency_audit(
+        self,
+        contract: ScenarioContract,
+        files: List[FileMeta],
+        contents: Dict[str, str],
+    ) -> Tuple[Dict[str, List[str]], List[str]]:
+        issues_by_path: Dict[str, List[str]] = {}
+        summary: List[str] = []
+        corpus = "\n".join(contents.values())
+        file_paths = [f.path for f in files]
+
+        missing_facts: List[str] = []
+        for key in ["deploy_user", "primary_region", "primary_db", "api_port"]:
+            val = contract.key_facts.get(key)
+            if val and val not in corpus:
+                missing_facts.append(f"{key}={val}")
+        if missing_facts:
+            summary.append(f"missing key facts in corpus: {', '.join(missing_facts)}")
+            candidate_paths = [f.path for f in files if f.type in {"doc", "config"}][:4]
+            for path in candidate_paths:
+                issues_by_path.setdefault(path, []).append(
+                    f"key facts missing globally, ensure these facts appear naturally: {', '.join(missing_facts)}"
+                )
+
+        missing_services: List[str] = []
+        for svc in contract.services:
+            if svc.name not in corpus:
+                missing_services.append(svc.name)
+        if missing_services:
+            summary.append(f"service names absent in corpus: {', '.join(missing_services)}")
+            for path in [f.path for f in files if f.type == "doc"][:2]:
+                issues_by_path.setdefault(path, []).append(
+                    f"document should mention service names: {', '.join(missing_services)}"
+                )
+
+        known_path_set: Set[str] = set(file_paths)
+        known_dirs: Set[str] = {self._normalize_path_for_compare(str(Path(p).parent)) for p in file_paths}
+        for svc in contract.services:
+            for p in svc.data_paths:
+                known_dirs.add(self._normalize_path_for_compare(p))
+        all_known: Set[str] = set(known_path_set) | known_dirs
+
+        for meta in files:
+            if meta.type != "doc":
+                continue
+            content = contents.get(meta.path, "")
+            has_path_ref = any(path in content for path in known_path_set if path != meta.path)
+            if not has_path_ref:
+                issues_by_path.setdefault(meta.path, []).append(
+                    "doc should reference at least one real path from current workspace"
+                )
+
+            # Check referenced absolute paths in docs are coherent with workspace tree.
+            doc_paths = self._extract_absolute_paths(content)
+            invalid_doc_paths = []
+            for p in doc_paths:
+                if self._is_known_or_allowed_doc_path(p, all_known, known_path_set):
+                    continue
+                invalid_doc_paths.append(p)
+            if invalid_doc_paths:
+                issues_by_path.setdefault(meta.path, []).append(
+                    "doc references paths not present in workspace: " + ", ".join(sorted(set(invalid_doc_paths))[:6])
+                )
+
+            # Check app port consistency for deployment-like statements.
+            expected_port = str(contract.key_facts.get("api_port", "")).strip()
+            if expected_port:
+                conflict_ports = self._detect_conflicting_api_ports(content, expected_port)
+                if conflict_ports:
+                    issues_by_path.setdefault(meta.path, []).append(
+                        f"doc mixes API ports {sorted(conflict_ports)} but contract api_port={expected_port}"
+                    )
+
+        return issues_by_path, summary
+
+    def _contract_alignment_issues(self, domain_context: str, contract: ScenarioContract) -> List[str]:
+        issues: List[str] = []
+        anchors = self._extract_anchor_terms(domain_context)
+        haystack = " ".join(
+            [
+                contract.domain or "",
+                contract.business_name or "",
+                " ".join(svc.name + " " + svc.purpose for svc in contract.services),
+            ]
+        ).lower()
+        hits = sum(1 for token in anchors if token.lower() in haystack)
+        if anchors and hits < min(2, len(anchors)):
+            issues.append(f"contract drifts from domain context; include anchor terms from: {anchors}")
+        return issues
+
+    def _extract_anchor_terms(self, domain_context: str) -> List[str]:
+        terms: List[str] = []
+        english = re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", domain_context)
+        chinese = re.findall(r"[\u4e00-\u9fff]{2,6}", domain_context)
+        for token in english + chinese:
+            t = token.strip()
+            if not t:
+                continue
+            terms.append(t)
+        # Keep small stable set to avoid over-constraining.
+        uniq: List[str] = []
+        for t in terms:
+            if t not in uniq:
+                uniq.append(t)
+        return uniq[:8]
+
+    def _extract_absolute_paths(self, text: str) -> List[str]:
+        return re.findall(r"(?<![\\w.])(/(?:[A-Za-z0-9._-]+/?)+)", text or "")
+
+    def _normalize_path_for_compare(self, path: str) -> str:
+        p = (path or "").strip()
+        if not p:
+            return p
+        if len(p) > 1 and p.endswith("/"):
+            p = p[:-1]
+        return p
+
+    def _is_known_or_allowed_doc_path(self, path: str, known_all: Set[str], known_files: Set[str]) -> bool:
+        p = self._normalize_path_for_compare(path)
+        if not p:
+            return True
+        if p in known_all:
+            return True
+        # Allow .env when corresponding .env.example exists.
+        if p.endswith(".env") and (p + ".example") in known_files:
+            return True
+        # Allow common system paths not expected in workspace tree.
+        allow_prefixes = [
+            "/etc/systemd/system",
+            "/usr/bin",
+            "/usr/sbin",
+            "/bin",
+            "/usr/local/bin",
+        ]
+        if any(p.startswith(prefix) for prefix in allow_prefixes):
+            return True
+        return False
+
+    def _detect_conflicting_api_ports(self, text: str, expected_port: str) -> Set[str]:
+        patterns = [
+            r"proxy_pass\s+https?://[^\s:]+:(\d{2,5})",
+            r"gunicorn[^\n]*?(?:--bind|-b)\s+[^\s:]+:(\d{2,5})",
+            r"listen\s+(\d{2,5})",
+            r"http://[^\s:]+:(\d{2,5})",
+        ]
+        found: Set[str] = set()
+        for pat in patterns:
+            for m in re.findall(pat, text or "", flags=re.IGNORECASE):
+                found.add(str(m))
+        benign = {"80", "443", "22", "5432", "6379"}
+        conflicts = {port for port in found if port not in benign and port != expected_port}
+        return conflicts
 
     def _build_context_snippet(self, generated_index: Dict[str, str]) -> str:
         if not generated_index:
@@ -422,16 +766,27 @@ ScenarioContract:
 
     def _strip_markdown_fences(self, text: str) -> str:
         cleaned = (text or "").strip()
-        if not cleaned.startswith("```"):
+        if not cleaned:
             return cleaned
-        lines = cleaned.splitlines()
-        if len(lines) >= 2 and lines[-1].strip().startswith("```"):
-            body = "\n".join(lines[1:-1])
-            return body.strip()
+
+        outer_fence = re.match(r"^```(?:[a-zA-Z0-9_\-\+]+)?\n([\s\S]*?)\n```$", cleaned)
+        if outer_fence:
+            return outer_fence.group(1).strip()
+
+        wrapped = re.search(
+            r"```(?:[a-zA-Z0-9_\-\+]+)?\n(?P<body>[\s\S]*?)\n```",
+            cleaned,
+        )
+        if not wrapped:
+            return cleaned
+        prefix = cleaned[: wrapped.start()].strip()
+        suffix = cleaned[wrapped.end() :].strip()
+        if self._is_wrapper_text(prefix) and self._is_wrapper_text(suffix):
+            return wrapped.group("body").strip()
         return cleaned
 
     def _extract_json_object(self, text: str) -> str:
-        cleaned = (text or "").strip()
+        cleaned = self._strip_markdown_fences(text)
         if not cleaned:
             raise ValueError("empty JSON response")
         try:
@@ -439,6 +794,14 @@ ScenarioContract:
             return cleaned
         except Exception:
             pass
+        match = re.search(r"\{[\s\S]*\}", cleaned)
+        if match:
+            candidate = match.group(0)
+            try:
+                json.loads(candidate)
+                return candidate
+            except Exception:
+                pass
         start = cleaned.find("{")
         end = cleaned.rfind("}")
         if start >= 0 and end > start:
@@ -446,6 +809,26 @@ ScenarioContract:
             json.loads(candidate)
             return candidate
         raise ValueError("failed to extract valid JSON object from model output")
+
+    def _is_wrapper_text(self, text: str) -> bool:
+        if not text:
+            return True
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        if len(lines) > 3:
+            return False
+        joined = " ".join(lines).lower()
+        hints = [
+            "here is",
+            "here's",
+            "output",
+            "file content",
+            "以下",
+            "如下",
+            "这是",
+            "内容",
+            "结果",
+        ]
+        return any(h in joined for h in hints)
 
 
 def _load_assets_from_json(path: Optional[str]) -> Optional[Dict[str, str]]:
