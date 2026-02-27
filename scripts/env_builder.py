@@ -114,6 +114,7 @@ class QualityJudgeResult(BaseModel):
 
 
 class EnvironmentBuilder:
+    FILESYSTEM_PREFIXES: Tuple[str, ...] = ("/etc", "/var", "/srv", "/usr", "/opt", "/home", "/tmp")
     def __init__(
         self,
         api_key: str,
@@ -290,6 +291,7 @@ ScenarioContract:
 
         contract = self.generate_contract(domain_context)
         tree = self.generate_skeleton(contract)
+        tree = self._normalize_file_types(tree)
 
         generated_index: Dict[str, str] = {}
         generated_contents: Dict[str, str] = {}
@@ -654,9 +656,19 @@ Return QualityJudgeResult:
                     continue
                 invalid_doc_paths.append(p)
             if invalid_doc_paths:
+                suggestions = []
+                for p in sorted(set(invalid_doc_paths))[:6]:
+                    suggestion = self._suggest_existing_path(p, known_path_set)
+                    if suggestion:
+                        suggestions.append(f"{p} -> {suggestion}")
                 issues_by_path.setdefault(meta.path, []).append(
-                    "doc references paths not present in workspace: " + ", ".join(sorted(set(invalid_doc_paths))[:6])
+                    "doc references paths not present in workspace: "
+                    + ", ".join(sorted(set(invalid_doc_paths))[:6])
                 )
+                if suggestions:
+                    issues_by_path.setdefault(meta.path, []).append(
+                        "use existing paths instead: " + "; ".join(suggestions)
+                    )
 
             # Check app port consistency for deployment-like statements.
             expected_port = str(contract.key_facts.get("api_port", "")).strip()
@@ -667,7 +679,61 @@ Return QualityJudgeResult:
                         f"doc mixes API ports {sorted(conflict_ports)} but contract api_port={expected_port}"
                     )
 
+            # Validate command-referenced file paths (hard consistency).
+            cmd_paths = self._extract_command_file_paths(content)
+            invalid_cmd_paths = []
+            for p in cmd_paths:
+                if self._is_known_or_allowed_doc_path(p, all_known, known_path_set):
+                    continue
+                invalid_cmd_paths.append(p)
+            if invalid_cmd_paths:
+                advice = []
+                for p in sorted(set(invalid_cmd_paths)):
+                    alt = self._suggest_existing_path(p, known_path_set)
+                    if alt:
+                        advice.append(f"{p} -> {alt}")
+                msg = "commands reference non-existent paths: " + ", ".join(sorted(set(invalid_cmd_paths))[:6])
+                if advice:
+                    msg += ". suggested replacements: " + "; ".join(advice[:6])
+                issues_by_path.setdefault(meta.path, []).append(msg)
+
         return issues_by_path, summary
+
+    def _normalize_file_types(self, tree: FileTree) -> FileTree:
+        normalized: List[FileMeta] = []
+        for item in tree.files:
+            inferred = self._infer_file_type_from_path(item.path, item.type)
+            if inferred != item.type:
+                normalized.append(FileMeta(path=item.path, type=inferred, description=item.description))
+            else:
+                normalized.append(item)
+        # Keep normalization best-effort: if re-validation breaks required type distribution,
+        # fall back to original tree rather than failing the whole generation.
+        try:
+            return FileTree(files=normalized)
+        except Exception:
+            return tree
+
+    def _infer_file_type_from_path(self, path: str, original: FileType) -> FileType:
+        p = path.lower()
+        name = Path(path).name.lower()
+        if p.endswith(".py"):
+            return "code"
+        if p.endswith(".log"):
+            return "log"
+        if (
+            p.endswith(".env")
+            or p.endswith(".ini")
+            or p.endswith(".conf")
+            or p.endswith(".yaml")
+            or p.endswith(".yml")
+            or p.endswith(".json")
+            or name == "requirements.txt"
+        ):
+            return "config"
+        if p.endswith(".md") or p.endswith(".txt") or p.endswith(".html") or p.endswith(".htm"):
+            return "doc"
+        return original
 
     def _contract_alignment_issues(self, domain_context: str, contract: ScenarioContract) -> List[str]:
         issues: List[str] = []
@@ -701,7 +767,18 @@ Return QualityJudgeResult:
         return uniq[:8]
 
     def _extract_absolute_paths(self, text: str) -> List[str]:
-        return re.findall(r"(?<![\\w.])(/(?:[A-Za-z0-9._-]+/?)+)", text or "")
+        candidates = re.findall(r"(?<![\w.])(/(?:[A-Za-z0-9._{}-]+/?)+)", text or "")
+        filtered: List[str] = []
+        for p in candidates:
+            normalized = self._normalize_path_for_compare(p)
+            if not self._has_filesystem_prefix(normalized):
+                continue
+            if self._looks_like_route_or_endpoint(normalized):
+                continue
+            if not self._looks_like_filesystem_path(normalized):
+                continue
+            filtered.append(normalized)
+        return filtered
 
     def _normalize_path_for_compare(self, path: str) -> str:
         p = (path or "").strip()
@@ -714,6 +791,10 @@ Return QualityJudgeResult:
     def _is_known_or_allowed_doc_path(self, path: str, known_all: Set[str], known_files: Set[str]) -> bool:
         p = self._normalize_path_for_compare(path)
         if not p:
+            return True
+        if not self._has_filesystem_prefix(p):
+            return True
+        if self._looks_like_route_or_endpoint(p):
             return True
         if p in known_all:
             return True
@@ -731,6 +812,81 @@ Return QualityJudgeResult:
         if any(p.startswith(prefix) for prefix in allow_prefixes):
             return True
         return False
+
+    def _has_filesystem_prefix(self, path: str) -> bool:
+        return any(path == prefix or path.startswith(prefix + "/") for prefix in self.FILESYSTEM_PREFIXES)
+
+    def _looks_like_route_or_endpoint(self, path: str) -> bool:
+        p = self._normalize_path_for_compare(path)
+        if not p:
+            return True
+        route_prefixes = [
+            "/api",
+            "/v1",
+            "/v2",
+            "/health",
+            "/metrics",
+            "/auth",
+            "/login",
+            "/logout",
+        ]
+        if any(p == rp or p.startswith(rp + "/") for rp in route_prefixes):
+            return True
+        if "{" in p or "}" in p:
+            return True
+        if re.fullmatch(r"/\d{1,3}(?:\.\d{1,3}){3}", p):
+            return True
+        return False
+
+    def _extract_command_file_paths(self, text: str) -> List[str]:
+        patterns = [
+            r"pip\s+install\s+-r\s+(/[\w./-]+)",
+            r"source\s+(/[\w./-]+)",
+            r"cp\s+(/[\w./-]+)\s+",
+            r"cat\s+(/[\w./-]+)",
+            r"tail\s+-f\s+(/[\w./-]+)",
+        ]
+        found: List[str] = []
+        for pat in patterns:
+            found.extend(re.findall(pat, text or "", flags=re.IGNORECASE))
+        cleaned: List[str] = []
+        for p in found:
+            normalized = self._normalize_path_for_compare(p)
+            if not normalized:
+                continue
+            if not self._has_filesystem_prefix(normalized):
+                continue
+            cleaned.append(normalized)
+        return cleaned
+
+    def _looks_like_filesystem_path(self, path: str) -> bool:
+        p = self._normalize_path_for_compare(path)
+        if not p or p == "/":
+            return False
+        name = Path(p).name
+        if "." in name:
+            return True
+        # Multi-level absolute paths are likely real fs locations; single segment often is route-like.
+        depth = len([part for part in p.split("/") if part])
+        return depth >= 3
+
+    def _suggest_existing_path(self, missing_path: str, known_files: Set[str]) -> Optional[str]:
+        basename = Path(missing_path).name.lower()
+        if not basename:
+            return None
+        candidates = [p for p in known_files if Path(p).name.lower() == basename]
+        if candidates:
+            return sorted(candidates)[0]
+        # fallback: same suffix with close semantics for requirements/env
+        if basename == "requirements.txt":
+            for p in sorted(known_files):
+                if p.endswith("/requirements.txt"):
+                    return p
+        if basename.endswith(".env"):
+            for p in sorted(known_files):
+                if p.endswith(".env") or p.endswith(".env.example"):
+                    return p
+        return None
 
     def _detect_conflicting_api_ports(self, text: str, expected_port: str) -> Set[str]:
         patterns = [
