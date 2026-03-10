@@ -171,7 +171,11 @@ class LLMAgent:
     def _convert_history(self, history: Sequence[dict]) -> List[object]:
         converted: List[object] = []
         for item in history:
-            role = (item.get("role") or "user").lower()
+            role_raw = item.get("role")
+            # Backward compatibility: older memory items used {"agent": ..., "content": ...}
+            if role_raw is None and item.get("agent"):
+                role_raw = "assistant"
+            role = str(role_raw or "user").lower()
             content = item.get("content") or ""
             if role in {"assistant", "ai", "model"}:
                 converted.append(AIMessage(content=content))

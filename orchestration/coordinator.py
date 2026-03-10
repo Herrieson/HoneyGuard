@@ -171,7 +171,7 @@ class AgentCoordinator:
         memory_mode = wrapper.memory_mode if wrapper else "window"
         if memory_mode == "none":
             return
-        history.append({"agent": agent_name, "content": content})
+        history.append({"role": "assistant", "name": agent_name, "agent": agent_name, "content": content})
         if len(history) > self.memory_limit:
             del history[0 : len(history) - self.memory_limit]
 

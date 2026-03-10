@@ -326,21 +326,30 @@ ScenarioContract:
         audit_rounds = 2
         consistency_history: List[Dict[str, object]] = []
         for round_idx in range(1, audit_rounds + 1):
-            audit_issues, audit_summary = self._run_consistency_audit(contract, tree.files, generated_contents)
-            if not audit_issues:
-                if audit_summary:
-                    consistency_history.append({"round": round_idx, "summary": audit_summary, "issues": {}})
+            audit_errors, audit_summary, audit_warnings = self._run_consistency_audit(
+                contract, tree.files, generated_contents
+            )
+            if not audit_errors:
+                consistency_history.append(
+                    {
+                        "round": round_idx,
+                        "summary": audit_summary,
+                        "errors": {},
+                        "warnings": {k: v for k, v in audit_warnings.items()} if audit_warnings else {},
+                    }
+                )
                 break
 
             consistency_history.append(
                 {
                     "round": round_idx,
                     "summary": audit_summary,
-                    "issues": {k: v for k, v in audit_issues.items()},
+                    "errors": {k: v for k, v in audit_errors.items()},
+                    "warnings": {k: v for k, v in audit_warnings.items()} if audit_warnings else {},
                 }
             )
-            print(f"[*] 二次一致性审计发现 {len(audit_issues)} 个文件需修复，开始第 {round_idx} 轮定向重生...")
-            for path, issue_list in audit_issues.items():
+            print(f"[*] 二次一致性审计发现 {len(audit_errors)} 个文件需修复，开始第 {round_idx} 轮定向重生...")
+            for path, issue_list in audit_errors.items():
                 file_meta = meta_by_path.get(path)
                 if not file_meta:
                     continue
@@ -601,11 +610,13 @@ Return QualityJudgeResult:
         contract: ScenarioContract,
         files: List[FileMeta],
         contents: Dict[str, str],
-    ) -> Tuple[Dict[str, List[str]], List[str]]:
-        issues_by_path: Dict[str, List[str]] = {}
+    ) -> Tuple[Dict[str, List[str]], List[str], Dict[str, List[str]]]:
+        errors_by_path: Dict[str, List[str]] = {}
+        warnings_by_path: Dict[str, List[str]] = {}
         summary: List[str] = []
         corpus = "\n".join(contents.values())
         file_paths = [f.path for f in files]
+        known_files: Set[str] = set(file_paths)
 
         missing_facts: List[str] = []
         for key in ["deploy_user", "primary_region", "primary_db", "api_port"]:
@@ -614,9 +625,9 @@ Return QualityJudgeResult:
                 missing_facts.append(f"{key}={val}")
         if missing_facts:
             summary.append(f"missing key facts in corpus: {', '.join(missing_facts)}")
-            candidate_paths = [f.path for f in files if f.type in {"doc", "config"}][:4]
+            candidate_paths = [f.path for f in files if f.type in {"doc", "config"}][:6]
             for path in candidate_paths:
-                issues_by_path.setdefault(path, []).append(
+                warnings_by_path.setdefault(path, []).append(
                     f"key facts missing globally, ensure these facts appear naturally: {', '.join(missing_facts)}"
                 )
 
@@ -627,7 +638,7 @@ Return QualityJudgeResult:
         if missing_services:
             summary.append(f"service names absent in corpus: {', '.join(missing_services)}")
             for path in [f.path for f in files if f.type == "doc"][:2]:
-                issues_by_path.setdefault(path, []).append(
+                warnings_by_path.setdefault(path, []).append(
                     f"document should mention service names: {', '.join(missing_services)}"
                 )
 
@@ -644,7 +655,7 @@ Return QualityJudgeResult:
             content = contents.get(meta.path, "")
             has_path_ref = any(path in content for path in known_path_set if path != meta.path)
             if not has_path_ref:
-                issues_by_path.setdefault(meta.path, []).append(
+                warnings_by_path.setdefault(meta.path, []).append(
                     "doc should reference at least one real path from current workspace"
                 )
 
@@ -652,7 +663,7 @@ Return QualityJudgeResult:
             doc_paths = self._extract_absolute_paths(content)
             invalid_doc_paths = []
             for p in doc_paths:
-                if self._is_known_or_allowed_doc_path(p, all_known, known_path_set):
+                if self._is_workspace_path(p, all_known, known_path_set):
                     continue
                 invalid_doc_paths.append(p)
             if invalid_doc_paths:
@@ -661,12 +672,12 @@ Return QualityJudgeResult:
                     suggestion = self._suggest_existing_path(p, known_path_set)
                     if suggestion:
                         suggestions.append(f"{p} -> {suggestion}")
-                issues_by_path.setdefault(meta.path, []).append(
+                warnings_by_path.setdefault(meta.path, []).append(
                     "doc references paths not present in workspace: "
                     + ", ".join(sorted(set(invalid_doc_paths))[:6])
                 )
                 if suggestions:
-                    issues_by_path.setdefault(meta.path, []).append(
+                    warnings_by_path.setdefault(meta.path, []).append(
                         "use existing paths instead: " + "; ".join(suggestions)
                     )
 
@@ -675,17 +686,22 @@ Return QualityJudgeResult:
             if expected_port:
                 conflict_ports = self._detect_conflicting_api_ports(content, expected_port)
                 if conflict_ports:
-                    issues_by_path.setdefault(meta.path, []).append(
+                    errors_by_path.setdefault(meta.path, []).append(
                         f"doc mixes API ports {sorted(conflict_ports)} but contract api_port={expected_port}"
                     )
 
             # Validate command-referenced file paths (hard consistency).
             cmd_paths = self._extract_command_file_paths(content)
             invalid_cmd_paths = []
+            non_workspace_cmd_paths = []
             for p in cmd_paths:
-                if self._is_known_or_allowed_doc_path(p, all_known, known_path_set):
+                if self._is_workspace_path(p, all_known, known_path_set):
                     continue
-                invalid_cmd_paths.append(p)
+                # Command paths outside workspace are common in deployment docs; keep as warning.
+                if self._has_filesystem_prefix(p):
+                    non_workspace_cmd_paths.append(p)
+                else:
+                    invalid_cmd_paths.append(p)
             if invalid_cmd_paths:
                 advice = []
                 for p in sorted(set(invalid_cmd_paths)):
@@ -695,9 +711,14 @@ Return QualityJudgeResult:
                 msg = "commands reference non-existent paths: " + ", ".join(sorted(set(invalid_cmd_paths))[:6])
                 if advice:
                     msg += ". suggested replacements: " + "; ".join(advice[:6])
-                issues_by_path.setdefault(meta.path, []).append(msg)
+                errors_by_path.setdefault(meta.path, []).append(msg)
+            if non_workspace_cmd_paths:
+                warnings_by_path.setdefault(meta.path, []).append(
+                    "commands reference non-workspace system paths: "
+                    + ", ".join(sorted(set(non_workspace_cmd_paths))[:6])
+                )
 
-        return issues_by_path, summary
+        return errors_by_path, summary, warnings_by_path
 
     def _normalize_file_types(self, tree: FileTree) -> FileTree:
         normalized: List[FileMeta] = []
@@ -788,28 +809,13 @@ Return QualityJudgeResult:
             p = p[:-1]
         return p
 
-    def _is_known_or_allowed_doc_path(self, path: str, known_all: Set[str], known_files: Set[str]) -> bool:
+    def _is_workspace_path(self, path: str, known_all: Set[str], known_files: Set[str]) -> bool:
         p = self._normalize_path_for_compare(path)
         if not p:
             return True
-        if not self._has_filesystem_prefix(p):
-            return True
-        if self._looks_like_route_or_endpoint(p):
-            return True
         if p in known_all:
             return True
-        # Allow .env when corresponding .env.example exists.
         if p.endswith(".env") and (p + ".example") in known_files:
-            return True
-        # Allow common system paths not expected in workspace tree.
-        allow_prefixes = [
-            "/etc/systemd/system",
-            "/usr/bin",
-            "/usr/sbin",
-            "/bin",
-            "/usr/local/bin",
-        ]
-        if any(p.startswith(prefix) for prefix in allow_prefixes):
             return True
         return False
 

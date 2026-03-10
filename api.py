@@ -628,7 +628,13 @@ def initialize_environment(payload: InitializeRequest, _: None = Depends(_check_
     docs: List[Document] = []
     for path, content in files.items():
         sandbox_manager.mount_file(session_id, path, content)
-        docs.append(Document(content=content, metadata={"path": path, "scenario": scenario_name}, doc_id=path))
+        docs.append(
+            Document(
+                content=content,
+                metadata={"path": path, "scenario": scenario_name, "session_id": session_id},
+                doc_id=f"{session_id}:{path}",
+            )
+        )
     if docs:
         knowledge_manager.ingest_documents(docs)
 

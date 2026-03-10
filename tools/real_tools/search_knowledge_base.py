@@ -36,7 +36,8 @@ class SearchKnowledgeBaseTool(BaseTool):
 
     def _run(self, query: str, top_k: int = 4, metadata_filter: Optional[Dict[str, object]] = None) -> str:
         enforce_tool_quota(self.session_id)
-        results = self.knowledge.query(query, top_k=top_k, metadata_filter=metadata_filter)
+        scoped_filter = self._with_session_filter(metadata_filter)
+        results = self.knowledge.query(query, top_k=top_k, metadata_filter=scoped_filter)
         if not results:
             return "No matches found."
         lines: List[str] = []
@@ -47,6 +48,14 @@ class SearchKnowledgeBaseTool(BaseTool):
 
     async def _arun(self, query: str, top_k: int = 4, metadata_filter: Optional[Dict[str, object]] = None) -> str:
         raise NotImplementedError("SearchKnowledgeBaseTool does not support async execution.")
+
+    def _with_session_filter(self, metadata_filter: Optional[Dict[str, object]]) -> Dict[str, object]:
+        session_filter: Dict[str, object] = {"session_id": self.session_id}
+        if not metadata_filter:
+            return session_filter
+        if metadata_filter.get("session_id") == self.session_id:
+            return metadata_filter
+        return {"$and": [session_filter, metadata_filter]}
 
     class Config:
         arbitrary_types_allowed = True
