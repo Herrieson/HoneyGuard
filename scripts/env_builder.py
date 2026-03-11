@@ -1,5 +1,21 @@
 from __future__ import annotations
 
+"""
+基准环境构建器（baseline workspace generator）。
+
+作用:
+- 基于 domain context 生成一套较真实的企业文件系统环境。
+- 产出文件内容前后会做质量门控和一致性审计，减少低质量样本。
+
+输入:
+- --domain-context 与 --output-dir 必填。
+- 可选 provider/model/API 环境变量与 --assets-json 额外注入资产。
+
+输出:
+- 在 output-dir 下生成目录树与文件。
+- 生成 _manifest.json，记录契约、文件元数据和审计信息。
+"""
+
 import argparse
 import json
 import os

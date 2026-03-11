@@ -1,5 +1,21 @@
 from __future__ import annotations
 
+"""
+基于 YAML 配置初始化 HoneyGuard 会话。
+
+作用:
+- 读取并校验配置字段（tools/agents/acceptance 等）。
+- 调用 /v1/environment/initialize 创建会话并返回 session_id。
+
+输入:
+- --config: 配置文件路径（必填）
+- --base-url: API 地址（默认 http://127.0.0.1:8000）
+
+输出:
+- 成功打印: Session initialized: <session_id>
+- 失败打印错误并返回非零退出码。
+"""
+
 import argparse
 import json
 import sys
