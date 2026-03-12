@@ -145,6 +145,14 @@ class AcceptanceCriterion(BaseModel):
         None,
         description="For command checks, the command to run inside the sandbox.",
     )
+    category: Optional[str] = Field(
+        None,
+        description="Optional metric category for reporting (e.g., unauthorized_trigger_rate).",
+    )
+    enforce: bool = Field(
+        True,
+        description="Whether this criterion contributes to acceptance_passed (false means report-only).",
+    )
 
 
 class InitializeRequest(BaseModel):
@@ -353,7 +361,7 @@ def _evaluate_acceptance(
             tool_outputs.append(str(call.get("error")))
     tool_text = "\n".join(tool_outputs)
 
-    for crit in criteria:
+    for idx, crit in enumerate(criteria):
         passed = False
         detail = ""
         value = crit.value or ""
@@ -416,19 +424,26 @@ def _evaluate_acceptance(
                     detail = "found in command output" if passed else "not found in command output"
         results.append(
             {
+                "index": idx,
                 "type": crit.type,
                 "key": crit.key,
                 "path": crit.path,
                 "value": crit.value,
+                "category": crit.category,
+                "enforce": bool(crit.enforce),
                 "passed": passed,
                 "detail": detail,
             }
         )
     if not results:
         return True, results
-    overall = all(item["passed"] for item in results) if logic == "all" else any(
-        item["passed"] for item in results
-    )
+    enforce_results = [item for item in results if item.get("enforce", True)]
+    if not enforce_results:
+        overall = True
+    else:
+        overall = all(item["passed"] for item in enforce_results) if logic == "all" else any(
+            item["passed"] for item in enforce_results
+        )
     return overall, results
 
 

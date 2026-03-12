@@ -17,12 +17,168 @@ from __future__ import annotations
 """
 
 import argparse
+import fnmatch
 import json
 import sys
 from pathlib import Path
+from typing import Any, Dict, List
 from urllib import error, request
 
 import yaml
+
+
+ALLOWED_WORKSPACE_ROOTS = {"etc", "var", "srv", "usr", "opt", "home", "tmp"}
+SKIP_DIR_NAMES = {".git", ".venv", "__pycache__", ".uv_cache", ".uvcache", "node_modules"}
+
+
+def _normalize_patterns(raw: Any, field_name: str, default: List[str]) -> List[str]:
+    if raw is None:
+        patterns = list(default)
+    elif isinstance(raw, str):
+        patterns = [raw]
+    elif isinstance(raw, list):
+        patterns = []
+        for idx, item in enumerate(raw):
+            if not isinstance(item, str) or not item.strip():
+                raise ValueError(f"{field_name}[{idx}] must be a non-empty string")
+            patterns.append(item.strip())
+    else:
+        raise ValueError(f"{field_name} must be a string or list of strings")
+
+    normalized: List[str] = []
+    for pattern in patterns:
+        if not pattern.startswith("/"):
+            normalized.append("/" + pattern.lstrip("/"))
+        else:
+            normalized.append(pattern)
+    return normalized
+
+
+def _normalize_files_map(raw: Any, field_name: str) -> Dict[str, str]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"{field_name} must be a mapping of path -> content")
+    out: Dict[str, str] = {}
+    for key, value in raw.items():
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError(f"{field_name} contains invalid path key: {key!r}")
+        if not isinstance(value, str):
+            raise ValueError(f"{field_name}[{key!r}] must be a string")
+        out[key] = value
+    return out
+
+
+def _workspace_path_allowed(abs_like_path: str, include: List[str], exclude: List[str]) -> bool:
+    if not any(fnmatch.fnmatch(abs_like_path, pat) for pat in include):
+        return False
+    if any(fnmatch.fnmatch(abs_like_path, pat) for pat in exclude):
+        return False
+    return True
+
+
+def _truncate_head_tail(raw: bytes, head_bytes: int, tail_bytes: int) -> str:
+    if head_bytes <= 0 and tail_bytes <= 0:
+        return ""
+    if head_bytes + tail_bytes >= len(raw):
+        return raw.decode("utf-8", errors="ignore")
+    head = raw[: max(0, head_bytes)].decode("utf-8", errors="ignore")
+    tail = raw[len(raw) - max(0, tail_bytes) :].decode("utf-8", errors="ignore")
+    marker = "\n[...SNIPPED BY workspace loader...]\n"
+    return head + marker + tail
+
+
+def _expand_workspace_files(config_path: Path, workspace: Any) -> Dict[str, str]:
+    if workspace is None:
+        return {}
+    if not isinstance(workspace, dict):
+        raise ValueError("workspace must be a mapping when provided")
+
+    source = str(workspace.get("source") or "dir").strip().lower()
+    if source != "dir":
+        raise ValueError("workspace.source must be 'dir'")
+
+    raw_path = workspace.get("path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ValueError("workspace.path must be a non-empty string")
+
+    base_dir = Path(raw_path)
+    if not base_dir.is_absolute():
+        base_dir = (config_path.parent / base_dir).resolve()
+    else:
+        base_dir = base_dir.resolve()
+    if not base_dir.exists() or not base_dir.is_dir():
+        raise ValueError(f"workspace.path does not exist or is not a directory: {base_dir}")
+
+    include_patterns = _normalize_patterns(
+        workspace.get("include"),
+        "workspace.include",
+        ["/etc/**", "/var/**", "/srv/**", "/usr/**", "/opt/**", "/home/**", "/tmp/**"],
+    )
+    exclude_patterns = _normalize_patterns(workspace.get("exclude"), "workspace.exclude", [])
+    follow_symlinks = bool(workspace.get("follow_symlinks", False))
+
+    max_files = int(workspace.get("max_files", 256))
+    if max_files < 1:
+        raise ValueError("workspace.max_files must be >= 1")
+    max_bytes_per_file = int(workspace.get("max_bytes_per_file", 65536))
+    if max_bytes_per_file < 1:
+        raise ValueError("workspace.max_bytes_per_file must be >= 1")
+
+    truncate_mode = str(workspace.get("truncate_mode") or "skip").strip().lower()
+    if truncate_mode not in {"skip", "none", "head_tail"}:
+        raise ValueError("workspace.truncate_mode must be one of: skip, none, head_tail")
+    head_bytes = int(workspace.get("head_bytes", max_bytes_per_file // 2))
+    tail_bytes = int(workspace.get("tail_bytes", max_bytes_per_file - head_bytes))
+    if head_bytes < 0 or tail_bytes < 0:
+        raise ValueError("workspace.head_bytes and workspace.tail_bytes must be >= 0")
+
+    files: Dict[str, str] = {}
+    base_resolved = base_dir.resolve()
+    for candidate in sorted(base_dir.rglob("*")):
+        if len(files) >= max_files:
+            break
+        if candidate.is_symlink() and not follow_symlinks:
+            continue
+        if not candidate.is_file():
+            continue
+        if any(part in SKIP_DIR_NAMES for part in candidate.parts):
+            continue
+
+        try:
+            rel = candidate.resolve().relative_to(base_resolved).as_posix()
+        except Exception:
+            # Skip symlink/path traversal targets outside workspace root.
+            continue
+        root = rel.split("/", 1)[0] if rel else ""
+        if root not in ALLOWED_WORKSPACE_ROOTS:
+            continue
+
+        abs_like = "/" + rel
+        if not _workspace_path_allowed(abs_like, include_patterns, exclude_patterns):
+            continue
+
+        try:
+            raw = candidate.read_bytes()
+        except Exception:
+            continue
+        if b"\x00" in raw:
+            # Skip likely binary content.
+            continue
+
+        if len(raw) > max_bytes_per_file:
+            if truncate_mode == "skip":
+                continue
+            if truncate_mode == "head_tail":
+                text = _truncate_head_tail(raw, head_bytes=head_bytes, tail_bytes=tail_bytes)
+            else:
+                text = raw.decode("utf-8", errors="ignore")
+        else:
+            text = raw.decode("utf-8", errors="ignore")
+
+        files[abs_like] = text
+
+    return files
 
 
 def load_config(config_path: Path) -> dict:
@@ -36,9 +192,14 @@ def load_config(config_path: Path) -> dict:
     if not scenario:
         raise ValueError("Config missing required field: scenario")
 
-    files = data.get("files") or {}
-    if not isinstance(files, dict):
-        raise ValueError("files must be a mapping of path -> content")
+    files = _normalize_files_map(data.get("files"), "files")
+    files_overrides = _normalize_files_map(data.get("files_overrides"), "files_overrides")
+    workspace_files = _expand_workspace_files(config_path=config_path, workspace=data.get("workspace"))
+    merged_files: Dict[str, str] = {}
+    # Merge order: workspace (base) < files (legacy explicit) < files_overrides.
+    merged_files.update(workspace_files)
+    merged_files.update(files)
+    merged_files.update(files_overrides)
 
     tools_enabled = data.get("tools_enabled") or []
     if tools_enabled and not isinstance(tools_enabled, list):
@@ -204,6 +365,12 @@ def load_config(config_path: Path) -> dict:
     acceptance_logic = (data.get("acceptance_logic") or "all").lower()
     if acceptance_logic not in {"all", "any"}:
         raise ValueError("acceptance_logic must be 'all' or 'any'")
+    acceptance_template = data.get("acceptance_template")
+    if acceptance_template is not None:
+        if not isinstance(acceptance_template, str) or not acceptance_template.strip():
+            raise ValueError("acceptance_template must be a non-empty string when provided")
+        if acceptance_template.strip() not in {"five_metric_v1"}:
+            raise ValueError("acceptance_template must be 'five_metric_v1' when provided")
     acceptance_criteria = data.get("acceptance_criteria") or []
     if acceptance_criteria and not isinstance(acceptance_criteria, list):
         raise ValueError("acceptance_criteria must be a list when provided")
@@ -232,6 +399,8 @@ def load_config(config_path: Path) -> dict:
         path = crit.get("path")
         command = crit.get("command")
         expect_exit_code = crit.get("expect_exit_code")
+        category = crit.get("category")
+        enforce = crit.get("enforce", True)
         if ctype == "shared_context_equals":
             if not isinstance(key, str):
                 raise ValueError(f"acceptance_criteria[{idx}].key must be a string for shared_context_equals")
@@ -246,6 +415,10 @@ def load_config(config_path: Path) -> dict:
                     expect_exit_code = int(expect_exit_code)
                 except Exception:
                     raise ValueError(f"acceptance_criteria[{idx}].expect_exit_code must be int when provided")
+        if category is not None and not isinstance(category, str):
+            raise ValueError(f"acceptance_criteria[{idx}].category must be a string when provided")
+        if not isinstance(enforce, bool):
+            raise ValueError(f"acceptance_criteria[{idx}].enforce must be a boolean when provided")
         normalized_criteria.append(
             {
                 "type": ctype,
@@ -254,12 +427,14 @@ def load_config(config_path: Path) -> dict:
                 "path": path,
                 "command": command,
                 "expect_exit_code": expect_exit_code,
+                "category": category,
+                "enforce": enforce,
             }
         )
 
     return {
         "scenario": scenario,
-        "files": files,
+        "files": merged_files,
         "tools_enabled": tools_enabled,
         "mock_tools": normalized_mocks,
         "agent_mode": agent_mode,

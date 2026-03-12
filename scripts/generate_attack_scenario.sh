@@ -19,6 +19,8 @@ Description:
   Build a full HoneyGuard attack scenario in 4 steps:
   1) Generate baseline workspace via env_builder.py
   2) Generate attack config YAML via build_attack_config.py
+     (default outputs workspace reference + files_overrides, not huge inline files)
+     (acceptance_template defaults to five_metric_v1: 5 categories)
   3) Lint attack config quality via attack_config_lint.py
   4) Optionally initialize session via init_from_config.py
 
@@ -35,8 +37,12 @@ Options:
   --attack-yaml PATH          Attack yaml output path
                               (default: configs/attack/<scenario-name>.yaml)
   --baseline-max-files N      Max baseline files carried into attack config (default: 24)
+                              (mainly used with --inline-files legacy mode)
+  --acceptance-logic MODE     auto | any | all (default: auto)
+                              auto: insider/prompt=any, backdoor=all
   --max-assets N              Max target assets in attack plan (default: 4)
   --temperature FLOAT         LLM sampling temperature for both generators (default: 0.2)
+  --inline-files              Legacy mode: inline baseline files into YAML
   --no-llm-plan               Disable --use-llm for build_attack_config.py (heuristic only)
   --skip-lint                 Skip attack config lint step
   --skip-init                 Skip init_from_config.py step
@@ -68,10 +74,12 @@ BASELINE_DIR="configs/scenario/baseline_auto_01"
 ATTACK_YAML=""
 BASELINE_MAX_FILES=24
 MAX_ASSETS=4
+ACCEPTANCE_LOGIC="auto"
 TEMPERATURE="0.2"
 USE_LLM_PLAN=1
 SKIP_INIT=0
 SKIP_LINT=0
+INLINE_FILES=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -115,9 +123,17 @@ while [[ $# -gt 0 ]]; do
       MAX_ASSETS="${2:-}"
       shift 2
       ;;
+    --acceptance-logic)
+      ACCEPTANCE_LOGIC="${2:-}"
+      shift 2
+      ;;
     --temperature)
       TEMPERATURE="${2:-}"
       shift 2
+      ;;
+    --inline-files)
+      INLINE_FILES=1
+      shift
       ;;
     --no-llm-plan)
       USE_LLM_PLAN=0
@@ -162,6 +178,10 @@ if [[ "${PROVIDER}" != "openai" && "${PROVIDER}" != "azure" ]]; then
   echo "Error: --provider must be openai|azure." >&2
   exit 1
 fi
+if [[ "${ACCEPTANCE_LOGIC}" != "auto" && "${ACCEPTANCE_LOGIC}" != "any" && "${ACCEPTANCE_LOGIC}" != "all" ]]; then
+  echo "Error: --acceptance-logic must be auto|any|all." >&2
+  exit 1
+fi
 
 echo "[1/4] Building baseline workspace: ${BASELINE_DIR}"
 uv run python scripts/env_builder.py \
@@ -180,6 +200,7 @@ ATTACK_CMD=(
   --baseline-manifest "${BASELINE_DIR}/_manifest.json"
   --baseline-dir "${BASELINE_DIR}"
   --baseline-max-files "${BASELINE_MAX_FILES}"
+  --acceptance-logic "${ACCEPTANCE_LOGIC}"
   --max-assets "${MAX_ASSETS}"
   --provider "${PROVIDER}"
   --model "${MODEL}"
@@ -189,6 +210,9 @@ ATTACK_CMD=(
 
 if [[ "${USE_LLM_PLAN}" -eq 1 ]]; then
   ATTACK_CMD+=(--use-llm)
+fi
+if [[ "${INLINE_FILES}" -eq 1 ]]; then
+  ATTACK_CMD+=(--inline-files)
 fi
 
 "${ATTACK_CMD[@]}"
