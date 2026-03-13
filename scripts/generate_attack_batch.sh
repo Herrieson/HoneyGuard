@@ -20,7 +20,8 @@ Options:
   --domains PRESET            domain preset: matrix_v1 | core | comprehensive (default: matrix_v1)
   --domain-file PATH          Domain file path; each line: domain_id|domain_context
                               (default: configs/matrix/domain_matrix_v1.txt)
-  --styles CSV                attack styles CSV (default: insider_exfiltration,malicious_coder_backdoor,indirect_prompt_injection)
+  --styles CSV                attack styles CSV
+                              (default: c_secret_harvest,c_bulk_exfiltration,i_config_tamper,i_code_backdoor,a_resource_exhaustion,a_workflow_disruption)
   --samples-per-combo N       Number of samples per (domain, style) combo (default: 2)
   --max-domains N             Limit domain count for quick smoke run (default: 0 = no limit)
   --matrix-version N          Matrix version number for experiment id (default: 1)
@@ -39,10 +40,11 @@ Options:
   -h, --help                  show help
 
 Examples:
-  # 全量覆盖（建议夜间跑）
+  # CIA v2 全量覆盖（建议夜间跑）
   scripts/generate_attack_batch.sh \
     --batch-name biz_full_01 \
     --domains matrix_v1 \
+    --styles c_secret_harvest,c_bulk_exfiltration,i_config_tamper,i_code_backdoor,a_resource_exhaustion,a_workflow_disruption \
     --samples-per-combo 3 \
     --provider azure \
     --model gpt-4o
@@ -50,7 +52,7 @@ Examples:
   # 快速抽样（白天调试）
   scripts/generate_attack_batch.sh \
     --domains core \
-    --styles insider_exfiltration \
+    --styles c_secret_harvest \
     --samples-per-combo 1 \
     --max-domains 2
 EOF
@@ -110,7 +112,7 @@ sanitize_id() {
 BATCH_NAME="$(default_batch_name)"
 DOMAINS_PRESET="matrix_v1"
 DOMAIN_FILE="configs/matrix/domain_matrix_v1.txt"
-STYLES_CSV="insider_exfiltration,malicious_coder_backdoor,indirect_prompt_injection"
+STYLES_CSV="c_secret_harvest,c_bulk_exfiltration,i_config_tamper,i_code_backdoor,a_resource_exhaustion,a_workflow_disruption"
 SAMPLES_PER_COMBO=2
 MAX_DOMAINS=0
 MATRIX_VERSION=1
@@ -275,7 +277,7 @@ if [[ ${#STYLES[@]} -eq 0 ]]; then
 fi
 for style in "${STYLES[@]}"; do
   case "${style}" in
-    insider_exfiltration|malicious_coder_backdoor|indirect_prompt_injection) ;;
+    insider_exfiltration|malicious_coder_backdoor|indirect_prompt_injection|c_secret_harvest|c_bulk_exfiltration|i_config_tamper|i_code_backdoor|a_resource_exhaustion|a_workflow_disruption) ;;
     *)
       echo "Error: invalid style in --styles: ${style}" >&2
       exit 1
@@ -311,6 +313,12 @@ for line in "${DOMAIN_LINES[@]}"; do
     short_style="${short_style/insider_exfiltration/insider}"
     short_style="${short_style/malicious_coder_backdoor/backdoor}"
     short_style="${short_style/indirect_prompt_injection/injection}"
+    short_style="${short_style/c_secret_harvest/c_harvest}"
+    short_style="${short_style/c_bulk_exfiltration/c_exfil}"
+    short_style="${short_style/i_config_tamper/i_tamper}"
+    short_style="${short_style/i_code_backdoor/i_backdoor}"
+    short_style="${short_style/a_resource_exhaustion/a_exhaust}"
+    short_style="${short_style/a_workflow_disruption/a_disrupt}"
 
     for ((i=1; i<=SAMPLES_PER_COMBO; i++)); do
       total=$((total + 1))

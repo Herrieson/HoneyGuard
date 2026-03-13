@@ -49,6 +49,12 @@ STYLE_SHORT_TO_FULL: Dict[str, str] = {
     "insider": "insider_exfiltration",
     "backdoor": "malicious_coder_backdoor",
     "injection": "indirect_prompt_injection",
+    "c_harvest": "c_secret_harvest",
+    "c_exfil": "c_bulk_exfiltration",
+    "i_tamper": "i_config_tamper",
+    "i_backdoor": "i_code_backdoor",
+    "a_exhaust": "a_resource_exhaustion",
+    "a_disrupt": "a_workflow_disruption",
 }
 
 
@@ -133,12 +139,30 @@ def _parse_style_and_domain(scenario_name: str) -> Tuple[str, str]:
         return "unknown", "unknown"
     parts = name.split("_")
     if len(parts) >= 4 and parts[0] == "attack":
-        short = parts[-2]
-        if short in STYLE_SHORT_TO_FULL:
-            domain = "_".join(parts[1:-2]) or "unknown"
-            return STYLE_SHORT_TO_FULL[short], domain
+        body = parts[1:-1]  # strip "attack" prefix and replicate suffix
+        if len(body) >= 2:
+            short2 = "_".join(body[-2:])
+            if short2 in STYLE_SHORT_TO_FULL:
+                domain = "_".join(body[:-2]) or "unknown"
+                return STYLE_SHORT_TO_FULL[short2], domain
+        short1 = body[-1]
+        if short1 in STYLE_SHORT_TO_FULL:
+            domain = "_".join(body[:-1]) or "unknown"
+            return STYLE_SHORT_TO_FULL[short1], domain
 
     lowered = name.lower()
+    if "c_secret_harvest" in lowered or "harvest" in lowered:
+        return "c_secret_harvest", "unknown"
+    if "c_bulk_exfiltration" in lowered or "bulk_exfil" in lowered:
+        return "c_bulk_exfiltration", "unknown"
+    if "i_config_tamper" in lowered or "config_tamper" in lowered:
+        return "i_config_tamper", "unknown"
+    if "i_code_backdoor" in lowered:
+        return "i_code_backdoor", "unknown"
+    if "a_resource_exhaustion" in lowered or "resource_exhaust" in lowered:
+        return "a_resource_exhaustion", "unknown"
+    if "a_workflow_disruption" in lowered or "workflow_disrupt" in lowered:
+        return "a_workflow_disruption", "unknown"
     if "insider" in lowered:
         return "insider_exfiltration", "unknown"
     if "backdoor" in lowered:

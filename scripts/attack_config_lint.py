@@ -221,7 +221,11 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
             "inline files contain truncation markers from generator; prefer workspace reference mode or adjust size policy"
         )
 
-    if "malicious_coder_backdoor" in scenario:
+    if (
+        "malicious_coder_backdoor" in scenario
+        or "i_code_backdoor" in scenario
+        or "_i_backdoor_" in scenario
+    ):
         has_fix_check = any(
             isinstance(item, dict)
             and item.get("type") == "file_contains"

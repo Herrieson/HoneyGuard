@@ -25,9 +25,11 @@ Description:
   4) Optionally initialize session via init_from_config.py
 
 Options:
-  --scenario-name NAME        Scenario name (default: attack_auto_insider_01)
-  --attack-style STYLE        insider_exfiltration | malicious_coder_backdoor | indirect_prompt_injection
-                              (default: insider_exfiltration)
+  --scenario-name NAME        Scenario name (default: attack_auto_c_harvest_01)
+  --attack-style STYLE        legacy: insider_exfiltration | malicious_coder_backdoor | indirect_prompt_injection
+                              cia_v2: c_secret_harvest | c_bulk_exfiltration | i_config_tamper |
+                                      i_code_backdoor | a_resource_exhaustion | a_workflow_disruption
+                              (default: c_secret_harvest)
   --domain-context TEXT       Domain context for environment generation (required)
   --provider PROVIDER         openai | azure (default: azure)
   --model MODEL               Model/deployment name (default: gpt-4o)
@@ -39,7 +41,7 @@ Options:
   --baseline-max-files N      Max baseline files carried into attack config (default: 24)
                               (mainly used with --inline-files legacy mode)
   --acceptance-logic MODE     auto | any | all (default: auto)
-                              auto: insider/prompt=any, backdoor=all
+                              auto: confidentiality/availability=any, integrity=all
   --max-assets N              Max target assets in attack plan (default: 4)
   --temperature FLOAT         LLM sampling temperature for both generators (default: 0.2)
   --inline-files              Legacy mode: inline baseline files into YAML
@@ -50,13 +52,13 @@ Options:
 
 Examples:
   scripts/generate_attack_scenario.sh \
-    --scenario-name attack_auto_insider_01 \
-    --attack-style insider_exfiltration \
+    --scenario-name attack_auto_c_harvest_01 \
+    --attack-style c_secret_harvest \
     --domain-context "A fintech ops environment with nginx, python backend, postgres, redis."
 
   scripts/generate_attack_scenario.sh \
-    --scenario-name attack_auto_backdoor_01 \
-    --attack-style malicious_coder_backdoor \
+    --scenario-name attack_auto_i_backdoor_01 \
+    --attack-style i_code_backdoor \
     --provider openai \
     --model gpt-4o \
     --domain-context "A SaaS coding assistant environment." \
@@ -64,8 +66,8 @@ Examples:
 EOF
 }
 
-SCENARIO_NAME="attack_auto_insider_01"
-ATTACK_STYLE="insider_exfiltration"
+SCENARIO_NAME="attack_auto_c_harvest_01"
+ATTACK_STYLE="c_secret_harvest"
 DOMAIN_CONTEXT=""
 PROVIDER="azure"
 MODEL="gpt-4o"
@@ -169,10 +171,14 @@ if [[ -z "${ATTACK_YAML}" ]]; then
   ATTACK_YAML="configs/attack/${SCENARIO_NAME}.yaml"
 fi
 
-if [[ "${ATTACK_STYLE}" != "insider_exfiltration" && "${ATTACK_STYLE}" != "malicious_coder_backdoor" && "${ATTACK_STYLE}" != "indirect_prompt_injection" ]]; then
-  echo "Error: --attack-style must be one of insider_exfiltration|malicious_coder_backdoor|indirect_prompt_injection." >&2
-  exit 1
-fi
+case "${ATTACK_STYLE}" in
+  insider_exfiltration|malicious_coder_backdoor|indirect_prompt_injection|c_secret_harvest|c_bulk_exfiltration|i_config_tamper|i_code_backdoor|a_resource_exhaustion|a_workflow_disruption) ;;
+  *)
+    echo "Error: --attack-style is invalid." >&2
+    echo "Allowed: insider_exfiltration|malicious_coder_backdoor|indirect_prompt_injection|c_secret_harvest|c_bulk_exfiltration|i_config_tamper|i_code_backdoor|a_resource_exhaustion|a_workflow_disruption" >&2
+    exit 1
+    ;;
+esac
 
 if [[ "${PROVIDER}" != "openai" && "${PROVIDER}" != "azure" ]]; then
   echo "Error: --provider must be openai|azure." >&2
