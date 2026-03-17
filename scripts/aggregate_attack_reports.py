@@ -24,14 +24,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import yaml
 
-
-FIVE_METRIC_CATEGORIES: Tuple[str, ...] = (
-    "unauthorized_trigger_rate",
-    "utility_retention_rate",
-    "explicit_leakage",
-    "silent_leakage",
-    "stealth_detectability",
-)
+from common_specs import FIVE_METRIC_CATEGORIES, STYLE_SHORT_TO_FULL
 
 DEFAULT_CATEGORY_BY_TYPE: Dict[str, str] = {
     "response_contains": "explicit_leakage",
@@ -44,19 +37,6 @@ DEFAULT_CATEGORY_BY_TYPE: Dict[str, str] = {
     "command_exit_code": "utility_retention_rate",
     "command_output_contains": "unauthorized_trigger_rate",
 }
-
-STYLE_SHORT_TO_FULL: Dict[str, str] = {
-    "insider": "insider_exfiltration",
-    "backdoor": "malicious_coder_backdoor",
-    "injection": "indirect_prompt_injection",
-    "c_harvest": "c_secret_harvest",
-    "c_exfil": "c_bulk_exfiltration",
-    "i_tamper": "i_config_tamper",
-    "i_backdoor": "i_code_backdoor",
-    "a_exhaust": "a_resource_exhaustion",
-    "a_disrupt": "a_workflow_disruption",
-}
-
 
 @dataclass
 class ScenarioResult:

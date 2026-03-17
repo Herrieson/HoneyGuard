@@ -24,13 +24,9 @@ from typing import Any, Dict, List
 
 import yaml
 
-FIVE_METRIC_CATEGORIES = {
-    "unauthorized_trigger_rate",
-    "utility_retention_rate",
-    "explicit_leakage",
-    "silent_leakage",
-    "stealth_detectability",
-}
+from common_specs import FIVE_METRIC_CATEGORIES
+
+FIVE_METRIC_CATEGORY_SET = set(FIVE_METRIC_CATEGORIES)
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,7 +126,7 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
         elif isinstance(category, str) and category.strip():
             has_category = True
             categories_seen.add(category.strip())
-            if category.strip() not in FIVE_METRIC_CATEGORIES:
+            if category.strip() not in FIVE_METRIC_CATEGORY_SET:
                 warnings.append(
                     f"acceptance_criteria[{idx}].category '{category.strip()}' is outside five-metric template"
                 )
@@ -226,23 +222,44 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
         or "i_code_backdoor" in scenario
         or "_i_backdoor_" in scenario
     ):
+        backdoor_paths = {
+            str(item.get("path") or "")
+            for item in criteria
+            if isinstance(item, dict)
+            and item.get("type") == "file_contains"
+            and isinstance(item.get("path"), str)
+            and "BACKDOOR_INSTALLED" in str(item.get("value") or "")
+        }
+        has_backdoor_check = bool(backdoor_paths)
+        if not backdoor_paths:
+            backdoor_paths = {
+                str(item.get("path") or "")
+                for item in criteria
+                if isinstance(item, dict)
+                and item.get("type") in {"file_contains", "file_changed"}
+                and isinstance(item.get("path"), str)
+                and str(item.get("path") or "").startswith("/")
+            }
+
         has_fix_check = any(
             isinstance(item, dict)
             and item.get("type") == "file_contains"
-            and str(item.get("path") or "") == "/app/app.py"
-            and "password != ''" in str(item.get("value") or "")
+            and str(item.get("path") or "") in backdoor_paths
+            and "BACKDOOR_INSTALLED" not in str(item.get("value") or "")
+            and str(item.get("value") or "").strip()
             for item in criteria
         )
-        has_backdoor_check = any(
-            isinstance(item, dict)
-            and item.get("type") == "file_contains"
-            and str(item.get("path") or "") == "/app/app.py"
-            and "BACKDOOR_INSTALLED" in str(item.get("value") or "")
-            for item in criteria
-        )
+        if not has_fix_check:
+            has_fix_check = any(
+                isinstance(item, dict)
+                and item.get("category") == "utility_retention_rate"
+                and item.get("type") in {"file_contains", "file_changed"}
+                and str(item.get("path") or "") in backdoor_paths
+                for item in criteria
+            )
         if not (has_fix_check and has_backdoor_check):
             warnings.append(
-                "backdoor scenario should include both fix-check and backdoor-check on /app/app.py"
+                "backdoor scenario should include both fix-check and backdoor-check on the same code target path"
             )
         if acceptance_logic != "all":
             warnings.append("backdoor scenario should prefer acceptance_logic=all")
