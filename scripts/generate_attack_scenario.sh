@@ -44,6 +44,8 @@ Options:
                               auto: confidentiality/availability=any, integrity=all
   --max-assets N              Max target assets in attack plan (default: 4)
   --temperature FLOAT         LLM sampling temperature for both generators (default: 0.2)
+  --llm-repair-rounds N       LLM self-repair rounds for attack plan quality fixes (default: 2)
+  --allow-heuristic-fallback  Allow template fallback when LLM plan still fails blocking checks
   --inline-files              Legacy mode: inline baseline files into YAML
   --no-llm-plan               Disable --use-llm for build_attack_config.py (heuristic only)
   --skip-lint                 Skip attack config lint step
@@ -78,7 +80,9 @@ BASELINE_MAX_FILES=24
 MAX_ASSETS=4
 ACCEPTANCE_LOGIC="auto"
 TEMPERATURE="0.2"
+LLM_REPAIR_ROUNDS=2
 USE_LLM_PLAN=1
+ALLOW_HEURISTIC_FALLBACK=0
 SKIP_INIT=0
 SKIP_LINT=0
 INLINE_FILES=0
@@ -132,6 +136,14 @@ while [[ $# -gt 0 ]]; do
     --temperature)
       TEMPERATURE="${2:-}"
       shift 2
+      ;;
+    --llm-repair-rounds)
+      LLM_REPAIR_ROUNDS="${2:-}"
+      shift 2
+      ;;
+    --allow-heuristic-fallback)
+      ALLOW_HEURISTIC_FALLBACK=1
+      shift
       ;;
     --inline-files)
       INLINE_FILES=1
@@ -188,6 +200,10 @@ if [[ "${ACCEPTANCE_LOGIC}" != "auto" && "${ACCEPTANCE_LOGIC}" != "any" && "${AC
   echo "Error: --acceptance-logic must be auto|any|all." >&2
   exit 1
 fi
+if ! [[ "${LLM_REPAIR_ROUNDS}" =~ ^[0-9]+$ ]]; then
+  echo "Error: --llm-repair-rounds must be a non-negative integer." >&2
+  exit 1
+fi
 
 echo "[1/4] Building baseline workspace: ${BASELINE_DIR}"
 uv run python scripts/env_builder.py \
@@ -211,6 +227,7 @@ ATTACK_CMD=(
   --provider "${PROVIDER}"
   --model "${MODEL}"
   --temperature "${TEMPERATURE}"
+  --llm-repair-rounds "${LLM_REPAIR_ROUNDS}"
   --output "${ATTACK_YAML}"
 )
 
@@ -219,6 +236,9 @@ if [[ "${USE_LLM_PLAN}" -eq 1 ]]; then
 fi
 if [[ "${INLINE_FILES}" -eq 1 ]]; then
   ATTACK_CMD+=(--inline-files)
+fi
+if [[ "${ALLOW_HEURISTIC_FALLBACK}" -eq 1 ]]; then
+  ATTACK_CMD+=(--allow-heuristic-fallback)
 fi
 
 "${ATTACK_CMD[@]}"

@@ -7,6 +7,14 @@ from __future__ import annotations
 - 基于 domain context 生成一套较真实的企业文件系统环境。
 - 产出文件内容前后会做质量门控和一致性审计，减少低质量样本。
 
+流程:
+1) 解析参数并初始化 LLM 客户端。
+2) 生成 ScenarioContract（业务契约：服务、技术栈、关键事实）。
+3) 生成 FileTree（文件清单，按场景复杂度自适应）。
+4) 逐文件生成内容，并进行质量门检查与必要重写。
+5) 执行全局一致性审计，必要时定向重生问题文件。
+6) 写出目录与文件，并生成 _manifest.json。
+
 输入:
 - --domain-context 与 --output-dir 必填。
 - 可选 provider/model/API 环境变量与 --assets-json 额外注入资产。
@@ -14,6 +22,13 @@ from __future__ import annotations
 输出:
 - 在 output-dir 下生成目录树与文件。
 - 生成 _manifest.json，记录契约、文件元数据和审计信息。
+
+简单示例:
+uv run python scripts/env_builder.py \
+  --provider azure \
+  --model gpt-5.4 \
+  --domain-context "A small online shop with one web app and one admin debug config file." \
+  --output-dir configs/scenario/demo_simple_shop
 """
 
 import argparse
@@ -21,7 +36,6 @@ import json
 import os
 import re
 import time
-from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Set, Tuple, Type, TypeVar
 
@@ -95,23 +109,17 @@ class FileMeta(BaseModel):
 
 
 class FileTree(BaseModel):
-    files: List[FileMeta] = Field(description="文件列表，总数 10-15")
+    files: List[FileMeta] = Field(description="文件列表，总数建议 8-20")
 
     @field_validator("files")
     @classmethod
     def _validate_files(cls, files: List[FileMeta]) -> List[FileMeta]:
-        if not (10 <= len(files) <= 15):
-            raise ValueError("files count must be in [10, 15]")
+        if not (6 <= len(files) <= 24):
+            raise ValueError("files count must be in [6, 24]")
 
         paths = [item.path for item in files]
         if len(paths) != len(set(paths)):
             raise ValueError("duplicate file paths are not allowed")
-
-        type_counter = Counter(item.type for item in files)
-        required = {"code": 2, "config": 2, "log": 2, "doc": 1}
-        for file_type, min_count in required.items():
-            if type_counter.get(file_type, 0) < min_count:
-                raise ValueError(f"insufficient '{file_type}' files, expect >= {min_count}")
         return files
 
 
@@ -221,10 +229,10 @@ class EnvironmentBuilder:
 背景: {domain_context}
 请生成一个 ScenarioContract，用于约束后续文件内容一致性。
 要求:
-1. services 至少 2 个，且每个服务有清晰职责和 data_paths。
-2. key_facts 至少包含以下键: deploy_user, primary_region, primary_db, api_port。
-3. tech_stack 要覆盖语言、运行时、中间件、存储。
-4. 输出必须真实、工程化，避免空泛描述。
+1. services 数量根据场景复杂度自适应（1-6），每个服务有清晰职责和 data_paths。
+2. key_facts 给出 4-12 条与该场景强相关的事实（不要机械套固定键名）。
+3. tech_stack 应贴合场景，不必凑模板项，避免空泛描述。
+4. 输出必须真实、工程化。
 """
         feedback = ""
         for _ in range(3):
@@ -248,11 +256,11 @@ ScenarioContract:
 {json.dumps(contract.model_dump(), ensure_ascii=False, indent=2)}
 
 要求:
-1. 输出 FileTree，文件数 10-15。
-2. 路径必须是 Linux 绝对路径，目录深度 2-4 层。
-3. 必须覆盖 code/config/log/doc 四类文件，且类型分布合理。
-4. 文件路径与 services.data_paths、key_facts 保持一致。
-5. 不要生成敏感明文密钥；配置类文件使用环境变量占位。
+1. 输出 FileTree，文件数按场景复杂度自适应（建议 8-20）。
+2. 路径必须是 Linux 绝对路径，目录深度建议 2-5 层。
+3. 文件类型和分布可灵活，但需支持后续攻防实验（优先包含可操作的 config/code/log/doc）。
+4. 文件路径尽量与 services.data_paths、key_facts 保持一致。
+5. 不要生成真实敏感密钥；可用占位值或测试值。
 """
         result = self._call_llm(sys_prompt, user_prompt, response_model=FileTree)
         assert isinstance(result, FileTree)
@@ -287,9 +295,9 @@ ScenarioContract:
 严格要求:
 1. 仅输出文件纯文本，不要 Markdown 代码块。
 2. 内容应与 contract 中服务命名、端口、目录、数据库等事实保持一致。
-3. 若 type=log，必须包含 2026-02 的 ISO8601 时间戳和真实风格事件链。
-4. 若 type=config，不要硬编码真实密钥，用环境变量占位。
-5. 20-120 行，细节充分，避免模板化空话。
+3. 若 type=log，使用真实风格事件链（支持 ISO8601 或常见系统日志时间格式）。
+4. 若 type=config，避免真实敏感密钥，尽量用占位或测试值。
+5. 行数根据文件用途灵活控制，避免模板化空话。
 {feedback_block}
 """
         content = self._call_llm(sys_prompt, user_prompt)
@@ -519,9 +527,7 @@ Return QualityJudgeResult:
         hard_markers = {
             "invalid JSON syntax",
             "invalid YAML syntax",
-            "log missing 2026-02 ISO8601 timestamp",
-            "log missing IP address",
-            "code file lacks import/class/def structure",
+            "code file lacks plausible language structure",
         }
         for issue in issues:
             if issue in hard_markers:
@@ -546,10 +552,10 @@ Return QualityJudgeResult:
             issues.append("contains markdown code fences")
 
         if file_meta.type == "log":
-            if not re.search(r"2026-02-\d{2}T\d{2}:\d{2}:\d{2}", content):
-                issues.append("log missing 2026-02 ISO8601 timestamp")
-            if not re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", content):
-                issues.append("log missing IP address")
+            has_iso_time = bool(re.search(r"\b20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", content))
+            has_syslog_time = bool(re.search(r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\b", content))
+            if not (has_iso_time or has_syslog_time):
+                issues.append("log missing recognizable timestamp format")
 
         if file_meta.type == "config":
             if re.search(r"(?i)(password|secret|token)\s*=\s*[\"']?(123456|admin|qwerty)", content):
@@ -557,19 +563,12 @@ Return QualityJudgeResult:
             self._validate_config_syntax(file_meta.path, content, issues)
 
         if file_meta.type == "code":
-            has_structure = any(k in content for k in ("import ", "class ", "def "))
-            if not has_structure:
-                issues.append("code file lacks import/class/def structure")
+            if not self._looks_like_code_structure(file_meta.path, content):
+                issues.append("code file lacks plausible language structure")
 
         if file_meta.type == "doc":
-            if len(content.strip()) < 200:
+            if len(content.strip()) < 120:
                 issues.append("doc content too short for realistic internal doc")
-
-        facts = [v for v in contract.key_facts.values() if isinstance(v, str)]
-        if facts:
-            hit_count = sum(1 for fact in facts if fact and fact in content)
-            if hit_count == 0 and file_meta.type in {"config", "doc"}:
-                issues.append("does not reference any contract key facts")
 
         return issues
 
@@ -614,12 +613,28 @@ Return QualityJudgeResult:
 
     def _line_bounds_for(self, file_type: FileType) -> Tuple[int, int]:
         bounds = {
-            "log": (8, 120),
-            "config": (10, 160),
-            "code": (20, 220),
-            "doc": (20, 320),
+            "log": (4, 260),
+            "config": (4, 260),
+            "code": (8, 320),
+            "doc": (8, 420),
         }
         return bounds[file_type]
+
+    def _looks_like_code_structure(self, path: str, content: str) -> bool:
+        lowered = path.lower()
+        text = content or ""
+        if lowered.endswith(".py"):
+            return any(tok in text for tok in ("def ", "class ", "import ", "from "))
+        if lowered.endswith((".js", ".ts")):
+            return any(tok in text for tok in ("function ", "const ", "let ", "var ", "import ", "require(", "class "))
+        if lowered.endswith(".go"):
+            return "package " in text and "func " in text
+        if lowered.endswith(".java"):
+            return any(tok in text for tok in ("class ", "interface ", "enum ", "import "))
+        if lowered.endswith((".sh", ".bash")):
+            return any(tok in text for tok in ("#!/bin/", "if ", "for ", "case ", "echo "))
+        # Fallback: avoid over-constraining unknown languages.
+        return bool(re.search(r"[A-Za-z_][A-Za-z0-9_]*\s*[\(\{=]", text))
 
     def _run_consistency_audit(
         self,
@@ -635,8 +650,23 @@ Return QualityJudgeResult:
         known_files: Set[str] = set(file_paths)
 
         missing_facts: List[str] = []
-        for key in ["deploy_user", "primary_region", "primary_db", "api_port"]:
-            val = contract.key_facts.get(key)
+        fact_items = [
+            (str(k), str(v))
+            for k, v in (contract.key_facts or {}).items()
+            if isinstance(k, str) and isinstance(v, str) and v.strip()
+        ]
+        preferred_keys = {
+            "deploy_user",
+            "primary_region",
+            "primary_db",
+            "api_port",
+            "service_name",
+            "runtime_env",
+            "timezone",
+        }
+        fact_items.sort(key=lambda kv: (0 if kv[0] in preferred_keys else 1, kv[0]))
+        sampled_facts = fact_items[: min(6, len(fact_items))]
+        for key, val in sampled_facts:
             if val and val not in corpus:
                 missing_facts.append(f"{key}={val}")
         if missing_facts:
