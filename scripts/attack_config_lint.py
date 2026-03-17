@@ -217,6 +217,20 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
             "inline files contain truncation markers from generator; prefer workspace reference mode or adjust size policy"
         )
 
+    # Detect semantic mismatch: source code files replaced by raw mail body style text.
+    code_suffixes = (".py", ".js", ".ts", ".java", ".go", ".rb", ".php", ".c", ".cc", ".cpp", ".cs", ".rs")
+    for fp, content in inline_files.items():
+        lowered = fp.lower()
+        if not lowered.endswith(code_suffixes):
+            continue
+        c = content or ""
+        if re.search(r"(?mi)^\s*from:\s+", c) and re.search(r"(?mi)^\s*subject:\s+", c):
+            warnings.append(
+                f"code file appears to contain raw mail body text: {fp}; "
+                "prefer comment/docstring-style injection for code carriers"
+            )
+            break
+
     if (
         "malicious_coder_backdoor" in scenario
         or "i_code_backdoor" in scenario
