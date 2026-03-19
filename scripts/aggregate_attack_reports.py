@@ -45,6 +45,7 @@ class ScenarioResult:
     scenario_name: str
     domain: str
     style: str
+    target_surface: str
     status: str
     classification: str
     category_positive: Dict[str, bool]
@@ -152,23 +153,33 @@ def _parse_style_and_domain(scenario_name: str) -> Tuple[str, str]:
     return "unknown", "unknown"
 
 
-def _load_scenario_name_from_config(config_path: str, cache: Dict[str, str]) -> str:
+def _normalize_target_surface(raw: Any) -> str:
+    value = str(raw or "").strip().lower()
+    if value in {"enterprise", "user", "hybrid"}:
+        return value
+    return "unknown"
+
+
+def _load_config_meta(config_path: str, cache: Dict[str, Dict[str, str]]) -> Dict[str, str]:
     if config_path in cache:
         return cache[config_path]
     p = Path(config_path)
     if not p.is_absolute():
         p = (Path.cwd() / p).resolve()
     scenario_name = p.stem
+    target_surface = "unknown"
     try:
         data = yaml.safe_load(p.read_text(encoding="utf-8"))
         if isinstance(data, dict):
             scen = data.get("scenario")
             if isinstance(scen, str) and scen.strip():
                 scenario_name = scen.strip()
+            target_surface = _normalize_target_surface(data.get("target_surface"))
     except Exception:
         pass
-    cache[config_path] = scenario_name
-    return scenario_name
+    meta = {"scenario_name": scenario_name, "target_surface": target_surface}
+    cache[config_path] = meta
+    return meta
 
 
 def _parse_run_json(run_response: Any) -> Dict[str, Any]:
@@ -224,7 +235,7 @@ def _classify_scenario(status: str, api_blocked: bool, refusal_like: bool, categ
 def load_scenarios(jsonl_files: Sequence[Path]) -> Tuple[List[ScenarioResult], Dict[str, Dict[str, int]]]:
     scenarios: List[ScenarioResult] = []
     criterion_stats: Dict[str, Dict[str, int]] = {}
-    cfg_cache: Dict[str, str] = {}
+    cfg_cache: Dict[str, Dict[str, str]] = {}
 
     for file_path in jsonl_files:
         try:
@@ -287,7 +298,9 @@ def load_scenarios(jsonl_files: Sequence[Path]) -> Tuple[List[ScenarioResult], D
             api_blocked = status == "api_error" or "content filter" in err.lower()
 
             config_path = str(record.get("config_path") or "")
-            scenario_name = _load_scenario_name_from_config(config_path, cfg_cache)
+            config_meta = _load_config_meta(config_path, cfg_cache)
+            scenario_name = config_meta["scenario_name"]
+            target_surface = config_meta["target_surface"]
             style, domain = _parse_style_and_domain(scenario_name)
             classification = _classify_scenario(status, api_blocked, refusal_like, category_positive)
 
@@ -298,6 +311,7 @@ def load_scenarios(jsonl_files: Sequence[Path]) -> Tuple[List[ScenarioResult], D
                     scenario_name=scenario_name,
                     domain=domain,
                     style=style,
+                    target_surface=target_surface,
                     status=status,
                     classification=classification,
                     category_positive=category_positive,
@@ -390,6 +404,7 @@ def write_csv(rows: Sequence[ScenarioResult], output_csv: Path) -> None:
         "scenario_name",
         "domain",
         "style",
+        "target_surface",
         "status",
         "classification",
     ] + [f"cat_{cat}" for cat in FIVE_METRIC_CATEGORIES]
@@ -403,6 +418,7 @@ def write_csv(rows: Sequence[ScenarioResult], output_csv: Path) -> None:
                 "scenario_name": row.scenario_name,
                 "domain": row.domain,
                 "style": row.style,
+                "target_surface": row.target_surface,
                 "status": row.status,
                 "classification": row.classification,
             }
@@ -426,11 +442,17 @@ def main() -> int:
     overall = summarize_group(scenarios)
     by_style_rows = _group_by(scenarios, lambda x: x.style)
     by_domain_rows = _group_by(scenarios, lambda x: x.domain)
+    by_surface_rows = _group_by(scenarios, lambda x: x.target_surface)
     by_domain_style_rows = _group_by(scenarios, lambda x: f"{x.domain}|{x.style}")
+    by_surface_style_rows = _group_by(scenarios, lambda x: f"{x.target_surface}|{x.style}")
 
     by_style = {k: summarize_group(v) for k, v in sorted(by_style_rows.items())}
     by_domain = {k: summarize_group(v) for k, v in sorted(by_domain_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
+    by_surface = {k: summarize_group(v) for k, v in sorted(by_surface_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
     by_domain_style = {k: summarize_group(v) for k, v in sorted(by_domain_style_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
+    by_surface_style = {
+        k: summarize_group(v) for k, v in sorted(by_surface_style_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    }
     criterion_level = _criterion_summary(criterion_stats)
 
     report = {
@@ -440,7 +462,9 @@ def main() -> int:
         "overall": overall,
         "by_style": by_style,
         "by_domain": by_domain,
+        "by_surface": by_surface,
         "by_domain_style": by_domain_style,
+        "by_surface_style": by_surface_style,
         "criterion_level": criterion_level,
     }
 
@@ -458,6 +482,10 @@ def main() -> int:
     print("\nBy Style:")
     for style, summary in by_style.items():
         print(f"- {style}: n={summary['n']}, real_compromise={summary['real_compromise_rate']['rate']*100:.1f}%")
+
+    print("\nBy Surface:")
+    for surface, summary in by_surface.items():
+        print(f"- {surface}: n={summary['n']}, real_compromise={summary['real_compromise_rate']['rate']*100:.1f}%")
 
     print("\nTop Domains:")
     shown = 0

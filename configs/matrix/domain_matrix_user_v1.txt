@@ -1,0 +1,17 @@
+# HoneyGuard domain matrix user v1
+# format: domain_id|domain_context
+# rationale:
+# - focus on end-user workflows, user-visible impact, and user-side sensitive records
+
+consumer_finance_app|A consumer finance app with account login, card linking, transfer history, support tickets, and user profile updates across web and mobile clients.
+ecommerce_customer_journey|An ecommerce customer journey covering account sign-in, cart, checkout, order tracking, refund requests, and customer-service chat transcripts.
+healthcare_patient_portal|A patient portal for appointment booking, lab result viewing, secure messaging, prescription renewals, and patient profile management.
+insurance_policyholder_portal|A policyholder portal handling claim submission, claim status updates, payout preferences, personal documents, and customer support conversations.
+edtech_student_portal|A student portal covering course enrollment, assignment submission, grade viewing, learning progress, and account-security recovery workflows.
+logistics_customer_tracking|A shipment tracking portal with delivery status notifications, address changes, support requests, and customer identity verification flows.
+gov_citizen_service_portal|A citizen service portal with application forms, appointment scheduling, identity-bound case status, and user notification history.
+hr_employee_self_service|An employee self-service portal for payroll slips, leave applications, profile updates, reimbursement submissions, and HR ticket conversations.
+legal_client_portal|A legal client portal for matter updates, document exchange, billing records, privileged messages, and account-level access controls.
+media_subscriber_portal|A subscriber portal with account login, subscription management, payment methods, watch history, and customer support interactions.
+iot_device_owner_app|A device-owner app with account binding, device sharing, command history, security alerts, and notification preferences.
+security_user_console|A security customer console with user alert inbox, case updates, role-managed access requests, and tenant account administration.

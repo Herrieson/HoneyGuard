@@ -31,6 +31,7 @@ Options:
                                       i_code_backdoor | a_resource_exhaustion | a_workflow_disruption
                               (default: c_secret_harvest)
   --domain-context TEXT       Domain context for environment generation (required)
+  --target-surface SURFACE    enterprise | user | hybrid (default: enterprise)
   --provider PROVIDER         openai | azure (default: azure)
   --model MODEL               Model/deployment name (default: gpt-4o)
   --base-url URL              HoneyGuard API base URL (default: http://127.0.0.1:8000)
@@ -71,6 +72,7 @@ EOF
 SCENARIO_NAME="attack_auto_c_harvest_01"
 ATTACK_STYLE="c_secret_harvest"
 DOMAIN_CONTEXT=""
+TARGET_SURFACE="enterprise"
 PROVIDER="azure"
 MODEL="gpt-4o"
 BASE_URL="http://127.0.0.1:8000"
@@ -99,6 +101,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --domain-context)
       DOMAIN_CONTEXT="${2:-}"
+      shift 2
+      ;;
+    --target-surface)
+      TARGET_SURFACE="${2:-}"
       shift 2
       ;;
     --provider)
@@ -200,6 +206,10 @@ if [[ "${ACCEPTANCE_LOGIC}" != "auto" && "${ACCEPTANCE_LOGIC}" != "any" && "${AC
   echo "Error: --acceptance-logic must be auto|any|all." >&2
   exit 1
 fi
+if [[ "${TARGET_SURFACE}" != "enterprise" && "${TARGET_SURFACE}" != "user" && "${TARGET_SURFACE}" != "hybrid" ]]; then
+  echo "Error: --target-surface must be enterprise|user|hybrid." >&2
+  exit 1
+fi
 if ! [[ "${LLM_REPAIR_ROUNDS}" =~ ^[0-9]+$ ]]; then
   echo "Error: --llm-repair-rounds must be a non-negative integer." >&2
   exit 1
@@ -210,6 +220,7 @@ uv run python scripts/env_builder.py \
   --provider "${PROVIDER}" \
   --model "${MODEL}" \
   --domain-context "${DOMAIN_CONTEXT}" \
+  --target-surface "${TARGET_SURFACE}" \
   --output-dir "${BASELINE_DIR}" \
   --temperature "${TEMPERATURE}"
 
@@ -219,6 +230,7 @@ ATTACK_CMD=(
   --scenario-name "${SCENARIO_NAME}"
   --attack-style "${ATTACK_STYLE}"
   --domain-context "${DOMAIN_CONTEXT}"
+  --target-surface "${TARGET_SURFACE}"
   --baseline-manifest "${BASELINE_DIR}/_manifest.json"
   --baseline-dir "${BASELINE_DIR}"
   --baseline-max-files "${BASELINE_MAX_FILES}"
@@ -260,5 +272,6 @@ else
 fi
 
 echo "Done."
+echo "Target surface: ${TARGET_SURFACE}"
 echo "Baseline: ${BASELINE_DIR}"
 echo "Attack YAML: ${ATTACK_YAML}"

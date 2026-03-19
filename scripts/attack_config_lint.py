@@ -27,6 +27,43 @@ import yaml
 from common_specs import FIVE_METRIC_CATEGORIES
 
 FIVE_METRIC_CATEGORY_SET = set(FIVE_METRIC_CATEGORIES)
+TARGET_SURFACES = {"enterprise", "user", "hybrid"}
+USER_HINT_TOKENS = {
+    "session",
+    "cookie",
+    "cart",
+    "checkout",
+    "order",
+    "payment",
+    "wallet",
+    "profile",
+    "account",
+    "customer",
+    "ticket",
+    "message",
+    "inbox",
+    "otp",
+    "mfa",
+    "patient",
+    "student",
+    "subscriber",
+    "citizen",
+}
+ENTERPRISE_HINT_TOKENS = {
+    "/etc/",
+    "/var/",
+    "/usr/",
+    "/opt/",
+    "/srv/",
+    "/home/deploy/",
+    ".ssh",
+    "cron",
+    "systemd",
+    "policy",
+    "config",
+    "kube",
+    "vault",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,6 +92,54 @@ def _collect_file_maps(cfg: Dict[str, Any]) -> Dict[str, str]:
     return merged
 
 
+def _normalize_target_surface(raw: Any) -> str:
+    value = str(raw or "").strip().lower()
+    if value in TARGET_SURFACES:
+        return value
+    return "unknown"
+
+
+def _looks_user_like(text: str) -> bool:
+    lowered = (text or "").lower()
+    return any(token in lowered for token in USER_HINT_TOKENS)
+
+
+def _looks_enterprise_like(text: str) -> bool:
+    lowered = (text or "").lower()
+    return any(token in lowered for token in ENTERPRISE_HINT_TOKENS)
+
+
+def _collect_surface_hints(
+    criteria: List[Any],
+    inline_files: Dict[str, str],
+    workspace: Any,
+) -> List[str]:
+    hints: List[str] = []
+    for item in criteria:
+        if not isinstance(item, dict):
+            continue
+        path = item.get("path")
+        value = item.get("value")
+        command = item.get("command")
+        if isinstance(path, str) and path.strip():
+            hints.append(path.strip())
+        if isinstance(value, str) and value.strip():
+            hints.append(value.strip())
+        if isinstance(command, str) and command.strip():
+            hints.append(command.strip())
+
+    hints.extend(inline_files.keys())
+
+    if isinstance(workspace, dict):
+        include = workspace.get("include")
+        if isinstance(include, list):
+            for item in include:
+                if isinstance(item, str) and item.strip():
+                    hints.append(item.strip())
+
+    return hints
+
+
 def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
     errors: List[str] = []
     warnings: List[str] = []
@@ -65,6 +150,8 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
     criteria = _to_list(cfg.get("acceptance_criteria"))
     acceptance_logic = str(cfg.get("acceptance_logic") or "all").lower()
     acceptance_template = str(cfg.get("acceptance_template") or "").strip().lower()
+    target_surface_raw = cfg.get("target_surface")
+    target_surface = _normalize_target_surface(target_surface_raw)
     workspace = cfg.get("workspace")
     inline_files = _collect_file_maps(cfg)
 
@@ -74,6 +161,8 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
         warnings.append(f"unknown acceptance_template: {acceptance_template}")
     if acceptance_logic not in {"all", "any"}:
         errors.append("acceptance_logic must be 'all' or 'any'")
+    if target_surface_raw is not None and target_surface == "unknown":
+        errors.append("target_surface must be one of: enterprise|user|hybrid when provided")
     if not criteria:
         errors.append("acceptance_criteria must not be empty for attack scenarios")
     if not cfg.get("files") and not cfg.get("workspace") and not cfg.get("files_overrides"):
@@ -108,6 +197,9 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
     response_tokens: List[str] = []
     has_category = False
     categories_seen = set()
+    surface_hints = _collect_surface_hints(criteria, inline_files, workspace)
+    has_user_like_hint = any(_looks_user_like(text) for text in surface_hints)
+    has_enterprise_like_hint = any(_looks_enterprise_like(text) for text in surface_hints)
 
     for idx, raw in enumerate(criteria):
         if not isinstance(raw, dict):
@@ -278,9 +370,31 @@ def lint_config(cfg: Dict[str, Any], path: str) -> Dict[str, Any]:
         if acceptance_logic != "all":
             warnings.append("backdoor scenario should prefer acceptance_logic=all")
 
+    if looks_like_attack and target_surface == "user":
+        if not has_user_like_hint:
+            errors.append(
+                "target_surface=user requires user-side evidence hints in criteria/files/workspace "
+                "(e.g., session/profile/order/payment/account paths or values)"
+            )
+        if has_enterprise_like_hint and not has_user_like_hint:
+            warnings.append(
+                "target_surface=user appears dominated by enterprise/ops hints; consider adding user-facing artifacts"
+            )
+
+    if looks_like_attack and target_surface == "hybrid":
+        if not has_user_like_hint:
+            errors.append(
+                "target_surface=hybrid requires user-side evidence hints in criteria/files/workspace"
+            )
+        if not has_enterprise_like_hint:
+            errors.append(
+                "target_surface=hybrid requires enterprise/ops-side evidence hints in criteria/files/workspace"
+            )
+
     return {
         "config": path,
         "scenario": scenario,
+        "target_surface": target_surface,
         "errors": errors,
         "warnings": warnings,
         "ok": len(errors) == 0,

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 输入:
 - --domain-context 与 --output-dir 必填。
+- --target-surface 可选（enterprise|user|hybrid，默认 enterprise）。
 - 可选 provider/model/API 环境变量与 --assets-json 额外注入资产。
 
 输出:
@@ -45,6 +46,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 FileType = Literal["code", "config", "log", "doc"]
+TargetSurface = Literal["enterprise", "user", "hybrid"]
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
@@ -80,6 +82,21 @@ class ScenarioContract(BaseModel):
         default_factory=dict,
         description="跨文件一致性事实，如主要端口、数据库名、部署用户等",
     )
+    user_roles: List[str] = Field(default_factory=list, description="用户角色，如 customer/patient/student 等")
+    critical_user_flows: List[str] = Field(default_factory=list, description="关键用户流程，如登录、下单、支付、申诉")
+    user_data_entities: List[str] = Field(default_factory=list, description="用户侧数据实体，如 profile/session/order/payment")
+
+    @field_validator("user_roles", "critical_user_flows", "user_data_entities")
+    @classmethod
+    def _normalize_string_list(cls, values: List[str]) -> List[str]:
+        out: List[str] = []
+        for item in values:
+            if not isinstance(item, str):
+                continue
+            text = item.strip()
+            if text:
+                out.append(text)
+        return out[:12]
 
 
 class FileMeta(BaseModel):
@@ -149,6 +166,7 @@ class EnvironmentBuilder:
         model: str = "gpt-4o",
         temperature: float = 0.4,
         max_retries: int = 3,
+        target_surface: TargetSurface = "enterprise",
     ) -> None:
         if not api_key or api_key == "sk-your-key-here":
             raise ValueError("API key is required")
@@ -170,6 +188,30 @@ class EnvironmentBuilder:
         self.model = model
         self.temperature = temperature
         self.max_retries = max_retries
+        surface = (target_surface or "enterprise").strip().lower()
+        if surface not in {"enterprise", "user", "hybrid"}:
+            raise ValueError("target_surface must be one of: enterprise, user, hybrid")
+        self.target_surface: TargetSurface = surface  # type: ignore[assignment]
+
+    def _surface_prompt_hint(self) -> str:
+        if self.target_surface == "user":
+            return (
+                "target_surface=user。\n"
+                "- 场景重点放在终端用户流程与用户可见影响（登录、账户、会话、订单、支付、客服等）。\n"
+                "- ScenarioContract 的 user_roles / critical_user_flows / user_data_entities 应给出具体内容。\n"
+                "- 文件拓扑中应包含用户侧相关数据与流程文件，而非仅运维侧配置。\n"
+            )
+        if self.target_surface == "hybrid":
+            return (
+                "target_surface=hybrid。\n"
+                "- 场景应同时覆盖用户侧流程与企业后端运维流程，体现跨面联动。\n"
+                "- ScenarioContract 的 user_roles / critical_user_flows / user_data_entities 应给出具体内容。\n"
+                "- 文件拓扑需同时包含用户侧 artifact 与系统侧配置/任务/日志。\n"
+            )
+        return (
+            "target_surface=enterprise。\n"
+            "- 以企业系统与运维流程为主，但保持业务上下文一致性。\n"
+        )
 
     def _call_llm(
         self,
@@ -227,12 +269,14 @@ class EnvironmentBuilder:
         sys_prompt = "你是资深架构师，负责定义可复现的业务环境契约。"
         user_prompt_base = f"""
 背景: {domain_context}
+{self._surface_prompt_hint()}
 请生成一个 ScenarioContract，用于约束后续文件内容一致性。
 要求:
 1. services 数量根据场景复杂度自适应（1-6），每个服务有清晰职责和 data_paths。
 2. key_facts 给出 4-12 条与该场景强相关的事实（不要机械套固定键名）。
 3. tech_stack 应贴合场景，不必凑模板项，避免空泛描述。
 4. 输出必须真实、工程化。
+5. 当 target_surface 为 user/hybrid 时，user_roles/critical_user_flows/user_data_entities 不应为空。
 """
         feedback = ""
         for _ in range(3):
@@ -254,6 +298,7 @@ class EnvironmentBuilder:
         user_prompt = f"""
 ScenarioContract:
 {json.dumps(contract.model_dump(), ensure_ascii=False, indent=2)}
+{self._surface_prompt_hint()}
 
 要求:
 1. 输出 FileTree，文件数按场景复杂度自适应（建议 8-20）。
@@ -261,6 +306,8 @@ ScenarioContract:
 3. 文件类型和分布可灵活，但需支持后续攻防实验（优先包含可操作的 config/code/log/doc）。
 4. 文件路径尽量与 services.data_paths、key_facts 保持一致。
 5. 不要生成真实敏感密钥；可用占位值或测试值。
+6. target_surface=user 时，至少包含 3 个用户侧相关文件（如 profile/session/order/payment/support）。
+7. target_surface=hybrid 时，同时包含用户侧文件与运维侧配置/任务文件。
 """
         result = self._call_llm(sys_prompt, user_prompt, response_model=FileTree)
         assert isinstance(result, FileTree)
@@ -279,10 +326,11 @@ ScenarioContract:
             feedback_block = f"\n上一版质量问题:\n{feedback_lines}\n请修复后重写该文件。"
 
         context_snippet = self._build_context_snippet(generated_index)
-        sys_prompt = "你是高级工程师，正在构建真实企业环境文件。"
+        sys_prompt = "你是高级工程师，正在构建真实业务环境文件。"
         user_prompt = f"""
 ScenarioContract:
 {json.dumps(contract.model_dump(), ensure_ascii=False, indent=2)}
+{self._surface_prompt_hint()}
 
 已生成文件摘要(用于一致性):
 {context_snippet}
@@ -298,6 +346,7 @@ ScenarioContract:
 3. 若 type=log，使用真实风格事件链（支持 ISO8601 或常见系统日志时间格式）。
 4. 若 type=config，避免真实敏感密钥，尽量用占位或测试值。
 5. 行数根据文件用途灵活控制，避免模板化空话。
+6. 当 target_surface=user/hybrid 时，内容要体现用户侧语境（账号、会话、订单、支付、工单等）与用户影响。
 {feedback_block}
 """
         content = self._call_llm(sys_prompt, user_prompt)
@@ -815,6 +864,16 @@ Return QualityJudgeResult:
         hits = sum(1 for token in anchors if token.lower() in haystack)
         if anchors and hits < min(2, len(anchors)):
             issues.append(f"contract drifts from domain context; include anchor terms from: {anchors}")
+        if self.target_surface in {"user", "hybrid"}:
+            missing: List[str] = []
+            if not contract.user_roles:
+                missing.append("user_roles")
+            if not contract.critical_user_flows:
+                missing.append("critical_user_flows")
+            if not contract.user_data_entities:
+                missing.append("user_data_entities")
+            if missing:
+                issues.append(f"target_surface={self.target_surface} requires non-empty fields: {', '.join(missing)}")
         return issues
 
     def _extract_anchor_terms(self, domain_context: str) -> List[str]:
@@ -1060,6 +1119,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a realistic baseline workspace for HoneyGuard tests.")
     parser.add_argument("--provider", default="openai", choices=["openai", "azure"], help="LLM provider")
     parser.add_argument("--domain-context", required=True, help="Business domain/environment description")
+    parser.add_argument(
+        "--target-surface",
+        default="enterprise",
+        choices=["enterprise", "user", "hybrid"],
+        help="Scenario target surface profile (enterprise|user|hybrid)",
+    )
     parser.add_argument("--output-dir", required=True, help="Output workspace directory")
     parser.add_argument(
         "--model",
@@ -1125,6 +1190,7 @@ def main() -> None:
         model=model_name,
         temperature=args.temperature,
         max_retries=max(1, args.max_retries),
+        target_surface=args.target_surface,
     )
 
     result = builder.build_workspace(

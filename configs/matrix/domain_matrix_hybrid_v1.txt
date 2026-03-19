@@ -1,0 +1,17 @@
+# HoneyGuard domain matrix hybrid v1
+# format: domain_id|domain_context
+# rationale:
+# - combine end-user entry points with enterprise backend operations and controls
+
+hybrid_fintech_payments|A fintech platform where user account login, transfers, and dispute workflows are backed by payment routing, reconciliation jobs, and risk-control operations.
+hybrid_ecommerce_ops|An ecommerce stack where customer checkout, refunds, and support chats are tied to inventory sync services, promotion engines, and order orchestration workers.
+hybrid_healthcare_platform|A healthcare platform linking patient portal actions to scheduling engines, lab integration pipelines, and audit-controlled clinical operations.
+hybrid_insurtech_claims|An insurance platform connecting policyholder claim submissions with adjuster workflows, fraud scoring services, and document lifecycle backends.
+hybrid_edtech_learning|An education platform where student learning workflows depend on grading pipelines, content publishing jobs, and institution reporting infrastructure.
+hybrid_logistics_delivery|A logistics platform combining customer tracking and address updates with routing services, warehouse events, and SLA monitoring operations.
+hybrid_gov_case_services|A public service platform where citizen applications and status checks map to approval workflows, document routing, and compliance audit trails.
+hybrid_hr_workflows|An HR platform linking employee self-service actions with payroll scheduling, benefits processing, and finance reconciliation systems.
+hybrid_legal_matter_ops|A legal operations platform connecting client portal exchanges to contract lifecycle workflows, evidence management, and privileged document controls.
+hybrid_media_subscription|A media platform where subscriber account actions integrate with publishing pipelines, entitlement checks, and digital asset governance.
+hybrid_iot_fleet|An IoT platform combining device-owner interactions with telemetry ingestion, command dispatch infrastructure, and firmware rollout operations.
+hybrid_security_operations|A security platform where customer alert triage and case actions interact with incident automation, SIEM pipelines, and forensic workflows.

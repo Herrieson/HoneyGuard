@@ -17,11 +17,12 @@ Description:
 
 Options:
   --batch-name NAME           Batch identifier (default: auto timestamp)
-  --domains PRESET            domain preset: matrix_v1 | core | comprehensive (default: matrix_v1)
+  --domains PRESET            domain preset: matrix_v1 | user_v1 | hybrid_v1 | core | comprehensive (default: matrix_v1)
   --domain-file PATH          Domain file path; each line: domain_id|domain_context
                               (default: configs/matrix/domain_matrix_v1.txt)
   --styles CSV                attack styles CSV
                               (default: c_secret_harvest,c_bulk_exfiltration,i_config_tamper,i_code_backdoor,a_resource_exhaustion,a_workflow_disruption)
+  --target-surface SURFACE    enterprise | user | hybrid (default: enterprise)
   --samples-per-combo N       Number of samples per (domain, style) combo (default: 2)
   --max-domains N             Limit domain count for quick smoke run (default: 0 = no limit)
   --matrix-version N          Matrix version number for experiment id (default: 1)
@@ -73,6 +74,22 @@ load_domains_preset() {
         return 1
       fi
       ;;
+    user_v1)
+      if [[ -f "configs/matrix/domain_matrix_user_v1.txt" ]]; then
+        cat "configs/matrix/domain_matrix_user_v1.txt"
+      else
+        echo "Missing user matrix file: configs/matrix/domain_matrix_user_v1.txt" >&2
+        return 1
+      fi
+      ;;
+    hybrid_v1)
+      if [[ -f "configs/matrix/domain_matrix_hybrid_v1.txt" ]]; then
+        cat "configs/matrix/domain_matrix_hybrid_v1.txt"
+      else
+        echo "Missing hybrid matrix file: configs/matrix/domain_matrix_hybrid_v1.txt" >&2
+        return 1
+      fi
+      ;;
     core)
       cat <<'EOF'
 fintech_ops|A fintech ops environment with nginx, python backend, postgres, redis, and strict audit requirements.
@@ -113,6 +130,7 @@ BATCH_NAME="$(default_batch_name)"
 DOMAINS_PRESET="matrix_v1"
 DOMAIN_FILE="configs/matrix/domain_matrix_v1.txt"
 STYLES_CSV="c_secret_harvest,c_bulk_exfiltration,i_config_tamper,i_code_backdoor,a_resource_exhaustion,a_workflow_disruption"
+TARGET_SURFACE="enterprise"
 SAMPLES_PER_COMBO=2
 MAX_DOMAINS=0
 MATRIX_VERSION=1
@@ -145,6 +163,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --styles)
       STYLES_CSV="${2:-}"
+      shift 2
+      ;;
+    --target-surface)
+      TARGET_SURFACE="${2:-}"
       shift 2
       ;;
     --samples-per-combo)
@@ -237,6 +259,10 @@ if [[ "${PROVIDER}" != "openai" && "${PROVIDER}" != "azure" ]]; then
 fi
 if [[ "${ACCEPTANCE_LOGIC}" != "auto" && "${ACCEPTANCE_LOGIC}" != "any" && "${ACCEPTANCE_LOGIC}" != "all" ]]; then
   echo "Error: --acceptance-logic must be auto|any|all" >&2
+  exit 1
+fi
+if [[ "${TARGET_SURFACE}" != "enterprise" && "${TARGET_SURFACE}" != "user" && "${TARGET_SURFACE}" != "hybrid" ]]; then
+  echo "Error: --target-surface must be enterprise|user|hybrid" >&2
   exit 1
 fi
 
@@ -335,6 +361,7 @@ for line in "${DOMAIN_LINES[@]}"; do
         --scenario-name "${scenario_name}"
         --attack-style "${style}"
         --domain-context "${domain_context}"
+        --target-surface "${TARGET_SURFACE}"
         --provider "${PROVIDER}"
         --model "${MODEL}"
         --baseline-dir "${baseline_dir}"
@@ -364,15 +391,15 @@ for line in "${DOMAIN_LINES[@]}"; do
         failed=$((failed + 1))
         echo "[error] failed scenario: ${scenario_name}" >&2
         if [[ "${CONTINUE_ON_ERROR}" -eq 0 ]]; then
-          printf '{"experiment_id":"%s","matrix_version":%s,"scenario":"%s","status":"%s","domain":"%s","style":"%s","cell_id":"%s","replicate":"%s","attack_yaml":"%s","baseline_dir":"%s"}\n' \
-            "${EXPERIMENT_ID}" "${MATRIX_VERSION}" "${scenario_name}" "${status}" "${domain_id}" "${style}" "${cell_id}" "${seq}" "${attack_yaml}" "${baseline_dir}" >> "${DETAIL_JSONL}"
+          printf '{"experiment_id":"%s","matrix_version":%s,"target_surface":"%s","scenario":"%s","status":"%s","domain":"%s","style":"%s","cell_id":"%s","replicate":"%s","attack_yaml":"%s","baseline_dir":"%s"}\n' \
+            "${EXPERIMENT_ID}" "${MATRIX_VERSION}" "${TARGET_SURFACE}" "${scenario_name}" "${status}" "${domain_id}" "${style}" "${cell_id}" "${seq}" "${attack_yaml}" "${baseline_dir}" >> "${DETAIL_JSONL}"
           echo "[stop] stop-on-error enabled." >&2
           break 3
         fi
       fi
 
-      printf '{"experiment_id":"%s","matrix_version":%s,"scenario":"%s","status":"%s","domain":"%s","style":"%s","cell_id":"%s","replicate":"%s","attack_yaml":"%s","baseline_dir":"%s"}\n' \
-        "${EXPERIMENT_ID}" "${MATRIX_VERSION}" "${scenario_name}" "${status}" "${domain_id}" "${style}" "${cell_id}" "${seq}" "${attack_yaml}" "${baseline_dir}" >> "${DETAIL_JSONL}"
+      printf '{"experiment_id":"%s","matrix_version":%s,"target_surface":"%s","scenario":"%s","status":"%s","domain":"%s","style":"%s","cell_id":"%s","replicate":"%s","attack_yaml":"%s","baseline_dir":"%s"}\n' \
+        "${EXPERIMENT_ID}" "${MATRIX_VERSION}" "${TARGET_SURFACE}" "${scenario_name}" "${status}" "${domain_id}" "${style}" "${cell_id}" "${seq}" "${attack_yaml}" "${baseline_dir}" >> "${DETAIL_JSONL}"
     done
   done
 done
@@ -390,6 +417,7 @@ cat > "${SUMMARY_JSON}" <<EOF
   "domains_preset": "${DOMAINS_PRESET}",
   "domain_file": "${DOMAIN_FILE}",
   "styles": "${STYLES_CSV}",
+  "target_surface": "${TARGET_SURFACE}",
   "samples_per_combo": ${SAMPLES_PER_COMBO},
   "max_domains": ${MAX_DOMAINS},
   "total": ${total},
@@ -404,6 +432,7 @@ EOF
 echo
 echo "Batch generation finished."
 echo "Batch: ${BATCH_NAME}"
+echo "Target surface: ${TARGET_SURFACE}"
 echo "Total: ${total}, Success: ${success}, Failed: ${failed}"
 echo "Attack configs: ${ATTACK_ROOT}"
 echo "Summary: ${SUMMARY_JSON}"
