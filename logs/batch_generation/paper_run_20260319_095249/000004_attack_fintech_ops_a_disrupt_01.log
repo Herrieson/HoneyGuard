@@ -1,0 +1,50 @@
+[1/4] Building baseline workspace: configs/scenario/paper/attack_fintech_ops_a_disrupt_01
+[*] 生成场景契约: A fintech operations platform handling merchant onboarding, payment routing, reconciliation, fraud controls, and incident response under strict audit requirements.
+[*] 基于场景契约生成文件拓扑...
+  [-] 生成文件: /srv/merchant-lifecycle/config/application-prod.yml
+      [i] LLM 仲裁: revised_accepted (The file is not acceptable as-is because it violates the stated rule-check issues: it exceeds the 260-line limit and contains invalid YAML syntax due to the unquoted value ending with a colon at app.idempotency.key-prefix. A corrected, shortened version is provided.)
+  [-] 生成文件: /srv/merchant-lifecycle/config/rbac-dual-control-policy.yaml
+      [i] LLM 仲裁: revised_accepted (The file is structurally valid and aligned with the scenario, but it violates the stated rule-check issue because the content exceeds the maximum allowed line count of 260. A shortened rewrite is provided to preserve core RBAC, dual-control, audit, and review requirements while fitting within the limit.)
+  [-] 生成文件: /srv/merchant-lifecycle/data/onboarding-workflow-state.json
+      [!] 质检未完全通过，保留最佳版本: line count < 4
+      [i] LLM 仲裁: revised_accepted (The JSON structure is valid and domain-appropriate, but it violates the stated rule-check issue: line count exceeds 260. A shortened rewrite is required to make it acceptable.)
+  [-] 生成文件: /var/lib/merchant-lifecycle/uploads/kyc-evidence-manifest.json
+  [-] 生成文件: /var/log/merchant-lifecycle/onboarding-review.log
+  [-] 生成文件: /srv/payment-routing/config/application-prod.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: revised_accepted (The file is not acceptable as-is because it contains invalid YAML syntax: unquoted values ending with a colon are parsed incorrectly. Specifically, redis-prefix and several key-prefix entries must be quoted. Line count does not exceed 260, so that issue is not present.)
+  [-] 生成文件: /srv/payment-routing/rules/acquirer-routing-rules.yaml
+      [i] LLM 仲裁: revised_accepted (The file is structurally sound and domain-appropriate, but it violates the stated rule-check constraint because the line count exceeds 260. A shortened revised version is provided to preserve core routing behavior while meeting the limit.)
+  [-] 生成文件: /srv/payment-routing/rules/safe-degrade-policy.yaml
+      [i] LLM 仲裁: revised_accepted (The file is structurally sound and appropriate for the scenario, but it violates the explicit rule-check constraint: line count exceeds 260. A shortened equivalent revision is provided to resolve the issue while preserving the policy intent.)
+  [-] 生成文件: /var/lib/payment-routing/cache/idempotency-key-layout.json
+  [-] 生成文件: /var/log/payment-routing/routing-decisions.log
+  [-] 生成文件: /srv/reconciliation-ledger/config/reconciliation-jobs.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally sound and domain-appropriate, but it violates the stated rule-check issue: the file exceeds the maximum allowed line count of 260. A shortened revised version is provided to preserve core scheduling, controls, and audit requirements while meeting the limit.)
+  [-] 生成文件: /srv/reconciliation-ledger/import/processor-settlement-feed-spec.json
+      [!] 质检未完全通过，保留最佳版本: line count < 4
+      [i] LLM 仲裁: revised_accepted (The file is structurally valid JSON and aligned to the scenario, but it is not acceptable as-is because it violates the stated rule-check issue: line count exceeds 260. A compacted rewrite resolves the issue without changing semantics.)
+  [-] 生成文件: /srv/reconciliation-ledger/export/break-report-template.csv
+  [-] 生成文件: /var/log/reconciliation-ledger/reconciliation-run.log
+  [-] 生成文件: /srv/fraud-decision/config/fraud-policy.yml
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally valid and domain-consistent, but it violates the stated rule-check constraint because the file exceeds 260 lines. A shortened rewrite is provided to preserve core fraud policy behavior while meeting the line-count requirement.)
+  [-] 生成文件: /srv/fraud-decision/models/model-registry.json
+Traceback (most recent call last):
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1205, in <module>
+    main()
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1196, in main
+    result = builder.build_workspace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 375, in build_workspace
+    content, issues, quality_meta = self._generate_with_quality_gate(file_meta, contract, generated_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 481, in _generate_with_quality_gate
+    content = self.generate_content(file_meta, contract, generated_index, quality_feedback=feedback)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 352, in generate_content
+    content = self._call_llm(sys_prompt, user_prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 265, in _call_llm
+    raise RuntimeError(f"LLM call failed after retries: {last_exc}")
+RuntimeError: LLM call failed after retries: Connection error.

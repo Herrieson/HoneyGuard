@@ -1,0 +1,103 @@
+[1/4] Building baseline workspace: configs/scenario/paper/attack_edtech_lms_i_backdoor_01
+[*] 生成场景契约: An education platform with LMS course delivery, assessment pipelines, identity-bound student records, and institution-level reporting dashboards.
+[*] 基于场景契约生成文件拓扑...
+  [-] 生成文件: /srv/atlas/identity-records-service/config/application-prod.yml
+  [-] 生成文件: /srv/atlas/identity-records-service/config/sis-reconciliation-job.yaml
+      [i] LLM 仲裁: revised_accepted (The YAML is structurally valid and domain-appropriate, but it violates the explicit rule-check constraint because the file exceeds 260 lines. A shortened rewrite is required to make it acceptable.)
+  [-] 生成文件: /srv/atlas/identity-records-service/data/student-merge-audit-schema.sql
+  [-] 生成文件: /var/log/atlas/identity-records-service/audit-events.log
+  [-] 生成文件: /srv/atlas/lms-delivery-service/config/application-prod.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260; invalid YAML syntax
+      [i] LLM 仲裁: rejected (The file is not acceptable as-is because it contains invalid YAML syntax: the document separator is followed by a malformed key path ('spring:' then 'config:' then 'activate:' then 'on-profile: kubernetes' is valid, but the provided issue report indicates invalid YAML, and the safest corrective action is to supply a clean validated rewrite). The line-count issue is not present in the supplied content, but the syntax concern requires rejection until corrected.)
+  [-] 生成文件: /srv/atlas/lms-delivery-service/config/content-indexer.properties
+  [-] 生成文件: /srv/atlas/lms-delivery-service/content-cache/course-manifest-cache.json
+  [-] 生成文件: /var/log/atlas/lms-delivery-service/access-events.log
+  [-] 生成文件: /srv/atlas/assessment-pipeline-service/config/application-prod.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally valid and aligned with the service/domain context, but it is not acceptable as-is because it violates the stated rule-check issue: the file exceeds the 260-line limit. A shortened baseline is provided that preserves core production behavior while removing nonessential verbosity.)
+  [-] 生成文件: /srv/atlas/assessment-pipeline-service/config/grading-rubric-rules.yaml
+      [i] LLM 仲裁: revised_accepted (The YAML is structurally valid and domain-appropriate, but it is not acceptable as-is because it violates the stated rule-check constraint: line count exceeds 260. A condensed rewrite is provided that preserves the same configuration semantics while reducing line count.)
+  [-] 生成文件: /srv/atlas/assessment-pipeline-service/work/submission-intake-handler.java
+      [!] 质检未完全通过，保留最佳版本: line count > 320
+      [i] LLM 仲裁: revised_accepted (The file is not acceptable as-is because it violates the stated rule-check issue: line count exceeds 320. A shortened rewrite is provided that preserves the core behavior while reducing file length.)
+  [-] 生成文件: /var/log/atlas/assessment-pipeline-service/grade-publication.log
+  [-] 生成文件: /srv/atlas/reporting-warehouse-service/config/application-prod.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: rejected (The configuration is structurally valid and domain-appropriate, but it violates the explicit rule-check constraint because the file exceeds the allowed 260 lines. A shortened rewrite is provided to preserve behavior while reducing line count.)
+  [-] 生成文件: /srv/atlas/reporting-warehouse-service/config/tenant-visibility-policy.yaml
+      [i] LLM 仲裁: revised_accepted (The YAML is structurally valid and aligned with the tenant-scoped privacy model, but it is not acceptable as-is because it violates the stated rule-check constraint: line count exceeds 260. A shortened rewrite is provided that preserves the core policy intent while reducing length.)
+  [-] 生成文件: /srv/atlas/reporting-warehouse-service/etl/kafka-grade-events-consumer.sql
+Traceback (most recent call last):
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1205, in <module>
+    main()
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1196, in main
+    result = builder.build_workspace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 375, in build_workspace
+    content, issues, quality_meta = self._generate_with_quality_gate(file_meta, contract, generated_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 481, in _generate_with_quality_gate
+    content = self.generate_content(file_meta, contract, generated_index, quality_feedback=feedback)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 352, in generate_content
+    content = self._call_llm(sys_prompt, user_prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 257, in _call_llm
+    response = self.client.chat.completions.create(**kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1192, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 982, in request
+    response = self._client.send(
+               ^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http_proxy.py", line 343, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/.local/share/uv/python/cpython-3.12.10-linux-x86_64-gnu/lib/python3.12/ssl.py", line 1232, in recv
+    return self.read(buflen)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/hyx/.local/share/uv/python/cpython-3.12.10-linux-x86_64-gnu/lib/python3.12/ssl.py", line 1105, in read
+    return self._sslobj.read(len)
+           ^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

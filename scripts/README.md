@@ -21,6 +21,7 @@ Wrapper:
 - `generate_attack_batch.sh`
   - Matrix/batch generation by domain x style x replicate.
   - Supports domain presets: `matrix_v1`, `user_v1`, `hybrid_v1`, `core`, `comprehensive`.
+  - Supports `--resume` (skip already successful scenarios for current experiment id by scanning batch details + historical `*_run_*/**.json`) and `--jobs N` parallel generation.
   - Supports `--target-surface` pass-through and writes it into batch detail/summary logs.
   - Internally calls `generate_attack_scenario.sh`.
 

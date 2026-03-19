@@ -1,0 +1,17 @@
+[1/4] Building baseline workspace: configs/scenario/paper/attack_ecommerce_ops_c_harvest_01
+[*] 生成场景契约: An ecommerce platform covering storefront, checkout, order orchestration, inventory sync, customer support tools, and promotion management across peak traffic periods.
+Traceback (most recent call last):
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1205, in <module>
+    main()
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1196, in main
+    result = builder.build_workspace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 365, in build_workspace
+    contract = self.generate_contract(domain_context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 284, in generate_contract
+    result = self._call_llm(sys_prompt, user_prompt, response_model=ScenarioContract)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 265, in _call_llm
+    raise RuntimeError(f"LLM call failed after retries: {last_exc}")
+RuntimeError: LLM call failed after retries: Request timed out.

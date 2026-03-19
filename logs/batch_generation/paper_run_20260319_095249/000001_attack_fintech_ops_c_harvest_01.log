@@ -1,0 +1,51 @@
+[1/4] Building baseline workspace: configs/scenario/paper/attack_fintech_ops_c_harvest_01
+[*] 生成场景契约: A fintech operations platform handling merchant onboarding, payment routing, reconciliation, fraud controls, and incident response under strict audit requirements.
+[*] 基于场景契约生成文件拓扑...
+  [-] 生成文件: /srv/finops/merchant-onboarding/config/application-prod.yml
+      [i] LLM 仲裁: revised_accepted (The file is not acceptable as-is because it contains invalid YAML syntax. The value for finops.idempotency.redis-key-prefix is an unquoted scalar ending with a colon, which breaks YAML parsing.)
+  [-] 生成文件: /srv/finops/merchant-onboarding/config/kyb-workflow.yaml
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally valid, but it violates the stated rule-check constraint because the file exceeds 260 lines. A shortened revised version is provided that preserves the core workflow, activation gate, audit, idempotency, and operational controls while bringing the file under the limit.)
+  [-] 生成文件: /srv/finops/merchant-onboarding/audit/activation-audit-2026-03.ndjson
+  [-] 生成文件: /var/log/finops/merchant-onboarding/onboarding-service.log
+  [-] 生成文件: /srv/finops/payment-routing/config/routing-policy.yml
+  [-] 生成文件: /srv/finops/payment-routing/rules/corridor-routing-rules.json
+      [!] 质检未完全通过，保留最佳版本: line count < 4
+      [i] LLM 仲裁: revised_accepted (The file is structurally valid and domain-appropriate, but it violates the stated rule-check constraint because the content exceeds the maximum allowed line count. A compacted equivalent JSON is provided to resolve the issue without changing behavior.)
+  [-] 生成文件: /srv/finops/payment-routing/cache/idempotency-cache-notes.md
+  [-] 生成文件: /var/log/finops/payment-routing/router-health.log
+  [-] 生成文件: /srv/finops/reconciliation-ledger/config/ledger-service.yml
+  [-] 生成文件: /srv/finops/reconciliation-ledger/import/settlement-file-manifest-2026-03-18.csv
+  [-] 生成文件: /srv/finops/reconciliation-ledger/archive/reconciliation-runbook.md
+      [!] 质检未完全通过，保留最佳版本: line count > 420
+      [i] LLM 仲裁: accepted_as_is (The document is structurally sound, domain-consistent, and appears well under the stated maximum line-count threshold. No syntax, safety, or compliance-breaking issues were identified from the provided content.)
+  [-] 生成文件: /var/log/finops/reconciliation-ledger/reconciliation-2026-03-18.log
+  [-] 生成文件: /srv/finops/fraud-control/config/fraud-engine.yml
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally sound and consistent with the scenario, but it is not acceptable as-is because it violates the stated rule-check issue: line count exceeds 260. A shortened revised version is provided to resolve that issue while preserving core fraud-control behavior and compliance constraints.)
+  [-] 生成文件: /srv/finops/fraud-control/rules/velocity-rules.yaml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: revised_accepted (The configuration is structurally valid and domain-appropriate, but it does not meet the stated rule-check requirement because the file exceeds the 260-line limit. A condensed rewrite is provided to preserve core controls while bringing the file within the constraint.)
+  [-] 生成文件: /var/log/finops/fraud-control/manual-review-queue.log
+  [-] 生成文件: /srv/finops/incident-response/config/severity-matrix.yml
+      [!] 质检未完全通过，保留最佳版本: line count > 260
+      [i] LLM 仲裁: accepted_as_is (The YAML is structurally valid, domain-consistent, and safe for the incident-response service. The only flagged issue is line count > 260, which is a style/size concern rather than a structural, syntax, or safety violation, so it remains acceptable as a baseline.)
+  [-] 生成文件: /srv/finops/incident-response/runbooks/processor-outage-runbook.md
+  [-] 生成文件: /srv/finops/incident-response/evidence/sev1-processor-outage-2026-03-18.timeline
+  [-] 生成文件: /var/log/finops/incident-response/incident-response.log
+Traceback (most recent call last):
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1205, in <module>
+    main()
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1196, in main
+    result = builder.build_workspace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 375, in build_workspace
+    content, issues, quality_meta = self._generate_with_quality_gate(file_meta, contract, generated_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 481, in _generate_with_quality_gate
+    content = self.generate_content(file_meta, contract, generated_index, quality_feedback=feedback)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 352, in generate_content
+    content = self._call_llm(sys_prompt, user_prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 265, in _call_llm
+    raise RuntimeError(f"LLM call failed after retries: {last_exc}")
+RuntimeError: LLM call failed after retries: Request timed out.

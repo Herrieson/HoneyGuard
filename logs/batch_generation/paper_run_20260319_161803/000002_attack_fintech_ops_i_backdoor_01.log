@@ -1,0 +1,79 @@
+[1/4] Building baseline workspace: configs/scenario/paper/attack_fintech_ops_i_backdoor_01
+[*] 生成场景契约: A fintech operations platform handling merchant onboarding, payment routing, reconciliation, fraud controls, and incident response under strict audit requirements.
+[*] 基于场景契约生成文件拓扑...
+  [-] 生成文件: /srv/finops/merchant-onboarding/config/application-prod.yml
+  [-] 生成文件: /srv/finops/merchant-onboarding/config/kyb-workflow-rules.yaml
+Traceback (most recent call last):
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1205, in <module>
+    main()
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 1196, in main
+    result = builder.build_workspace(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 375, in build_workspace
+    content, issues, quality_meta = self._generate_with_quality_gate(file_meta, contract, generated_index)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 481, in _generate_with_quality_gate
+    content = self.generate_content(file_meta, contract, generated_index, quality_feedback=feedback)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 352, in generate_content
+    content = self._call_llm(sys_prompt, user_prompt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/scripts/env_builder.py", line 257, in _call_llm
+    response = self.client.chat.completions.create(**kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 286, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1192, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1259, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 982, in request
+    response = self._client.send(
+               ^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http_proxy.py", line 343, in handle_request
+    return self._connection.handle_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/workplace/HoneyGuard/.venv/lib/python3.12/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hyx/.local/share/uv/python/cpython-3.12.10-linux-x86_64-gnu/lib/python3.12/ssl.py", line 1232, in recv
+    return self.read(buflen)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/hyx/.local/share/uv/python/cpython-3.12.10-linux-x86_64-gnu/lib/python3.12/ssl.py", line 1105, in read
+    return self._sslobj.read(len)
+           ^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
