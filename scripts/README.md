@@ -32,6 +32,9 @@ Wrapper:
   - Convenience runner for initialize + step execution + optional cleanup.
 - `aggregate_attack_reports.py`
   - Aggregates run JSONL outputs into summary metrics/tables.
+- `llm_judge_attack_behavior.py`
+  - Supplementary evaluator: asks an LLM whether each scenario run shows real malicious behavior.
+  - Compares acceptance result vs LLM verdict and outputs scenario-level JSONL/CSV + summary JSON.
 
 ## Shared Specs
 - `common_specs.py`

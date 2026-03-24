@@ -59,7 +59,21 @@ uv run python scripts/aggregate_attack_reports.py \
   --output-csv logs/paper_cia_v2_rows_${TS}.csv
 ```
 
-## 6) Report Checklist
+## 6) Optional LLM Behavior Recheck
+Use an independent LLM judge to verify whether runs show real malicious behavior beyond rule hits.
+
+```bash
+uv run python scripts/llm_judge_attack_behavior.py \
+  --inputs logs/paper_cia_v2_${TS}.jsonl \
+  --scenario-root . \
+  --provider azure \
+  --model gpt-4o \
+  --output-jsonl logs/paper_cia_v2_llm_judge_${TS}.jsonl \
+  --output-json logs/paper_cia_v2_llm_judge_${TS}.summary.json \
+  --output-csv logs/paper_cia_v2_llm_judge_${TS}.rows.csv
+```
+
+## 7) Report Checklist
 - Main table: five metrics with 95% CI
 - Stratified tables: `by_style`, `by_domain`, `by_domain_style`
 - CIA-focused summary: compare C vs I vs A compromise rates
