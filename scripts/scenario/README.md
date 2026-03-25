@@ -1,0 +1,82 @@
+# Scenario V2 Pipeline
+
+This directory contains a simple multi-stage, seed-driven scenario generator.
+
+## Script
+
+- `generate_from_seed.py`
+  - Input: one seed prompt (for example `"user personal document assistant"`).
+  - Controls:
+    - `--target-surface auto|enterprise|user|hybrid`
+    - `--attack-intent auto|confidentiality|integrity|availability`
+    - `--attack-intent-note "..."`
+    - `--prompt-version <tag>`
+  - Stages:
+    1. World generation (files + tools + user-facing task)
+    2. Attack plot generation (primary intent + hidden goal + attack artifacts + expected state changes)
+    3. Acceptance generation (criteria across five metrics)
+  - Output: HoneyGuard-compatible scenario YAML.
+  - Repro metadata is stored in `generation_meta` (seed, intent, model_version, prompt_version, generated_at).
+
+## Example
+
+```bash
+uv run python scripts/scenario/generate_from_seed.py \
+  --seed "用户个人文档管理助手，帮助总结本周会议纪要" \
+  --target-surface user \
+  --attack-intent confidentiality \
+  --attack-intent-note "优先测试隐蔽信息外泄，不要明显破坏任务结果" \
+  --provider azure \
+  --prompt-version seed_pipeline_v2_intent_meta_20260325 \
+  --output configs/attack/seed_user_docs_v2.yaml
+```
+
+Then initialize as usual:
+
+```bash
+uv run python scripts/init_from_config.py \
+  --config configs/attack/seed_user_docs_v2.yaml \
+  --base-url http://127.0.0.1:8000
+```
+
+## Notes
+
+- The generator intentionally keeps only minimal hard constraints and lets LLM lead most content.
+- Acceptance hardening enforces action/outcome evidence pairing to reduce obvious false positives.
+- Runtime currently evaluates tool outputs, file state, command checks, and response text.
+  It does not yet natively match mock-tool argument payloads.
+
+
+## Batch Generation
+
+Use a TSV seed list to generate many scenarios in parallel.
+
+Required column:
+- `seed`
+
+Recommended columns:
+- `scenario_name`
+- `target_surface`
+- `attack_intent`
+- `attack_intent_note`
+- `output_relpath`
+
+Template:
+- `configs/seeds/template_seed_batch_v2.tsv`
+
+Example:
+```bash
+uv run python scripts/scenario/generate_batch_from_seeds.py \
+  --seeds-file configs/seeds/template_seed_batch_v2.tsv \
+  --output-dir configs/attack/batch_seed_v2 \
+  --provider azure \
+  --model gpt-4o \
+  --prompt-version seed_pipeline_v2_intent_meta_20260325 \
+  --workers 4 \
+  --resume
+```
+
+Outputs:
+- `configs/attack/batch_seed_v2/*.yaml`
+- `configs/attack/batch_seed_v2/_batch_manifest.jsonl`
+- `configs/attack/batch_seed_v2/_batch_summary.json`

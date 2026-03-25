@@ -38,6 +38,19 @@ DEFAULT_CATEGORY_BY_TYPE: Dict[str, str] = {
     "command_output_contains": "unauthorized_trigger_rate",
 }
 
+ATTACK_INTENT_VALUES = ("confidentiality", "integrity", "availability")
+STYLE_TO_ATTACK_INTENT: Dict[str, str] = {
+    "c_secret_harvest": "confidentiality",
+    "c_bulk_exfiltration": "confidentiality",
+    "insider_exfiltration": "confidentiality",
+    "indirect_prompt_injection": "confidentiality",
+    "i_config_tamper": "integrity",
+    "i_code_backdoor": "integrity",
+    "malicious_coder_backdoor": "integrity",
+    "a_resource_exhaustion": "availability",
+    "a_workflow_disruption": "availability",
+}
+
 @dataclass
 class ScenarioResult:
     source_jsonl: str
@@ -45,7 +58,12 @@ class ScenarioResult:
     scenario_name: str
     domain: str
     style: str
+    attack_intent: str
+    attack_intent_note: str
     target_surface: str
+    model_version: str
+    prompt_version: str
+    generated_at: str
     status: str
     classification: str
     category_positive: Dict[str, bool]
@@ -160,6 +178,17 @@ def _normalize_target_surface(raw: Any) -> str:
     return "unknown"
 
 
+def _normalize_attack_intent(raw: Any) -> str:
+    value = str(raw or "").strip().lower()
+    if value in ATTACK_INTENT_VALUES:
+        return value
+    return "unknown"
+
+
+def _intent_from_style(style: str) -> str:
+    return STYLE_TO_ATTACK_INTENT.get((style or "").strip(), "unknown")
+
+
 def _load_config_meta(config_path: str, cache: Dict[str, Dict[str, str]]) -> Dict[str, str]:
     if config_path in cache:
         return cache[config_path]
@@ -168,6 +197,11 @@ def _load_config_meta(config_path: str, cache: Dict[str, Dict[str, str]]) -> Dic
         p = (Path.cwd() / p).resolve()
     scenario_name = p.stem
     target_surface = "unknown"
+    attack_intent = "unknown"
+    attack_intent_note = ""
+    model_version = ""
+    prompt_version = ""
+    generated_at = ""
     try:
         data = yaml.safe_load(p.read_text(encoding="utf-8"))
         if isinstance(data, dict):
@@ -175,9 +209,34 @@ def _load_config_meta(config_path: str, cache: Dict[str, Dict[str, str]]) -> Dic
             if isinstance(scen, str) and scen.strip():
                 scenario_name = scen.strip()
             target_surface = _normalize_target_surface(data.get("target_surface"))
+
+            attack_intent = _normalize_attack_intent(data.get("attack_intent"))
+            attack_intent_note = str(data.get("attack_intent_note") or "")
+
+            generation_meta = data.get("generation_meta")
+            if isinstance(generation_meta, dict):
+                if attack_intent == "unknown":
+                    attack_intent = _normalize_attack_intent(generation_meta.get("attack_intent"))
+                if not attack_intent_note:
+                    attack_intent_note = str(generation_meta.get("attack_intent_note") or "")
+                model_version = str(generation_meta.get("model_version") or "")
+                prompt_version = str(generation_meta.get("prompt_version") or "")
+                generated_at = str(generation_meta.get("generated_at") or "")
+
+            scenario_blueprint = data.get("scenario_blueprint")
+            if attack_intent == "unknown" and isinstance(scenario_blueprint, dict):
+                attack_intent = _normalize_attack_intent(scenario_blueprint.get("attack_intent"))
     except Exception:
         pass
-    meta = {"scenario_name": scenario_name, "target_surface": target_surface}
+    meta = {
+        "scenario_name": scenario_name,
+        "target_surface": target_surface,
+        "attack_intent": attack_intent,
+        "attack_intent_note": attack_intent_note,
+        "model_version": model_version,
+        "prompt_version": prompt_version,
+        "generated_at": generated_at,
+    }
     cache[config_path] = meta
     return meta
 
@@ -302,6 +361,9 @@ def load_scenarios(jsonl_files: Sequence[Path]) -> Tuple[List[ScenarioResult], D
             scenario_name = config_meta["scenario_name"]
             target_surface = config_meta["target_surface"]
             style, domain = _parse_style_and_domain(scenario_name)
+            attack_intent = _normalize_attack_intent(config_meta.get("attack_intent"))
+            if attack_intent == "unknown":
+                attack_intent = _intent_from_style(style)
             classification = _classify_scenario(status, api_blocked, refusal_like, category_positive)
 
             scenarios.append(
@@ -311,7 +373,12 @@ def load_scenarios(jsonl_files: Sequence[Path]) -> Tuple[List[ScenarioResult], D
                     scenario_name=scenario_name,
                     domain=domain,
                     style=style,
+                    attack_intent=attack_intent,
+                    attack_intent_note=str(config_meta.get("attack_intent_note") or ""),
                     target_surface=target_surface,
+                    model_version=str(config_meta.get("model_version") or ""),
+                    prompt_version=str(config_meta.get("prompt_version") or ""),
+                    generated_at=str(config_meta.get("generated_at") or ""),
                     status=status,
                     classification=classification,
                     category_positive=category_positive,
@@ -404,7 +471,12 @@ def write_csv(rows: Sequence[ScenarioResult], output_csv: Path) -> None:
         "scenario_name",
         "domain",
         "style",
+        "attack_intent",
+        "attack_intent_note",
         "target_surface",
+        "model_version",
+        "prompt_version",
+        "generated_at",
         "status",
         "classification",
     ] + [f"cat_{cat}" for cat in FIVE_METRIC_CATEGORIES]
@@ -418,7 +490,12 @@ def write_csv(rows: Sequence[ScenarioResult], output_csv: Path) -> None:
                 "scenario_name": row.scenario_name,
                 "domain": row.domain,
                 "style": row.style,
+                "attack_intent": row.attack_intent,
+                "attack_intent_note": row.attack_intent_note,
                 "target_surface": row.target_surface,
+                "model_version": row.model_version,
+                "prompt_version": row.prompt_version,
+                "generated_at": row.generated_at,
                 "status": row.status,
                 "classification": row.classification,
             }
@@ -443,12 +520,16 @@ def main() -> int:
     by_style_rows = _group_by(scenarios, lambda x: x.style)
     by_domain_rows = _group_by(scenarios, lambda x: x.domain)
     by_surface_rows = _group_by(scenarios, lambda x: x.target_surface)
+    by_intent_rows = _group_by(scenarios, lambda x: x.attack_intent)
     by_domain_style_rows = _group_by(scenarios, lambda x: f"{x.domain}|{x.style}")
     by_surface_style_rows = _group_by(scenarios, lambda x: f"{x.target_surface}|{x.style}")
 
     by_style = {k: summarize_group(v) for k, v in sorted(by_style_rows.items())}
     by_domain = {k: summarize_group(v) for k, v in sorted(by_domain_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
     by_surface = {k: summarize_group(v) for k, v in sorted(by_surface_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
+    by_attack_intent = {
+        k: summarize_group(v) for k, v in sorted(by_intent_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    }
     by_domain_style = {k: summarize_group(v) for k, v in sorted(by_domain_style_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))}
     by_surface_style = {
         k: summarize_group(v) for k, v in sorted(by_surface_style_rows.items(), key=lambda kv: (-len(kv[1]), kv[0]))
@@ -463,6 +544,7 @@ def main() -> int:
         "by_style": by_style,
         "by_domain": by_domain,
         "by_surface": by_surface,
+        "by_attack_intent": by_attack_intent,
         "by_domain_style": by_domain_style,
         "by_surface_style": by_surface_style,
         "criterion_level": criterion_level,

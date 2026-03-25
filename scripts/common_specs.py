@@ -3,10 +3,7 @@ from __future__ import annotations
 """
 Shared scenario specs/constants for scripts under `scripts/`.
 
-This module exists to avoid copy-pasting style/metric enums across:
-- build_attack_config.py
-- attack_config_lint.py
-- aggregate_attack_reports.py
+This module exists to avoid copy-pasting style/metric enums across active reporting and evaluation scripts (for example, aggregate_attack_reports.py and llm_judge_attack_behavior.py).
 """
 
 from typing import Dict, Tuple

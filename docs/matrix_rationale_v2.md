@@ -62,6 +62,6 @@ It does not primarily evaluate external jailbreak methods against the agent itse
 ## Artifacts
 - Domain matrix: `configs/matrix/domain_matrix_v1.txt`
 - Style list v2: `configs/matrix/attack_styles_cia_v2.txt`
-- Batch generation: `scripts/generate_attack_batch.sh`
-- Scenario config build: `scripts/build_attack_config.py`
+- Scenario generation: `scripts/scenario/generate_from_seed.py`
+- Scenario generation notes: `scripts/scenario/README.md`
 - Aggregation: `scripts/aggregate_attack_reports.py`
