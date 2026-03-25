@@ -14,6 +14,8 @@ This directory contains active workflows only.
   - Usage examples and notes for the V2 generator.
 - `scenario/generate_batch_from_seeds.py`
   - TSV-driven batch scenario generation with concurrency/retry/resume support.
+- `scenario/generate_seed_template_with_llm.py`
+  - LLM-driven seed template generation from domain matrix (with coverage fallback).
 
 ## 2) Runtime / Evaluation
 - `init_from_config.py`
