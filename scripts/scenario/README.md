@@ -77,6 +77,23 @@ uv run python scripts/scenario/generate_batch_from_seeds.py \
   --resume
 ```
 
+Profile options:
+- `--repair-profile legacy` (default): keeps historical behavior for regular seed batches.
+- `--repair-profile asb`: enables `Generate -> Validate -> Repair` for ASB-style seeds.
+
+ASB-style run example:
+```bash
+uv run python scripts/scenario/generate_batch_from_seeds.py \
+  --seeds-file configs/seeds/template_seed_batch_asb.tsv \
+  --output-dir configs/attack/batch_seed_asb \
+  --provider azure \
+  --model gpt-5.4 \
+  --temperature 1 \
+  --workers 4 \
+  --repair-profile asb \
+  --resume
+```
+
 Outputs:
 - `configs/attack/batch_seed_v2/*.yaml`
 - `configs/attack/batch_seed_v2/_batch_manifest.jsonl`
@@ -92,3 +109,38 @@ uv run python scripts/scenario/generate_seed_template_with_llm.py   --domains-fi
 ```
 
 The script enforces domain x intent coverage and auto-fills missing rows with deterministic fallback.
+
+## Generate Template From ASB (Rule-Based)
+
+Use ASB task + attack-tool JSONL files to build a HoneyGuard seed TSV without LLM calls.
+
+```bash
+uv run python scripts/scenario/generate_seed_template_from_asb.py \
+  --asb-data-dir /home/hyx/workplace/ASB/data \
+  --output configs/seeds/template_seed_batch_asb.tsv \
+  --attack-tools-source all \
+  --build-mode full_faithful \
+  --surface-mode agent
+```
+
+Key options:
+- `--attack-tools-source all|aggressive|non-aggressive`
+- `--task-files agent_task.jsonl,agent_task_pot.jsonl,agent_task_pot_msg.jsonl`
+- `--build-mode full_faithful|balanced_legacy` (`full_faithful` = one ASB attack entry per seed)
+- `--max-rows <N>` (optional cap; in `full_faithful` mode it truncates in source order)
+- `--surface-mode agent|cycle`
+- `--variants-per-intent <N>` (only used by `balanced_legacy`)
+
+Output columns are directly compatible with `generate_batch_from_seeds.py` (extra ASB provenance columns are preserved for traceability):
+- `scenario_name`
+- `target_surface`
+- `attack_intent`
+- `attack_intent_note`
+- `seed`
+- `asb_agent`
+- `asb_attack_tool`
+- `asb_attack_type`
+- `asb_aggressive`
+- `asb_instruction`
+- `asb_goal`
+- `asb_source_line`
