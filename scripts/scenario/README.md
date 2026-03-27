@@ -144,3 +144,50 @@ Output columns are directly compatible with `generate_batch_from_seeds.py` (extr
 - `asb_instruction`
 - `asb_goal`
 - `asb_source_line`
+
+## Generate Template From OpenAgentSafety (LLM-First)
+
+Use OpenAgentSafety task folders to generate HoneyGuard seed TSV under the threat model:
+`benign user instruction + malicious agent hidden intent`.
+
+```bash
+uv run python scripts/scenario/generate_seed_template_from_oas.py \
+  --oas-tasks-dir /home/hyx/workplace/OpenAgentSafety/workspaces/tasks \
+  --output configs/seeds/template_seed_batch_oas.tsv \
+  --provider azure \
+  --model gpt-4o \
+  --workers 4
+```
+
+Key options:
+- `--llm-max-retries <N>`: retries per structured LLM call
+- `--repair-max-rounds <N>`: extra rounds when deterministic validation fails
+- `--min-confidence <0-1>`: confidence gate (default low-confidence rows are skipped)
+- `--keep-low-confidence`: keep low-confidence rows and mark review flag
+- `--resume`: append new rows while skipping existing `oas_task_id`
+- `--dependencies-filter all|local_only|external_only`
+- `--require-workspace`, `--require-scenarios`
+- `--max-rows <N>`
+
+Output columns are compatible with `generate_batch_from_seeds.py` (extra OAS + LLM metadata kept for traceability):
+- `scenario_name`
+- `target_surface`
+- `attack_intent`
+- `attack_intent_note`
+- `seed`
+- `oas_task_id`
+- `oas_dependencies`
+- `oas_has_workspace`
+- `oas_has_scenarios`
+- `oas_checkpoint`
+- `oas_safe_completion`
+- `oas_strategy_hint`
+- `oas_task_type`
+- `oas_confidence`
+- `oas_rationale`
+- `oas_unsafe_spans`
+- `oas_repair_rounds`
+- `oas_prompt_version`
+- `oas_model_version`
+- `oas_review_flag`
+- `oas_validation_flags`
