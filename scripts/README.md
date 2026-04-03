@@ -22,6 +22,9 @@ This directory contains active workflows only.
   - Validates YAML and initializes a HoneyGuard session.
 - `run_attack_scenario.sh`
   - Convenience runner for initialize + step execution + optional cleanup.
+- `run_ablation_experiment.py`
+  - Repeated multi-scenario experiment runner with behavior-oriented aggregation
+    (sensitive-path access, leakage buckets B0/B1/B2/B3, utility retention).
 - `aggregate_attack_reports.py`
   - Aggregates run JSONL outputs into summary metrics/tables.
 - `llm_judge_attack_behavior.py`
