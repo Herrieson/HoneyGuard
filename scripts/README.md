@@ -27,6 +27,9 @@ This directory contains active workflows only.
     (sensitive-path access, leakage buckets B0/B1/B2/B3, utility retention).
 - `aggregate_attack_reports.py`
   - Aggregates run JSONL outputs into summary metrics/tables.
+- `export_run_to_json.py`
+  - Converts one or more `run_scenarios.py` records plus optional `logs/hse.db`
+    trace rows into a normalized scorer-facing JSON format.
 - `llm_judge_attack_behavior.py`
   - LLM-based supplementary evaluator for malicious behavior.
 

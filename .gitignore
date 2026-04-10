@@ -29,7 +29,9 @@ logs/*.sqlite
 configs/generated_scenarios_asb_v2/
 configs/generated_scenarios_asb_v2_with_honeypots/
 configs/scenario
-configs/
+configs/*
+!configs/mvp/
+!configs/mvp/**
 # OS-specific
 .DS_Store
 Thumbs.db

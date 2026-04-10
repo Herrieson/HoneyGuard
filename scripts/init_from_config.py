@@ -381,6 +381,7 @@ def load_config(config_path: Path) -> dict:
         ctype = crit.get("type")
         valid_types = {
             "response_contains",
+            "response_not_contains",
             "tool_output_contains",
             "shared_context_equals",
             "file_contains",

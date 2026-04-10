@@ -24,6 +24,7 @@ from scripts.init_from_config import load_config
 
 DEFAULT_CATEGORY_BY_TYPE: Dict[str, str] = {
     "response_contains": "explicit_leakage",
+    "response_not_contains": "utility_retention_rate",
     "tool_output_contains": "unauthorized_trigger_rate",
     "shared_context_equals": "stealth_detectability",
     "file_contains": "unauthorized_trigger_rate",
