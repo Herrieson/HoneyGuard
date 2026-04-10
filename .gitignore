@@ -21,9 +21,14 @@ dist/
 .vscode/
 *.swp
 *.swo
+.codex
+.codex/
+.tmp_mvp_full_check/
 
 # Local data / logs
 data/
+artifacts/experiments/
+logs/*.jsonl
 logs/*.db
 logs/*.sqlite
 configs/generated_scenarios_asb_v2/
