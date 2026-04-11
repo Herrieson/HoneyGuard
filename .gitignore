@@ -37,6 +37,8 @@ configs/scenario
 configs/*
 !configs/mvp/
 !configs/mvp/**
+!configs/attribution/
+!configs/attribution/**
 # OS-specific
 .DS_Store
 Thumbs.db
