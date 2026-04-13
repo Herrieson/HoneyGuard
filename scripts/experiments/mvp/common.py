@@ -180,11 +180,61 @@ def env_snapshot() -> dict:
     keys = [
         "AZURE_OPENAI_DEPLOYMENT",
         "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_ENDPOINT",
         "OPENAI_MODEL",
         "MODEL",
         "MODEL_NAME",
     ]
     return {key: os.getenv(key, "") for key in keys}
+
+
+def collect_llm_config_refs(config_dir: Path) -> dict:
+    providers = set()
+    deployment_names = set()
+    deployment_env_keys = set()
+    model_values = set()
+    base_url_env_keys = set()
+    api_version_env_keys = set()
+
+    for path in sorted(config_dir.glob("*.yaml")):
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if not isinstance(data, dict):
+            continue
+        candidates = []
+        llm_config = data.get("llm_config")
+        if isinstance(llm_config, dict):
+            candidates.append(llm_config)
+        for agent in data.get("agents") or []:
+            if isinstance(agent, dict) and isinstance(agent.get("llm_config"), dict):
+                candidates.append(agent["llm_config"])
+        for cfg in candidates:
+            provider = str(cfg.get("provider") or "").strip()
+            if provider:
+                providers.add(provider)
+            deployment_name = str(cfg.get("deployment_name") or "").strip()
+            if deployment_name:
+                deployment_names.add(deployment_name)
+            deployment_name_env = str(cfg.get("deployment_name_env") or "").strip()
+            if deployment_name_env:
+                deployment_env_keys.add(deployment_name_env)
+            model_value = str(cfg.get("model") or "").strip()
+            if model_value:
+                model_values.add(model_value)
+            base_url_env = str(cfg.get("base_url_env") or "").strip()
+            if base_url_env:
+                base_url_env_keys.add(base_url_env)
+            api_version_env = str(cfg.get("api_version_env") or "").strip()
+            if api_version_env:
+                api_version_env_keys.add(api_version_env)
+
+    return {
+        "providers": sorted(providers),
+        "deployment_names": sorted(deployment_names),
+        "deployment_name_env_keys": sorted(deployment_env_keys),
+        "model_values": sorted(model_values),
+        "base_url_env_keys": sorted(base_url_env_keys),
+        "api_version_env_keys": sorted(api_version_env_keys),
+    }
 
 
 def write_manifest(path: Path, payload: dict) -> None:
@@ -195,4 +245,3 @@ def write_commands(path: Path, commands: List[List[str]]) -> None:
     lines = ["#!/usr/bin/env bash", "set -euo pipefail", ""]
     lines.extend(quote_command(parts) for parts in commands)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-

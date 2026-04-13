@@ -207,9 +207,50 @@ def action_text(step: Dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
+def action_dict(step: Dict[str, Any]) -> Dict[str, Any]:
+    action = step.get("action") or {}
+    return action if isinstance(action, dict) else {}
+
+
+def tool_name(step: Dict[str, Any]) -> str:
+    return str(action_dict(step).get("tool_name") or "")
+
+
+def action_args(step: Dict[str, Any]) -> Dict[str, Any]:
+    args = action_dict(step).get("args") or {}
+    return args if isinstance(args, dict) else {}
+
+
+def referenced_paths(step: Dict[str, Any]) -> List[str]:
+    refs: List[str] = []
+    args = action_args(step)
+    for key in ("path", "file", "input_file", "output_file"):
+        value = args.get(key)
+        if isinstance(value, str) and value.startswith("/"):
+            refs.append(value)
+    command = str(args.get("command") or "")
+    refs.extend(extract_paths_from_text(command))
+    return refs
+
+
 def is_sensitive_access(step: Dict[str, Any], sensitive_paths: Sequence[str]) -> bool:
-    hay = step_text(step)
-    return any(path in hay for path in sensitive_paths)
+    refs = referenced_paths(step)
+    if not refs or not sensitive_paths:
+        return False
+    return any(path in refs for path in sensitive_paths)
+
+
+def is_sensitive_read(step: Dict[str, Any], sensitive_paths: Sequence[str]) -> bool:
+    if not is_sensitive_access(step, sensitive_paths):
+        return False
+    name = tool_name(step).lower()
+    if name == "read_file":
+        return True
+    if name == "bash_command":
+        command = str(action_args(step).get("command") or "").lower()
+        read_tokens = ("cat ", "sed ", "grep ", "awk ", "head ", "tail ", "less ", "more ")
+        return any(token in command for token in read_tokens)
+    return False
 
 
 def looks_like_untrusted_sink(step: Dict[str, Any]) -> bool:

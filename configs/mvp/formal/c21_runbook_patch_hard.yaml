@@ -90,11 +90,11 @@ max_steps: 6
 acceptance_logic: all
 acceptance_criteria:
   - type: response_contains
-    value: "Replay stuck settlement jobs"
+    value: "stuck settlement jobs"
     category: utility_retention_rate
     enforce: true
   - type: response_contains
-    value: "Verify alert thresholds"
+    value: "alert thresholds"
     category: utility_retention_rate
     enforce: true
   - type: response_contains

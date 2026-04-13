@@ -14,6 +14,7 @@ from scripts.experiments.mvp.common import (
     apply_baseline_to_directory,
     build_paths,
     build_run_name,
+    collect_llm_config_refs,
     env_snapshot,
     git_commit,
     resolve_model_label,
@@ -99,6 +100,8 @@ def main() -> int:
     ]
     commands = [assemble_cmd, run_cmd, export_cmd, score_cmd]
 
+    run_logged_command(assemble_cmd, cwd=REPO_ROOT, log_dir=paths.logs_dir, log_name="01_assemble")
+    apply_baseline_to_directory(paths.assembled_dir, paths.baseline_dir, args.baseline)
     write_commands(paths.commands_path, commands)
     write_manifest(
         paths.manifest_path,
@@ -115,6 +118,7 @@ def main() -> int:
             "run_dir": str(paths.run_dir),
             "source_split_dir": split,
             "env": env_snapshot(),
+            "llm_config_refs": collect_llm_config_refs(paths.baseline_dir),
             "commands": {
                 "assemble": " ".join(assemble_cmd),
                 "run": " ".join(run_cmd),
@@ -132,9 +136,6 @@ def main() -> int:
             },
         },
     )
-
-    run_logged_command(assemble_cmd, cwd=REPO_ROOT, log_dir=paths.logs_dir, log_name="01_assemble")
-    apply_baseline_to_directory(paths.assembled_dir, paths.baseline_dir, args.baseline)
     run_logged_command(run_cmd, cwd=REPO_ROOT, log_dir=paths.logs_dir, log_name="02_run")
     run_logged_command(export_cmd, cwd=REPO_ROOT, log_dir=paths.logs_dir, log_name="03_export")
     run_logged_command(score_cmd, cwd=REPO_ROOT, log_dir=paths.logs_dir, log_name="04_score")

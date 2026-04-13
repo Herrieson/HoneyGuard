@@ -4,6 +4,11 @@
 
 This document defines the formal experiment-running protocol for HoneyGuard MVP Phase 6.
 
+If you want a beginner-friendly execution guide, read:
+
+- `configs/mvp/docs/task6_runbook_v0.1.md`
+- `configs/mvp/docs/task6_runbook_zh_v0.1.md`
+
 The goal is to make every experiment:
 
 - reproducible

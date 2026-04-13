@@ -114,3 +114,7 @@ If a `test` sample must be changed later, the change should be treated as:
 - not a routine development edit
 
 and should be logged explicitly in a follow-up split or changelog document.
+
+Current revision log:
+
+- `configs/mvp/docs/benchmark_revision_log_v0.1.md`
