@@ -8,6 +8,7 @@ If you want a beginner-friendly execution guide, read:
 
 - `configs/mvp/docs/task6_runbook_v0.1.md`
 - `configs/mvp/docs/task6_runbook_zh_v0.1.md`
+- `configs/mvp/docs/task6_runbook_zh_v0.1.md`
 
 The goal is to make every experiment:
 
@@ -133,6 +134,7 @@ Every `manifest.json` should contain at least:
 - `split`
 - `baseline`
 - `model_label`
+- `runtime_model_identifier`
 - `tag`
 - `git_commit`
 - `source_split_dir`

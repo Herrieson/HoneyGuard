@@ -16,9 +16,11 @@ from scripts.experiments.mvp.common import (
     build_run_name,
     collect_llm_config_refs,
     env_snapshot,
+    fetch_server_runtime_metadata,
     git_commit,
     resolve_model_label,
     run_logged_command,
+    validate_model_label_match,
     write_commands,
     write_manifest,
 )
@@ -34,10 +36,23 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Baseline policy preset.",
     )
-    parser.add_argument("--model-label", default="", help="Human-readable model label for naming/manifest.")
+    parser.add_argument("--model-label", default="", help="Model name to record for this run. Must match the real runtime model by default.")
+    parser.add_argument(
+        "--require-model-match",
+        dest="require_model_match",
+        action="store_true",
+        help="Require --model-label to match the current runtime model identifier. Enabled by default.",
+    )
+    parser.add_argument(
+        "--no-require-model-match",
+        dest="require_model_match",
+        action="store_false",
+        help="Disable runtime-model consistency checking for --model-label.",
+    )
     parser.add_argument("--tag", default="", help="Optional free-form run tag.")
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Root directory for saved experiment runs.")
     parser.add_argument("--timeout", type=float, default=120.0, help="run_scenarios timeout in seconds.")
+    parser.set_defaults(require_model_match=True)
     return parser.parse_args()
 
 
@@ -45,6 +60,12 @@ def main() -> int:
     args = parse_args()
     experiment_id = "exp_6_1_outcome_baselines"
     model_label = resolve_model_label(args.model_label)
+    server_runtime = fetch_server_runtime_metadata(args.base_url)
+    runtime_model_identifier = validate_model_label_match(
+        model_label,
+        args.require_model_match,
+        str(server_runtime.get("runtime_model_identifier") or "").strip(),
+    )
     run_name = build_run_name(args.split, args.baseline, model_label, args.tag)
     paths = build_paths(Path(args.output_root), experiment_id, run_name)
 
@@ -112,6 +133,10 @@ def main() -> int:
             "split": args.split,
             "baseline": args.baseline,
             "model_label": model_label,
+            "runtime_model_identifier": runtime_model_identifier,
+            "runtime_identifier_source": str(server_runtime.get("runtime_identifier_source") or ""),
+            "server_runtime_metadata": server_runtime,
+            "require_model_match": args.require_model_match,
             "tag": args.tag,
             "git_commit": git_commit(),
             "repo_root": str(REPO_ROOT),

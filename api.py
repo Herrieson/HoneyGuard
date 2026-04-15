@@ -19,6 +19,7 @@ from environment.sandbox import SandboxManager
 from knowledge import Document, KnowledgeManager
 from logs.logger import SqliteLogger
 from orchestration.agent import SimpleAgent
+from orchestration.errors import AgentBlockedError, AgentExecutionError, AgentTransientError
 from orchestration.runner import EnvironmentRunner
 from orchestration.state import AgentState
 from orchestration.coordinator import AgentCoordinator, AgentWrapper
@@ -261,6 +262,19 @@ class RunStepResponse(BaseModel):
     )
 
 
+class RuntimeMetadataResponse(BaseModel):
+    runtime_model_identifier: str = Field(
+        "", description="Best-effort server-side runtime model identifier used for experiment labeling checks."
+    )
+    runtime_identifier_source: str = Field(
+        "", description="Environment variable or config source used to derive runtime_model_identifier."
+    )
+    runtime_env_snapshot: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Selected server-side environment values relevant to runtime model resolution.",
+    )
+
+
 sandbox_manager = SandboxManager()
 knowledge_manager = KnowledgeManager()
 tool_registry = ToolRegistry(sandbox_manager, knowledge_manager)
@@ -329,6 +343,38 @@ def _pre_execution_hook(session_id: str):
 
 def _trace_timestamp() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _agent_error_detail(exc: AgentExecutionError) -> Dict[str, Any]:
+    payload = exc.to_payload()
+    payload["message"] = str(exc)
+    return payload
+
+
+def _server_runtime_metadata() -> Dict[str, Any]:
+    keys = ("OPENAI_MODEL", "MODEL", "MODEL_NAME", "AZURE_OPENAI_DEPLOYMENT")
+    snapshot = {key: os.getenv(key, "") for key in keys}
+    for key in keys:
+        value = snapshot[key].strip()
+        if value:
+            return {
+                "runtime_model_identifier": value,
+                "runtime_identifier_source": key,
+                "runtime_env_snapshot": snapshot,
+            }
+    fallback = resolve_llm_config({})
+    fallback_identifier = str(fallback.get("deployment_name") or fallback.get("model") or "").strip()
+    if fallback_identifier:
+        return {
+            "runtime_model_identifier": fallback_identifier,
+            "runtime_identifier_source": "resolve_llm_config({})",
+            "runtime_env_snapshot": snapshot,
+        }
+    return {
+        "runtime_model_identifier": "",
+        "runtime_identifier_source": "",
+        "runtime_env_snapshot": snapshot,
+    }
 
 
 def _derive_trace_events(acceptance_results: Optional[List[Dict[str, object]]]) -> List[Dict[str, object]]:
@@ -808,6 +854,12 @@ def run_step(payload: RunStepRequest, _: None = Depends(_check_auth_and_rate)) -
     }
     try:
         result = session.runner.run(state)
+    except AgentBlockedError as exc:
+        raise HTTPException(status_code=400, detail=_agent_error_detail(exc)) from exc
+    except AgentTransientError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=_agent_error_detail(exc)) from exc
+    except AgentExecutionError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=_agent_error_detail(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Agent execution error: {exc}") from exc
     except Exception as exc:
@@ -945,6 +997,11 @@ def health(_: None = Depends(_check_auth_and_rate)) -> Dict[str, Any]:
         "rate_limit": RATE_LIMIT,
         "token_required": bool(API_TOKEN or os.getenv("HSE_API_TOKEN")),
     }
+
+
+@app.get("/v1/server/runtime_metadata", response_model=RuntimeMetadataResponse)
+def runtime_metadata(_: None = Depends(_check_auth_and_rate)) -> RuntimeMetadataResponse:
+    return RuntimeMetadataResponse(**_server_runtime_metadata())
 
 
 @app.post("/admin/cleanup_containers")

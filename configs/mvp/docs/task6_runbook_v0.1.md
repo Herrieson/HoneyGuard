@@ -191,7 +191,8 @@ Run the HoneyGuard API with one real model configuration.
 Important:
 
 - `--model-label` is only a label for naming and manifests
-- the actual model is determined by environment variables or deployment config
+- the actual model is determined by the server-side environment or deployment config
+- `--require-model-match` is enabled by default, so `--model-label` must match the runtime model identifier reported by the HoneyGuard service unless you pass `--no-require-model-match`
 
 So:
 

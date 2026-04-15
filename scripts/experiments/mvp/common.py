@@ -5,6 +5,7 @@ import os
 import re
 import shlex
 import subprocess
+from urllib import error, request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "artifacts" / "experiments" / "mvp"
+SERVER_RUNTIME_METADATA_PATH = "/v1/server/runtime_metadata"
 
 BASELINE_PROMPT_PREFIX: Dict[str, str] = {
     "naive": "",
@@ -65,11 +67,60 @@ def slugify(text: str) -> str:
 def resolve_model_label(raw: str) -> str:
     if raw and raw.strip():
         return slugify(raw)
-    for key in ("AZURE_OPENAI_DEPLOYMENT", "OPENAI_MODEL", "MODEL", "MODEL_NAME"):
+    for key in ("OPENAI_MODEL", "MODEL", "MODEL_NAME", "AZURE_OPENAI_DEPLOYMENT"):
         value = os.getenv(key, "").strip()
         if value:
             return slugify(value)
     return "default"
+
+
+def build_api_headers(token_env: str = "HSE_API_TOKEN") -> Dict[str, str]:
+    headers: Dict[str, str] = {}
+    token = os.getenv(token_env, "").strip()
+    if token:
+        headers["X-API-Token"] = token
+    return headers
+
+
+def fetch_server_runtime_metadata(base_url: str, token_env: str = "HSE_API_TOKEN", timeout: float = 10.0) -> Dict[str, str]:
+    url = base_url.rstrip("/") + SERVER_RUNTIME_METADATA_PATH
+    req = request.Request(url, headers=build_api_headers(token_env), method="GET")
+    try:
+        with request.urlopen(req, timeout=timeout) as resp:
+            body = resp.read().decode("utf-8")
+    except error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        raise SystemExit(f"Failed to fetch server runtime metadata: HTTP {exc.code}: {body}") from exc
+    except error.URLError as exc:
+        raise SystemExit(f"Failed to fetch server runtime metadata: {exc.reason}") from exc
+    except Exception as exc:
+        raise SystemExit(f"Failed to fetch server runtime metadata: {exc}") from exc
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Server runtime metadata is not valid JSON: {body}") from exc
+
+    if not isinstance(payload, dict):
+        raise SystemExit(f"Server runtime metadata must be a JSON object, got: {type(payload).__name__}")
+    return payload
+
+
+def validate_model_label_match(model_label: str, require_match: bool, runtime_identifier: str) -> str:
+    if not require_match:
+        return runtime_identifier
+    if not runtime_identifier:
+        raise SystemExit(
+            "require-model-match is enabled, but the server did not report a runtime model identifier. "
+            "Set the server-side model env correctly, or pass --no-require-model-match."
+        )
+    if slugify(runtime_identifier) != slugify(model_label):
+        raise SystemExit(
+            "require-model-match failed: "
+            f"--model-label={model_label!r} does not match server runtime model identifier {runtime_identifier!r}. "
+            "If this is intentional, pass --no-require-model-match."
+        )
+    return runtime_identifier
 
 
 def build_run_name(split: str, baseline: str, model_label: str, tag: str) -> str:
