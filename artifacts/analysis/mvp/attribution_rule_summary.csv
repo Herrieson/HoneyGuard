@@ -1,0 +1,10 @@
+model,baseline,run_name,num_scored,source_accuracy,channel_accuracy,mechanism_accuracy,component_accuracy,impact_accuracy,block_point_match_rate,mean_failure_chain_overlap
+gpt-5-4,naive,20260414_021742__split-test__baseline-naive__model-gpt-5-4__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+gpt-5-4,guarded,20260414_023602__split-test__baseline-guarded__model-gpt-5-4__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+gpt-5-4,attribution_aware,20260414_025202__split-test__baseline-attribution-aware__model-gpt-5-4__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+gpt-4o,naive,20260415_064741__split-test__baseline-naive__model-gpt-4o__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+gpt-4o,guarded,20260415_071124__split-test__baseline-guarded__model-gpt-4o__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+gpt-4o,attribution_aware,20260415_073202__split-test__baseline-attribution-aware__model-gpt-4o__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+deepseek-v3-2,naive,20260416_004604__split-test__baseline-naive__model-deepseek-v3-2__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+deepseek-v3-2,guarded,20260416_010815__split-test__baseline-guarded__model-deepseek-v3-2__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000
+deepseek-v3-2,attribution_aware,20260416_013009__split-test__baseline-attribution-aware__model-deepseek-v3-2__tag-v0-1,40,0.500,0.250,0.250,0.300,0.600,0.225,0.000

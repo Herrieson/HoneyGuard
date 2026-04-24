@@ -21,6 +21,10 @@
 - `6.2` 和 `6.5` 是“主要跑实验”
 - `6.3` 和 `6.4` 是“主要做分析”
 
+如果你现在最困惑的是“归因到底怎么落地”，直接看这份单独说明：
+
+- [task6_attribution_runbook_zh_v0.1.md](/home/hyx/workplace/HoneyGuard/configs/mvp/docs/task6_attribution_runbook_zh_v0.1.md)
+
 ---
 
 ## 2. 第 6 阶段到底包含什么
@@ -409,17 +413,20 @@
   - `exports/`
   - `scores/`
 
-目前还没有完全脚本化的部分：
+目前已经补上的分析脚本：
 
-- `6.3` 的专门分析脚本
-- `6.4` 的专门分析脚本
+- 横向结果聚合：`scripts/analysis/analyze_mvp_results.py`
+- trace 归因预测：`scripts/analysis/trace_attribution_judge.py`
+- 批量归因评分：`scripts/analysis/run_mvp_attribution_analysis.py`
 
-这不影响你现在开始正式实验。
+也就是说，现在 `6.3` 不需要靠人肉逐条看 trace 起步。
 
-因为：
+正确做法是：
 
-- 主实验已经可以规范地跑起来
-- `6.3`、`6.4` 后面主要是补分析脚本和出图
+1. 先用脚本自动产出模型横向表、naive 横向表、失败归因分布
+2. 再用 trace attribution judge 产出 `attribution_prediction`
+3. 再用 `eval/attribution_scorer.py` 自动和 YAML 真值对齐评分
+4. 最后只挑少量代表性 trace 做论文 case study
 
 ---
 
@@ -589,14 +596,118 @@ pilot 在：
 
 等你把 `test` 上的 3 个 baseline 都跑完后，就可以做 `6.3`。
 
-最简单的做法是：
+现在推荐用自动流程，不再先手工逐条看 trace。
 
-1. 先看 3 份 `outcome.summary.json`
-2. 找两个 endpoint 分数比较接近的 baseline
-3. 再去看它们各自的 `outcome.rows.csv`
-4. 比较失败样本分布
-5. 比较 attribution 标签分布
-6. 选几个代表性 trace 作为论文 case study
+### 15.1 先生成 outcome 和失败归因分布
+
+```bash
+uv run python scripts/analysis/analyze_mvp_results.py \
+  --root artifacts/experiments/mvp \
+  --output artifacts/analysis/mvp
+```
+
+这个脚本会生成：
+
+- `artifacts/analysis/mvp/focus_three_models_summary.csv`
+- `artifacts/analysis/mvp/all_naive_summary.csv`
+- `artifacts/analysis/mvp/focus_three_models_family_breakdown.csv`
+- `artifacts/analysis/mvp/focus_three_models_attribution_failure_breakdown.csv`
+- `artifacts/analysis/mvp/summary.md`
+
+这里的 attribution failure breakdown 不是人工肉眼看出来的。
+
+它会把已经发生 `safety_violation` 或 latent violation 的 run，自动映射到 YAML 里的样本级归因真值：
+
+- `primary_channel`
+- `first_failed_component`
+- `primary_mechanism`
+- `primary_impact`
+- `counterfactual_block_point`
+
+这一步适合回答：
+
+> 不同模型实际触发的失败，主要集中在哪些归因类别？
+
+### 15.2 再生成运行级 attribution prediction
+
+如果要做真正的“自动归因评分”，不要手写 `attribution.predictions.jsonl`。
+
+用这个脚本：
+
+```bash
+uv run python scripts/analysis/run_mvp_attribution_analysis.py \
+  --mode rule \
+  --output artifacts/analysis/mvp/attribution_rule_summary.csv
+```
+
+它会对默认三模型九组结果运行：
+
+- `gpt-5-4`
+- `gpt-4o`
+- `deepseek-v3-2`
+
+以及三种 baseline：
+
+- `naive`
+- `guarded`
+- `attribution_aware`
+
+每个 run 会自动生成：
+
+- `scores/attribution_rule.predictions.jsonl`
+- `scores/attribution_rule.summary.json`
+- `scores/attribution_rule.rows.csv`
+
+总表会生成：
+
+- `artifacts/analysis/mvp/attribution_rule_summary.csv`
+- `artifacts/analysis/mvp/attribution_rule_summary.md`
+
+### 15.3 三种归因模式怎么理解
+
+`trace_attribution_judge.py` 支持三种模式：
+
+- `--mode oracle`：直接复制 YAML 真值，主要用于 sanity check，正常应该 100% 对齐
+- `--mode rule`：基于 family、trace 文本、tool/action 线索做规则预测，是可复现的自动 baseline
+- `--mode llm`：把 trace evidence 交给 LLM judge 预测归因标签，用于正式的 trace-based attribution judge
+
+`oracle` 不能当模型能力结果，只能证明 scorer 链路没坏。
+
+`rule` 可以作为很弱的自动归因 baseline。
+
+`llm` 才是后面最适合写进论文的自动归因判断方式，但要固定 judge model、prompt 和版本。
+
+### 15.4 如果要跑 LLM judge
+
+先确认环境里有 OpenAI API key，然后跑：
+
+```bash
+uv run python scripts/analysis/run_mvp_attribution_analysis.py \
+  --mode llm \
+  --judge-model gpt-4o-mini \
+  --output artifacts/analysis/mvp/attribution_llm_summary.csv
+```
+
+如果只想先跑一个模型或一个 baseline，可以收窄范围：
+
+```bash
+uv run python scripts/analysis/run_mvp_attribution_analysis.py \
+  --mode llm \
+  --models gpt-5-4 \
+  --baselines guarded attribution_aware \
+  --judge-model gpt-4o-mini \
+  --output artifacts/analysis/mvp/attribution_llm_gpt54_guarded_vs_attr.csv
+```
+
+### 15.5 最后再挑 case study
+
+自动表出来以后，再人工挑少量代表性 trace。
+
+这里人工看的目的不是“生成全部归因标签”，而是：
+
+- 解释一个典型失败链
+- 展示 endpoint 分数相近但 mechanism 不同的例子
+- 支撑论文里的 qualitative case study
 
 这里的核心不是：
 
@@ -612,12 +723,26 @@ pilot 在：
 
 等你把 `test` 上的结果都跑完后，也可以开始做 `6.4`。
 
-最简单的做法是：
+现在最简单的做法也是先跑自动聚合：
 
-1. 先看哪些样本最后看起来比较安全
-2. 再检查 trace-level scorer 有没有提示 latent violation
-3. 统计这样的样本有多少
-4. 总结这些 case 为什么 endpoint-only 会漏掉
+```bash
+uv run python scripts/analysis/analyze_mvp_results.py \
+  --root artifacts/experiments/mvp \
+  --output artifacts/analysis/mvp
+```
+
+然后重点看：
+
+- `artifacts/analysis/mvp/focus_three_models_summary.csv` 里的 `latent_violation_rate`
+- `artifacts/analysis/mvp/all_naive_summary.csv` 里的 `latent_violation_rate`
+- 每个 run 的 `scores/outcome.rows.csv` 里的 `latent_violation_labels`
+
+`6.4` 要回答的是：
+
+1. 哪些 run 最终输出看起来没有明显泄露
+2. 但 trace 或工具行为里已经出现 unauthorized sensitive read / silent boundary crossing
+3. endpoint-only evaluation 会漏掉多少
+4. 哪些模型或 baseline 更容易出现这种 false negative
 
 这一部分最重要的结论就是：
 
@@ -660,7 +785,9 @@ pilot 在：
 正确做法是：
 
 - 先把 `test` 的 3 个 baseline 跑齐
-- 再做 `6.3` 和 `6.4`
+- 再跑 `scripts/analysis/analyze_mvp_results.py`
+- 再跑 `scripts/analysis/run_mvp_attribution_analysis.py`
+- 最后只对少量代表性 trace 做人工 case study
 
 ---
 
@@ -676,8 +803,10 @@ pilot 在：
 6. 跑 `pilot_b + naive`
 7. 跑 `pilot_b + guarded`
 8. 跑 `pilot_b + attribution_aware`
-9. 再开始做 `6.3`
-10. 再开始做 `6.4`
+9. 跑 `scripts/analysis/analyze_mvp_results.py` 生成横向表和失败归因分布
+10. 跑 `scripts/analysis/run_mvp_attribution_analysis.py` 生成自动归因评分
+11. 再写 `6.3` attribution divergence 分析
+12. 再写 `6.4` hidden violation 分析
 
 如果你已经跑完了 `test + naive`，那下一步通常就是：
 

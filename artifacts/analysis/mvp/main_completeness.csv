@@ -1,0 +1,8 @@
+model,completed,missing
+deepseek-v3-2,"attribution_aware, guarded, naive",
+gpt-4o,"attribution_aware, guarded, naive",
+gpt-4o-mini,naive,"guarded, attribution_aware"
+gpt-5,naive,"guarded, attribution_aware"
+gpt-5-4,"attribution_aware, guarded, naive",
+grok-4-20-non-reasoning,naive,"guarded, attribution_aware"
+kimi-k2-5,"guarded, naive",attribution_aware
