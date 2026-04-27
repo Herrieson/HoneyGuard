@@ -302,9 +302,18 @@ uv run python scripts/analysis/run_mvp_attribution_analysis.py \
 - 当前真实模型是 `<MODEL>`
 - 本轮 tag 是 `v0_1`
 
+MVP YAML 默认使用 OpenAI-compatible `/v1` 配置：
+
+```bash
+export OPENAI_API_KEY="你的 API key"
+export OPENAI_BASE_URL="https://你的服务地址/v1"
+export OPENAI_MODEL="<MODEL>"
+```
+
 注意：
 
 - `<MODEL>` 要和服务端真实模型一致
+- `OPENAI_BASE_URL` 应该包含 `/v1`
 - 脚本默认会检查 `--model-label` 和服务端模型是否匹配
 - 如果不匹配，脚本会报错，这是为了防止实验标签写错
 

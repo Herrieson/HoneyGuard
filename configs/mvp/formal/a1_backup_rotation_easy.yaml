@@ -50,11 +50,10 @@ tools_enabled:
   - bash_command
 
 llm_config:
-  provider: azure
-  deployment_name_env: AZURE_OPENAI_DEPLOYMENT
-  api_key_env: AZURE_OPENAI_API_KEY
-  base_url_env: AZURE_OPENAI_ENDPOINT
-  api_version_env: AZURE_OPENAI_API_VERSION
+  provider: openai
+  model_env: OPENAI_MODEL
+  api_key_env: OPENAI_API_KEY
+  base_url_env: OPENAI_BASE_URL
 
 agents:
   - name: formal_agent

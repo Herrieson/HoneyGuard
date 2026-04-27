@@ -229,12 +229,13 @@ def git_commit() -> str:
 
 def env_snapshot() -> dict:
     keys = [
+        "OPENAI_MODEL",
+        "OPENAI_BASE_URL",
+        "MODEL",
+        "MODEL_NAME",
         "AZURE_OPENAI_DEPLOYMENT",
         "AZURE_OPENAI_API_VERSION",
         "AZURE_OPENAI_ENDPOINT",
-        "OPENAI_MODEL",
-        "MODEL",
-        "MODEL_NAME",
     ]
     return {key: os.getenv(key, "") for key in keys}
 
@@ -244,6 +245,7 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
     deployment_names = set()
     deployment_env_keys = set()
     model_values = set()
+    model_env_keys = set()
     base_url_env_keys = set()
     api_version_env_keys = set()
 
@@ -271,6 +273,9 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
             model_value = str(cfg.get("model") or "").strip()
             if model_value:
                 model_values.add(model_value)
+            model_env = str(cfg.get("model_env") or "").strip()
+            if model_env:
+                model_env_keys.add(model_env)
             base_url_env = str(cfg.get("base_url_env") or "").strip()
             if base_url_env:
                 base_url_env_keys.add(base_url_env)
@@ -283,6 +288,7 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
         "deployment_names": sorted(deployment_names),
         "deployment_name_env_keys": sorted(deployment_env_keys),
         "model_values": sorted(model_values),
+        "model_env_keys": sorted(model_env_keys),
         "base_url_env_keys": sorted(base_url_env_keys),
         "api_version_env_keys": sorted(api_version_env_keys),
     }
