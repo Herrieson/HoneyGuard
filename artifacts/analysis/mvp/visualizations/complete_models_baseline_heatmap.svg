@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="686" height="422" viewBox="0 0 686 422">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Complete Models: Baseline Comparison</text>
+<text x="28" y="52" class="subtitle">Models with naive, guarded, and attribution-aware runs.</text>
+<text x="40" y="74" class="axis">label</text>
+<text x="342.0" y="74" text-anchor="middle" class="axis">TSR</text>
+<text x="426.0" y="74" text-anchor="middle" class="axis">SVR</text>
+<text x="510.0" y="74" text-anchor="middle" class="axis">STCR</text>
+<text x="594.0" y="74" text-anchor="middle" class="axis">ASR</text>
+<text x="40" y="106" class="label">ds-v3-2 / naive</text>
+<rect x="300" y="86" width="82" height="28" fill="#aec49d" rx="3"/>
+<text x="342.0" y="105" text-anchor="middle" class="small">35%</text>
+<rect x="384" y="86" width="82" height="28" fill="#d89059" rx="3"/>
+<text x="426.0" y="105" text-anchor="middle" class="small">50%</text>
+<rect x="468" y="86" width="82" height="28" fill="#ecd6be" rx="3"/>
+<text x="510.0" y="105" text-anchor="middle" class="small">8%</text>
+<rect x="552" y="86" width="82" height="28" fill="#d87c4f" rx="3"/>
+<text x="594.0" y="105" text-anchor="middle" class="small">60%</text>
+<text x="40" y="136" class="label">ds-v3-2 / guarded</text>
+<rect x="300" y="116" width="82" height="28" fill="#a8c29a" rx="3"/>
+<text x="342.0" y="135" text-anchor="middle" class="small">38%</text>
+<rect x="384" y="116" width="82" height="28" fill="#d8945c" rx="3"/>
+<text x="426.0" y="135" text-anchor="middle" class="small">48%</text>
+<rect x="468" y="116" width="82" height="28" fill="#e6d4bb" rx="3"/>
+<text x="510.0" y="135" text-anchor="middle" class="small">10%</text>
+<rect x="552" y="116" width="82" height="28" fill="#d88654" rx="3"/>
+<text x="594.0" y="135" text-anchor="middle" class="small">55%</text>
+<text x="40" y="166" class="label">ds-v3-2 / attr_aware</text>
+<rect x="300" y="146" width="82" height="28" fill="#9dbf94" rx="3"/>
+<text x="342.0" y="165" text-anchor="middle" class="small">42%</text>
+<rect x="384" y="146" width="82" height="28" fill="#d88152" rx="3"/>
+<text x="426.0" y="165" text-anchor="middle" class="small">57%</text>
+<rect x="468" y="146" width="82" height="28" fill="#ecd6be" rx="3"/>
+<text x="510.0" y="165" text-anchor="middle" class="small">8%</text>
+<rect x="552" y="146" width="82" height="28" fill="#d8734a" rx="3"/>
+<text x="594.0" y="165" text-anchor="middle" class="small">65%</text>
+<text x="40" y="196" class="label">gpt-4o / naive</text>
+<rect x="300" y="176" width="82" height="28" fill="#43a465" rx="3"/>
+<text x="342.0" y="195" text-anchor="middle" class="small">82%</text>
+<rect x="384" y="176" width="82" height="28" fill="#d74432" rx="3"/>
+<text x="426.0" y="195" text-anchor="middle" class="small">89%</text>
+<rect x="468" y="176" width="82" height="28" fill="#f5d9c3" rx="3"/>
+<text x="510.0" y="195" text-anchor="middle" class="small">4%</text>
+<rect x="552" y="176" width="82" height="28" fill="#d74532" rx="3"/>
+<text x="594.0" y="195" text-anchor="middle" class="small">89%</text>
+<text x="40" y="226" class="label">gpt-4o / guarded</text>
+<rect x="300" y="206" width="82" height="28" fill="#40a364" rx="3"/>
+<text x="342.0" y="225" text-anchor="middle" class="small">83%</text>
+<rect x="384" y="206" width="82" height="28" fill="#d86945" rx="3"/>
+<text x="426.0" y="225" text-anchor="middle" class="small">70%</text>
+<rect x="468" y="206" width="82" height="28" fill="#dfd2b7" rx="3"/>
+<text x="510.0" y="225" text-anchor="middle" class="small">13%</text>
+<rect x="552" y="206" width="82" height="28" fill="#d8764c" rx="3"/>
+<text x="594.0" y="225" text-anchor="middle" class="small">63%</text>
+<text x="40" y="256" class="label">gpt-4o / attr_aware</text>
+<rect x="300" y="236" width="82" height="28" fill="#49a669" rx="3"/>
+<text x="342.0" y="255" text-anchor="middle" class="small">79%</text>
+<rect x="384" y="236" width="82" height="28" fill="#d86b46" rx="3"/>
+<text x="426.0" y="255" text-anchor="middle" class="small">69%</text>
+<rect x="468" y="236" width="82" height="28" fill="#d6cfb2" rx="3"/>
+<text x="510.0" y="255" text-anchor="middle" class="small">17%</text>
+<rect x="552" y="236" width="82" height="28" fill="#d8764c" rx="3"/>
+<text x="594.0" y="255" text-anchor="middle" class="small">63%</text>
+<text x="40" y="286" class="label">gpt-5.4 / naive</text>
+<rect x="300" y="266" width="82" height="28" fill="#209a53" rx="3"/>
+<text x="342.0" y="285" text-anchor="middle" class="small">98%</text>
+<rect x="384" y="266" width="82" height="28" fill="#d86040" rx="3"/>
+<text x="426.0" y="285" text-anchor="middle" class="small">75%</text>
+<rect x="468" y="266" width="82" height="28" fill="#dbd1b5" rx="3"/>
+<text x="510.0" y="285" text-anchor="middle" class="small">15%</text>
+<rect x="552" y="266" width="82" height="28" fill="#d89059" rx="3"/>
+<text x="594.0" y="285" text-anchor="middle" class="small">50%</text>
+<text x="40" y="316" class="label">gpt-5.4 / guarded</text>
+<rect x="300" y="296" width="82" height="28" fill="#259b56" rx="3"/>
+<text x="342.0" y="315" text-anchor="middle" class="small">95%</text>
+<rect x="384" y="296" width="82" height="28" fill="#d86542" rx="3"/>
+<text x="426.0" y="315" text-anchor="middle" class="small">72%</text>
+<rect x="468" y="296" width="82" height="28" fill="#d5cfb2" rx="3"/>
+<text x="510.0" y="315" text-anchor="middle" class="small">18%</text>
+<rect x="552" y="296" width="82" height="28" fill="#d8995e" rx="3"/>
+<text x="594.0" y="315" text-anchor="middle" class="small">45%</text>
+<text x="40" y="346" class="label">gpt-5.4 / attr_aware</text>
+<rect x="300" y="326" width="82" height="28" fill="#209a53" rx="3"/>
+<text x="342.0" y="345" text-anchor="middle" class="small">97%</text>
+<rect x="384" y="326" width="82" height="28" fill="#d86141" rx="3"/>
+<text x="426.0" y="345" text-anchor="middle" class="small">74%</text>
+<rect x="468" y="326" width="82" height="28" fill="#dad1b5" rx="3"/>
+<text x="510.0" y="345" text-anchor="middle" class="small">15%</text>
+<rect x="552" y="326" width="82" height="28" fill="#d8955c" rx="3"/>
+<text x="594.0" y="345" text-anchor="middle" class="small">47%</text>
+</svg>

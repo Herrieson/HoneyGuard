@@ -134,14 +134,19 @@ def markdown_table(rows: list[dict[str, Any]], columns: list[tuple[str, str]]) -
 
 def summary_row(run: dict[str, Any]) -> dict[str, Any]:
     summary = run["summary"]
+    per_run = summary.get("per_run") or []
+    num_runs = summary.get("num_runs", len(per_run) if per_run else "")
+    infra_failed_count = sum(1 for row in per_run if row.get("status") == "infra_failed")
+    evaluable_count = sum(1 for row in per_run if row.get("evaluable") is True)
+    inferred_infra_rate = infra_failed_count / num_runs if isinstance(num_runs, int) and num_runs else None
     return {
         "model": run["model"],
         "baseline": run["baseline"],
         "split": run["split"],
         "run_name": run["run_name"],
-        "num_runs": summary.get("num_runs", ""),
-        "num_evaluable_runs": summary.get("num_evaluable_runs", summary.get("num_runs", "")),
-        "infra_failed_rate": fmt(summary.get("infra_failed_rate")),
+        "num_runs": num_runs,
+        "num_evaluable_runs": summary.get("num_evaluable_runs", evaluable_count or summary.get("num_runs", "")),
+        "infra_failed_rate": fmt(summary.get("infra_failed_rate", inferred_infra_rate)),
         "TSR": fmt(summary.get("TSR")),
         "SVR": fmt(summary.get("SVR")),
         "STCR": fmt(summary.get("STCR")),
@@ -162,17 +167,20 @@ def family_breakdown(run: dict[str, Any]) -> list[dict[str, Any]]:
         groups[row.get("family", "")].append(row)
     output = []
     for family, rows in sorted(groups.items()):
+        evaluable_rows = [row for row in rows if row.get("status") not in {"infra_failed", "init_failed", "run_failed"}]
         output.append(
             {
                 "model": run["model"],
                 "baseline": run["baseline"],
                 "family": family,
                 "n": len(rows),
-                "TSR": fmt(safe_mean(1.0 if boolish(row.get("task_success")) else 0.0 for row in rows)),
-                "SVR": fmt(safe_mean(1.0 if boolish(row.get("safety_violation")) else 0.0 for row in rows)),
-                "STCR": fmt(safe_mean(1.0 if boolish(row.get("stcr_success")) else 0.0 for row in rows)),
-                "ASR": fmt(safe_mean(1.0 if boolish(row.get("attack_success")) else 0.0 for row in rows if boolish(row.get("attack_success")) is not None)),
-                "latent_violation_rate": fmt(safe_mean(1.0 if row.get("latent_violation_labels") else 0.0 for row in rows)),
+                "evaluable_n": len(evaluable_rows),
+                "infra_failed_n": sum(1 for row in rows if row.get("status") == "infra_failed"),
+                "TSR": fmt(safe_mean(1.0 if boolish(row.get("task_success")) else 0.0 for row in evaluable_rows)),
+                "SVR": fmt(safe_mean(1.0 if boolish(row.get("safety_violation")) else 0.0 for row in evaluable_rows)),
+                "STCR": fmt(safe_mean(1.0 if boolish(row.get("stcr_success")) else 0.0 for row in evaluable_rows)),
+                "ASR": fmt(safe_mean(1.0 if boolish(row.get("attack_success")) else 0.0 for row in evaluable_rows if boolish(row.get("attack_success")) is not None)),
+                "latent_violation_rate": fmt(safe_mean(1.0 if row.get("latent_violation_labels") else 0.0 for row in evaluable_rows)),
             }
         )
     return output

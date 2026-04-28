@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="636" height="452" viewBox="0 0 636 452">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">All Naive Models: Family-Level Risk</text>
+<text x="28" y="52" class="subtitle">A1/A4 cells use SVR; C2.1/C2.2 cells use ASR. Red means more unsafe.</text>
+<text x="40" y="74" class="axis">model</text>
+<text x="292.0" y="74" text-anchor="middle" class="axis">A1</text>
+<text x="376.0" y="74" text-anchor="middle" class="axis">A4</text>
+<text x="460.0" y="74" text-anchor="middle" class="axis">C2.1</text>
+<text x="544.0" y="74" text-anchor="middle" class="axis">C2.2</text>
+<text x="40" y="106" class="label">claude-opus-4.6</text>
+<rect x="250" y="86" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="105" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="86" width="82" height="28" fill="#d74b35" rx="3"/>
+<text x="376.0" y="105" text-anchor="middle" class="small">86%</text>
+<rect x="418" y="86" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="460.0" y="105" text-anchor="middle" class="small">0%</text>
+<rect x="502" y="86" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="544.0" y="105" text-anchor="middle" class="small">90%</text>
+<text x="40" y="136" class="label">gpt-5</text>
+<rect x="250" y="116" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="135" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="116" width="82" height="28" fill="#d88553" rx="3"/>
+<text x="376.0" y="135" text-anchor="middle" class="small">56%</text>
+<rect x="418" y="116" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="460.0" y="135" text-anchor="middle" class="small">0%</text>
+<rect x="502" y="116" width="82" height="28" fill="#d7563b" rx="3"/>
+<text x="544.0" y="135" text-anchor="middle" class="small">80%</text>
+<text x="40" y="166" class="label">gpt-5.4</text>
+<rect x="250" y="146" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="165" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="146" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="376.0" y="165" text-anchor="middle" class="small">100%</text>
+<rect x="418" y="146" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="460.0" y="165" text-anchor="middle" class="small">0%</text>
+<rect x="502" y="146" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="544.0" y="165" text-anchor="middle" class="small">100%</text>
+<text x="40" y="196" class="label">gemini-3.1-pro</text>
+<rect x="250" y="176" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="195" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="176" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="376.0" y="195" text-anchor="middle" class="small">90%</text>
+<rect x="418" y="176" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="460.0" y="195" text-anchor="middle" class="small">0%</text>
+<rect x="502" y="176" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="544.0" y="195" text-anchor="middle" class="small">90%</text>
+<text x="40" y="226" class="label">kimi-k2-5</text>
+<rect x="250" y="206" width="82" height="28" fill="#d7563b" rx="3"/>
+<text x="292.0" y="225" text-anchor="middle" class="small">80%</text>
+<rect x="334" y="206" width="82" height="28" fill="#d86945" rx="3"/>
+<text x="376.0" y="225" text-anchor="middle" class="small">70%</text>
+<rect x="418" y="206" width="82" height="28" fill="#d9c977" rx="3"/>
+<text x="460.0" y="225" text-anchor="middle" class="small">20%</text>
+<rect x="502" y="206" width="82" height="28" fill="#d7563b" rx="3"/>
+<text x="544.0" y="225" text-anchor="middle" class="small">80%</text>
+<text x="40" y="256" class="label">ds-v4-pro</text>
+<rect x="250" y="236" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="255" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="236" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="376.0" y="255" text-anchor="middle" class="small">100%</text>
+<rect x="418" y="236" width="82" height="28" fill="#d87c4f" rx="3"/>
+<text x="460.0" y="255" text-anchor="middle" class="small">60%</text>
+<rect x="502" y="236" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="544.0" y="255" text-anchor="middle" class="small">100%</text>
+<text x="40" y="286" class="label">ds-v3-2</text>
+<rect x="250" y="266" width="82" height="28" fill="#d86945" rx="3"/>
+<text x="292.0" y="285" text-anchor="middle" class="small">70%</text>
+<rect x="334" y="266" width="82" height="28" fill="#d9dc81" rx="3"/>
+<text x="376.0" y="285" text-anchor="middle" class="small">10%</text>
+<rect x="418" y="266" width="82" height="28" fill="#d8a363" rx="3"/>
+<text x="460.0" y="285" text-anchor="middle" class="small">40%</text>
+<rect x="502" y="266" width="82" height="28" fill="#d7563b" rx="3"/>
+<text x="544.0" y="285" text-anchor="middle" class="small">80%</text>
+<text x="40" y="316" class="label">ds-v4-flash</text>
+<rect x="250" y="296" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="315" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="296" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="376.0" y="315" text-anchor="middle" class="small">100%</text>
+<rect x="418" y="296" width="82" height="28" fill="#d87c4f" rx="3"/>
+<text x="460.0" y="315" text-anchor="middle" class="small">60%</text>
+<rect x="502" y="296" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="544.0" y="315" text-anchor="middle" class="small">100%</text>
+<text x="40" y="346" class="label">gpt-4o</text>
+<rect x="250" y="326" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="345" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="326" width="82" height="28" fill="#d86040" rx="3"/>
+<text x="376.0" y="345" text-anchor="middle" class="small">75%</text>
+<rect x="418" y="326" width="82" height="28" fill="#d7563b" rx="3"/>
+<text x="460.0" y="345" text-anchor="middle" class="small">80%</text>
+<rect x="502" y="326" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="544.0" y="345" text-anchor="middle" class="small">100%</text>
+<text x="40" y="376" class="label">gpt-4o-mini</text>
+<rect x="250" y="356" width="82" height="28" fill="#d73027" rx="3"/>
+<text x="292.0" y="375" text-anchor="middle" class="small">100%</text>
+<rect x="334" y="356" width="82" height="28" fill="#d9c977" rx="3"/>
+<text x="376.0" y="375" text-anchor="middle" class="small">20%</text>
+<rect x="418" y="356" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="460.0" y="375" text-anchor="middle" class="small">90%</text>
+<rect x="502" y="356" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="544.0" y="375" text-anchor="middle" class="small">90%</text>
+</svg>

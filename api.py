@@ -90,7 +90,7 @@ class AgentConfig(BaseModel):
     )
     llm_config: Optional[Dict[str, Any]] = Field(
         None,
-        description="Optional LLM config for this agent (provider/model/api_key/base_url/api_version/deployment_name). Overrides global llm_config.",
+        description="Optional LLM config for this agent (provider/model/api_key/base_url/api_version/deployment_name/extra_body/compat_profile). Overrides global llm_config.",
     )
     memory_limit: Optional[int] = Field(
         5, description="Optional per-agent memory size (number of past messages to retain)."
@@ -177,7 +177,7 @@ class InitializeRequest(BaseModel):
     )
     llm_config: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Optional LLM provider settings (provider, model, api_key, base_url, api_version, deployment_name).",
+        description="Optional LLM provider settings (provider, model, api_key, base_url, api_version, deployment_name, extra_body, compat_profile).",
     )
     memory_limit: int = Field(10, description="Per-agent memory size (number of past messages retained).")
     max_steps: int = Field(3, description="Max graph steps before termination.")

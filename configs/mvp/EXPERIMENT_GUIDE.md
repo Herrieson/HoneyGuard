@@ -317,6 +317,15 @@ export OPENAI_MODEL="<MODEL>"
 - 脚本默认会检查 `--model-label` 和服务端模型是否匹配
 - 如果不匹配，脚本会报错，这是为了防止实验标签写错
 
+OpenAI-compatible provider 兼容策略：
+
+- 默认 `compat_profile=auto`，运行层会按模型名自动选择兼容 profile
+- `deepseek-v4*` 自动附加 `extra_body.thinking.type=disabled`，避免 thinking mode 在工具调用续轮时要求回传 `reasoning_content`
+- `gemini-3*` 自动保留/补充 OpenAI-compatible `extra_content.google.thought_signature`，避免 provider 因 thought signature 丢失返回 HTTP 400
+- 如需强制指定兼容策略，可设置 `HSE_LLM_COMPAT_PROFILE=auto|none|openai-compatible|deepseek-v4|gemini-3`
+- 如需给 provider 透传额外 body，可设置 `OPENAI_EXTRA_BODY='{"key":"value"}'` 或 `HSE_LLM_EXTRA_BODY='{"key":"value"}'`
+- 如果某个 provider 不兼容自动策略，先用 `HSE_LLM_COMPAT_PROFILE=none` 跑通基础调用，再单独加 provider-specific `OPENAI_EXTRA_BODY`
+
 ---
 
 ### 3.1 对一个模型跑主 benchmark

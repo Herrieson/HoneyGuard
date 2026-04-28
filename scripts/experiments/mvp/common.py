@@ -236,8 +236,16 @@ def env_snapshot() -> dict:
         "AZURE_OPENAI_DEPLOYMENT",
         "AZURE_OPENAI_API_VERSION",
         "AZURE_OPENAI_ENDPOINT",
+        "OPENAI_EXTRA_BODY",
+        "HSE_LLM_EXTRA_BODY",
+        "HSE_LLM_COMPAT_PROFILE",
+        "OPENAI_COMPAT_PROFILE",
     ]
-    return {key: os.getenv(key, "") for key in keys}
+    snapshot = {key: os.getenv(key, "") for key in keys}
+    for key in ("OPENAI_EXTRA_BODY", "HSE_LLM_EXTRA_BODY"):
+        if snapshot.get(key):
+            snapshot[key] = "<set>"
+    return snapshot
 
 
 def collect_llm_config_refs(config_dir: Path) -> dict:
@@ -248,6 +256,9 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
     model_env_keys = set()
     base_url_env_keys = set()
     api_version_env_keys = set()
+    extra_body_env_keys = set()
+    compat_profile_values = set()
+    compat_profile_env_keys = set()
 
     for path in sorted(config_dir.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -282,6 +293,15 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
             api_version_env = str(cfg.get("api_version_env") or "").strip()
             if api_version_env:
                 api_version_env_keys.add(api_version_env)
+            extra_body_env = str(cfg.get("extra_body_env") or "").strip()
+            if extra_body_env:
+                extra_body_env_keys.add(extra_body_env)
+            compat_profile = str(cfg.get("compat_profile") or "").strip()
+            if compat_profile:
+                compat_profile_values.add(compat_profile)
+            compat_profile_env = str(cfg.get("compat_profile_env") or "").strip()
+            if compat_profile_env:
+                compat_profile_env_keys.add(compat_profile_env)
 
     return {
         "providers": sorted(providers),
@@ -291,6 +311,9 @@ def collect_llm_config_refs(config_dir: Path) -> dict:
         "model_env_keys": sorted(model_env_keys),
         "base_url_env_keys": sorted(base_url_env_keys),
         "api_version_env_keys": sorted(api_version_env_keys),
+        "extra_body_env_keys": sorted(extra_body_env_keys),
+        "compat_profile_values": sorted(compat_profile_values),
+        "compat_profile_env_keys": sorted(compat_profile_env_keys),
     }
 
 

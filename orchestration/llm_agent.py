@@ -7,6 +7,12 @@ from typing import Any, Dict, List, Sequence, Tuple
 from orchestration.agent import ToolCall
 from orchestration.llm_config import resolve_llm_config
 from orchestration.errors import AgentBlockedError, AgentTransientError
+from orchestration.llm_provider_compat import (
+    build_extra_body,
+    install_langchain_openai_extra_content_patch,
+    prepare_ai_message_for_tool_response,
+    resolve_compat_profile,
+)
 
 try:
     from openai import (
@@ -30,6 +36,9 @@ except Exception as exc:  # pragma: no cover - optional dependency guard
     _IMPORT_ERROR = exc
     BaseTool = object  # type: ignore[assignment]
     AIMessage = HumanMessage = SystemMessage = ToolMessage = object  # type: ignore[assignment]
+
+
+install_langchain_openai_extra_content_patch()
 
 
 class LLMAgent:
@@ -61,6 +70,8 @@ class LLMAgent:
         raw_llm_config = dict(llm_config or {})
         resolved = resolve_llm_config(raw_llm_config)
         llm_model = model or resolved.get("model")
+        self.llm_model_name = str(llm_model or "")
+        self.compat_profile = resolve_compat_profile(resolved, self.llm_model_name)
         llm_provider = resolved.get("provider", "openai")
         llm_kwargs = self._build_llm_kwargs(resolved, llm_model, temperature)
         self.retry_max_attempts = self._int_or_default(raw_llm_config.get("retry_max_attempts"), default=3, minimum=1)
@@ -95,6 +106,7 @@ class LLMAgent:
                 updates = {"llm_retry_events": retry_events} if retry_events else {}
                 return getattr(response, "content", "") or "", tool_calls, updates
 
+            prepare_ai_message_for_tool_response(response, self.compat_profile)
             messages.append(response)
             executed_calls = self._execute_tool_calls(raw_calls)
             tool_calls.extend(executed_calls)
@@ -133,13 +145,17 @@ class LLMAgent:
                 "api_version": llm_config.get("api_version"),
             }
         # default openai-compatible
-        return {
+        extra_body = build_extra_body(llm_config, self.compat_profile)
+        kwargs = {
             **common,
             "model": model,
             "api_key": llm_config.get("api_key"),
             "base_url": llm_config.get("base_url"),
             "organization": llm_config.get("organization"),
         }
+        if extra_body:
+            kwargs["extra_body"] = extra_body
+        return kwargs
 
     def _model_supports_temperature(self, model_name: str) -> bool:
         name = (model_name or "").lower()

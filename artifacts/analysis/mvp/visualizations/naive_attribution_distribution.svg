@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Naive Failure Attribution Distribution</text>
+<text x="28" y="52" class="subtitle">Aggregated over observed safety failures / latent violations. N=273 attribution labels counted per dimension.</text>
+<text x="48" y="86" class="label" font-weight="700">Hazard Channel</text>
+<text x="48" y="130" class="small">tool_output</text>
+<rect x="258" y="114" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="129" class="small">89 (33%)</text>
+<text x="48" y="157" class="small">goal_specification</text>
+<rect x="258" y="141" width="251.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="517.7" y="156" class="small">80 (29%)</text>
+<text x="48" y="184" class="small">retrieved_content</text>
+<rect x="258" y="168" width="204.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="470.5" y="183" class="small">65 (24%)</text>
+<text x="48" y="211" class="small">environment_state</text>
+<rect x="258" y="195" width="122.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="388.7" y="210" class="small">39 (14%)</text>
+<text x="568" y="86" class="label" font-weight="700">Failure Mechanism</text>
+<text x="568" y="130" class="small">unsafe_tool_trust</text>
+<rect x="778" y="114" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="1066.0" y="129" class="small">74 (27%)</text>
+<text x="568" y="157" class="small">authority_overtrust</text>
+<rect x="778" y="141" width="238.4" height="19" fill="#4e79a7" rx="3"/>
+<text x="1024.4" y="156" class="small">63 (23%)</text>
+<text x="568" y="184" class="small">goal_rewrite_without_authorization</text>
+<rect x="778" y="168" width="166.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="952.5" y="183" class="small">44 (16%)</text>
+<text x="568" y="211" class="small">unsafe_objective_optimization</text>
+<rect x="778" y="195" width="83.2" height="19" fill="#4e79a7" rx="3"/>
+<text x="869.2" y="210" class="small">22 (8%)</text>
+<text x="568" y="238" class="small">unverified_state_assumption</text>
+<rect x="778" y="222" width="75.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="861.7" y="237" class="small">20 (7%)</text>
+<text x="568" y="265" class="small">privilege_boundary_failure</text>
+<rect x="778" y="249" width="71.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="857.9" y="264" class="small">19 (7%)</text>
+<text x="48" y="306" class="label" font-weight="700">First Failed Component</text>
+<text x="48" y="350" class="small">tool_argument_builder</text>
+<rect x="258" y="334" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="349" class="small">82 (30%)</text>
+<text x="48" y="377" class="small">instruction_resolver</text>
+<rect x="258" y="361" width="273.2" height="19" fill="#4e79a7" rx="3"/>
+<text x="539.2" y="376" class="small">80 (29%)</text>
+<text x="48" y="404" class="small">planner</text>
+<rect x="258" y="388" width="225.4" height="19" fill="#4e79a7" rx="3"/>
+<text x="491.4" y="403" class="small">66 (24%)</text>
+<text x="48" y="431" class="small">reasoner</text>
+<rect x="258" y="415" width="119.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="385.5" y="430" class="small">35 (13%)</text>
+<text x="48" y="458" class="small">tool_selector</text>
+<rect x="258" y="442" width="34.1" height="19" fill="#4e79a7" rx="3"/>
+<text x="300.1" y="457" class="small">10 (4%)</text>
+<text x="568" y="306" class="label" font-weight="700">Block Point</text>
+<text x="568" y="350" class="small">tool_output_trust_gating</text>
+<rect x="778" y="334" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="1066.0" y="349" class="small">79 (29%)</text>
+<text x="568" y="377" class="small">pre_action_verification</text>
+<rect x="778" y="361" width="194.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="980.9" y="376" class="small">55 (20%)</text>
+<text x="568" y="404" class="small">privilege_confirmation</text>
+<rect x="778" y="388" width="155.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="941.9" y="403" class="small">44 (16%)</text>
+<text x="568" y="431" class="small">tool_argument_sanitization</text>
+<rect x="778" y="415" width="134.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="920.7" y="430" class="small">38 (14%)</text>
+<text x="568" y="458" class="small">instruction_data_separation_after…</text>
+<rect x="778" y="442" width="124.1" height="19" fill="#4e79a7" rx="3"/>
+<text x="910.1" y="457" class="small">35 (13%)</text>
+<text x="568" y="485" class="small">uncertainty_triggered_clarificati…</text>
+<rect x="778" y="469" width="78.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="864.0" y="484" class="small">22 (8%)</text>
+<text x="48" y="526" class="label" font-weight="700">Impact</text>
+<text x="48" y="570" class="small">data_exfiltration</text>
+<rect x="258" y="554" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="569" class="small">132 (48%)</text>
+<text x="48" y="597" class="small">system_degradation</text>
+<rect x="258" y="581" width="182.4" height="19" fill="#4e79a7" rx="3"/>
+<text x="448.4" y="596" class="small">86 (32%)</text>
+<text x="48" y="624" class="small">hidden_policy_violation</text>
+<rect x="258" y="608" width="95.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="361.5" y="623" class="small">45 (16%)</text>
+<text x="48" y="651" class="small">dangerous_action</text>
+<rect x="258" y="635" width="21.2" height="19" fill="#4e79a7" rx="3"/>
+<text x="287.2" y="650" class="small">10 (4%)</text>
+</svg>

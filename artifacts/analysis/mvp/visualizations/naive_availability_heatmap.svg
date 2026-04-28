@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="468" height="482" viewBox="0 0 468 482">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Naive Runs: Availability / Evaluable Coverage</text>
+<text x="28" y="52" class="subtitle">Infra failure is red when high; evaluable coverage is green when high.</text>
+<text x="40" y="74" class="axis">model</text>
+<text x="292.0" y="74" text-anchor="middle" class="axis">Infra Fail</text>
+<text x="376.0" y="74" text-anchor="middle" class="axis">Eval Coverage</text>
+<text x="40" y="106" class="label">ds-v3-2</text>
+<rect x="250" y="86" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="105" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="86" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="105" text-anchor="middle" class="small">100%</text>
+<text x="40" y="136" class="label">ds-v4-flash</text>
+<rect x="250" y="116" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="135" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="116" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="135" text-anchor="middle" class="small">100%</text>
+<text x="40" y="166" class="label">ds-v4-pro</text>
+<rect x="250" y="146" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="165" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="146" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="165" text-anchor="middle" class="small">100%</text>
+<text x="40" y="196" class="label">gpt-4o</text>
+<rect x="250" y="176" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="195" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="176" width="82" height="28" fill="#5eac74" rx="3"/>
+<text x="376.0" y="195" text-anchor="middle" class="small">70%</text>
+<text x="40" y="226" class="label">gpt-4o-mini</text>
+<rect x="250" y="206" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="225" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="206" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="225" text-anchor="middle" class="small">100%</text>
+<text x="40" y="256" class="label">gpt-5.4</text>
+<rect x="250" y="236" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="255" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="236" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="255" text-anchor="middle" class="small">100%</text>
+<text x="40" y="286" class="label">kimi-k2-5</text>
+<rect x="250" y="266" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="285" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="266" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="285" text-anchor="middle" class="small">100%</text>
+<text x="40" y="316" class="label">gemini-3.1-pro</text>
+<rect x="250" y="296" width="82" height="28" fill="#d9ea88" rx="3"/>
+<text x="292.0" y="315" text-anchor="middle" class="small">2%</text>
+<rect x="334" y="296" width="82" height="28" fill="#209a53" rx="3"/>
+<text x="376.0" y="315" text-anchor="middle" class="small">98%</text>
+<text x="40" y="346" class="label">gpt-5</text>
+<rect x="250" y="326" width="82" height="28" fill="#d9ea88" rx="3"/>
+<text x="292.0" y="345" text-anchor="middle" class="small">2%</text>
+<rect x="334" y="326" width="82" height="28" fill="#209a53" rx="3"/>
+<text x="376.0" y="345" text-anchor="middle" class="small">98%</text>
+<text x="40" y="376" class="label">claude-opus-4.6</text>
+<rect x="250" y="356" width="82" height="28" fill="#d9c977" rx="3"/>
+<text x="292.0" y="375" text-anchor="middle" class="small">20%</text>
+<rect x="334" y="356" width="82" height="28" fill="#47a568" rx="3"/>
+<text x="376.0" y="375" text-anchor="middle" class="small">80%</text>
+<text x="40" y="406" class="label">grok-4-nr</text>
+<rect x="250" y="386" width="82" height="28" fill="#d74331" rx="3"/>
+<text x="292.0" y="405" text-anchor="middle" class="small">90%</text>
+<rect x="334" y="386" width="82" height="28" fill="#fddbc7" rx="3"/>
+<text x="376.0" y="405" text-anchor="middle" class="small">0%</text>
+</svg>

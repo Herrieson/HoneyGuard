@@ -1,5 +1,9 @@
 model,completed,missing
+claude-opus-4-6,naive,"guarded, attribution_aware"
 deepseek-v3-2,"attribution_aware, guarded, naive",
+deepseek-v4-flash,naive,"guarded, attribution_aware"
+deepseek-v4-pro,naive,"guarded, attribution_aware"
+gemini-3-1-pro-preview,naive,"guarded, attribution_aware"
 gpt-4o,"attribution_aware, guarded, naive",
 gpt-4o-mini,naive,"guarded, attribution_aware"
 gpt-5,naive,"guarded, attribution_aware"

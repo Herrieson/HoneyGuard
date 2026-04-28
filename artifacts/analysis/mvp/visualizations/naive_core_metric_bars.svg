@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="870" viewBox="0 0 1120 870">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Naive Models: Core Metric Bars</text>
+<text x="28" y="52" class="subtitle">Sorted by ASR descending. Lower ASR/SVR is safer; higher TSR/STCR is better.</text>
+<line x1="220.0" y1="72" x2="220.0" y2="822" class="grid"/>
+<text x="220.0" y="844" text-anchor="middle" class="axis">0</text>
+<line x1="303.0" y1="72" x2="303.0" y2="822" class="grid"/>
+<text x="303.0" y="844" text-anchor="middle" class="axis">10</text>
+<line x1="386.0" y1="72" x2="386.0" y2="822" class="grid"/>
+<text x="386.0" y="844" text-anchor="middle" class="axis">20</text>
+<line x1="469.0" y1="72" x2="469.0" y2="822" class="grid"/>
+<text x="469.0" y="844" text-anchor="middle" class="axis">30</text>
+<line x1="552.0" y1="72" x2="552.0" y2="822" class="grid"/>
+<text x="552.0" y="844" text-anchor="middle" class="axis">40</text>
+<line x1="635.0" y1="72" x2="635.0" y2="822" class="grid"/>
+<text x="635.0" y="844" text-anchor="middle" class="axis">50</text>
+<line x1="718.0" y1="72" x2="718.0" y2="822" class="grid"/>
+<text x="718.0" y="844" text-anchor="middle" class="axis">60</text>
+<line x1="801.0" y1="72" x2="801.0" y2="822" class="grid"/>
+<text x="801.0" y="844" text-anchor="middle" class="axis">70</text>
+<line x1="884.0" y1="72" x2="884.0" y2="822" class="grid"/>
+<text x="884.0" y="844" text-anchor="middle" class="axis">80</text>
+<line x1="967.0" y1="72" x2="967.0" y2="822" class="grid"/>
+<text x="967.0" y="844" text-anchor="middle" class="axis">90</text>
+<line x1="1050.0" y1="72" x2="1050.0" y2="822" class="grid"/>
+<text x="1050.0" y="844" text-anchor="middle" class="axis">100</text>
+<text x="635.0" y="862" text-anchor="middle" class="label">Metric value (%)</text>
+<rect x="220" y="66" width="16" height="10" fill="#d73027" rx="2"/>
+<text x="242" y="75" class="small">ASR</text>
+<rect x="302" y="66" width="16" height="10" fill="#f46d43" rx="2"/>
+<text x="324" y="75" class="small">SVR</text>
+<rect x="384" y="66" width="16" height="10" fill="#1a9850" rx="2"/>
+<text x="406" y="75" class="small">TSR</text>
+<rect x="466" y="66" width="16" height="10" fill="#4575b4" rx="2"/>
+<text x="488" y="75" class="small">STCR</text>
+<text x="36" y="123" class="label">gpt-4o-mini</text>
+<text x="36" y="139" class="small">n=40/40</text>
+<rect x="220" y="92" width="747.0" height="12" fill="#d73027" rx="3"/>
+<text x="973.0" y="102" text-anchor="start" class="small" fill="#222">ASR 90.0% (18/20)</text>
+<rect x="220" y="108" width="622.5" height="12" fill="#f46d43" rx="3"/>
+<text x="848.5" y="118" text-anchor="start" class="small" fill="#222">SVR 75.0% (30/40)</text>
+<rect x="220" y="124" width="581.0" height="12" fill="#1a9850" rx="3"/>
+<text x="807.0" y="134" text-anchor="start" class="small" fill="#222">TSR 70.0% (28/40)</text>
+<rect x="220" y="140" width="20.8" height="12" fill="#4575b4" rx="3"/>
+<text x="246.8" y="150" text-anchor="start" class="small" fill="#222">STCR 2.5% (1/40)</text>
+<text x="36" y="195" class="label">gpt-4o</text>
+<text x="36" y="211" class="small">n=28/40</text>
+<rect x="220" y="164" width="737.8" height="12" fill="#d73027" rx="3"/>
+<text x="963.8" y="174" text-anchor="start" class="small" fill="#222">ASR 88.9% (16/18)</text>
+<rect x="220" y="180" width="741.1" height="12" fill="#f46d43" rx="3"/>
+<text x="967.1" y="190" text-anchor="start" class="small" fill="#222">SVR 89.3% (25/28)</text>
+<rect x="220" y="196" width="681.8" height="12" fill="#1a9850" rx="3"/>
+<text x="907.8" y="206" text-anchor="start" class="small" fill="#222">TSR 82.1% (23/28)</text>
+<rect x="220" y="212" width="29.6" height="12" fill="#4575b4" rx="3"/>
+<text x="255.6" y="222" text-anchor="start" class="small" fill="#222">STCR 3.6% (1/28)</text>
+<text x="36" y="267" class="label">ds-v4-flash</text>
+<text x="36" y="283" class="small">n=40/40</text>
+<rect x="220" y="236" width="664.0" height="12" fill="#d73027" rx="3"/>
+<text x="890.0" y="246" text-anchor="start" class="small" fill="#222">ASR 80.0% (16/20)</text>
+<rect x="220" y="252" width="747.0" height="12" fill="#f46d43" rx="3"/>
+<text x="973.0" y="262" text-anchor="start" class="small" fill="#222">SVR 90.0% (36/40)</text>
+<rect x="220" y="268" width="684.8" height="12" fill="#1a9850" rx="3"/>
+<text x="910.8" y="278" text-anchor="start" class="small" fill="#222">TSR 82.5% (33/40)</text>
+<rect x="220" y="284" width="62.2" height="12" fill="#4575b4" rx="3"/>
+<text x="288.2" y="294" text-anchor="start" class="small" fill="#222">STCR 7.5% (3/40)</text>
+<text x="36" y="339" class="label">ds-v4-pro</text>
+<text x="36" y="355" class="small">n=40/40</text>
+<rect x="220" y="308" width="664.0" height="12" fill="#d73027" rx="3"/>
+<text x="890.0" y="318" text-anchor="start" class="small" fill="#222">ASR 80.0% (16/20)</text>
+<rect x="220" y="324" width="747.0" height="12" fill="#f46d43" rx="3"/>
+<text x="973.0" y="334" text-anchor="start" class="small" fill="#222">SVR 90.0% (36/40)</text>
+<rect x="220" y="340" width="747.0" height="12" fill="#1a9850" rx="3"/>
+<text x="973.0" y="350" text-anchor="start" class="small" fill="#222">TSR 90.0% (36/40)</text>
+<rect x="220" y="356" width="83.0" height="12" fill="#4575b4" rx="3"/>
+<text x="309.0" y="366" text-anchor="start" class="small" fill="#222">STCR 10.0% (4/40)</text>
+<text x="36" y="411" class="label">ds-v3-2</text>
+<text x="36" y="427" class="small">n=40/40</text>
+<rect x="220" y="380" width="498.0" height="12" fill="#d73027" rx="3"/>
+<text x="724.0" y="390" text-anchor="start" class="small" fill="#222">ASR 60.0% (12/20)</text>
+<rect x="220" y="396" width="415.0" height="12" fill="#f46d43" rx="3"/>
+<text x="641.0" y="406" text-anchor="start" class="small" fill="#222">SVR 50.0% (20/40)</text>
+<rect x="220" y="412" width="290.5" height="12" fill="#1a9850" rx="3"/>
+<text x="516.5" y="422" text-anchor="start" class="small" fill="#222">TSR 35.0% (14/40)</text>
+<rect x="220" y="428" width="62.2" height="12" fill="#4575b4" rx="3"/>
+<text x="288.2" y="438" text-anchor="start" class="small" fill="#222">STCR 7.5% (3/40)</text>
+<text x="36" y="483" class="label">gpt-5.4</text>
+<text x="36" y="499" class="small">n=40/40</text>
+<rect x="220" y="452" width="415.0" height="12" fill="#d73027" rx="3"/>
+<text x="641.0" y="462" text-anchor="start" class="small" fill="#222">ASR 50.0% (10/20)</text>
+<rect x="220" y="468" width="622.5" height="12" fill="#f46d43" rx="3"/>
+<text x="848.5" y="478" text-anchor="start" class="small" fill="#222">SVR 75.0% (30/40)</text>
+<rect x="220" y="484" width="809.2" height="12" fill="#1a9850" rx="3"/>
+<text x="1023.2" y="494" text-anchor="end" class="small" fill="#fff">TSR 97.5% (39/40)</text>
+<rect x="220" y="500" width="124.5" height="12" fill="#4575b4" rx="3"/>
+<text x="350.5" y="510" text-anchor="start" class="small" fill="#222">STCR 15.0% (6/40)</text>
+<text x="36" y="555" class="label">kimi-k2-5</text>
+<text x="36" y="571" class="small">n=40/40</text>
+<rect x="220" y="524" width="415.0" height="12" fill="#d73027" rx="3"/>
+<text x="641.0" y="534" text-anchor="start" class="small" fill="#222">ASR 50.0% (10/20)</text>
+<rect x="220" y="540" width="518.8" height="12" fill="#f46d43" rx="3"/>
+<text x="744.8" y="550" text-anchor="start" class="small" fill="#222">SVR 62.5% (25/40)</text>
+<rect x="220" y="556" width="622.5" height="12" fill="#1a9850" rx="3"/>
+<text x="848.5" y="566" text-anchor="start" class="small" fill="#222">TSR 75.0% (30/40)</text>
+<rect x="220" y="572" width="103.8" height="12" fill="#4575b4" rx="3"/>
+<text x="329.8" y="582" text-anchor="start" class="small" fill="#222">STCR 12.5% (5/40)</text>
+<text x="36" y="627" class="label">gemini-3.1-pro</text>
+<text x="36" y="643" class="small">n=39/40</text>
+<rect x="220" y="596" width="393.2" height="12" fill="#d73027" rx="3"/>
+<text x="619.2" y="606" text-anchor="start" class="small" fill="#222">ASR 47.4% (9/19)</text>
+<rect x="220" y="612" width="595.9" height="12" fill="#f46d43" rx="3"/>
+<text x="821.9" y="622" text-anchor="start" class="small" fill="#222">SVR 71.8% (28/39)</text>
+<rect x="220" y="628" width="681.0" height="12" fill="#1a9850" rx="3"/>
+<text x="907.0" y="638" text-anchor="start" class="small" fill="#222">TSR 82.1% (32/39)</text>
+<rect x="220" y="644" width="106.4" height="12" fill="#4575b4" rx="3"/>
+<text x="332.4" y="654" text-anchor="start" class="small" fill="#222">STCR 12.8% (5/39)</text>
+<text x="36" y="699" class="label">claude-opus-4.6</text>
+<text x="36" y="715" class="small">n=32/40</text>
+<rect x="220" y="668" width="373.5" height="12" fill="#d73027" rx="3"/>
+<text x="599.5" y="678" text-anchor="start" class="small" fill="#222">ASR 45.0% (9/20)</text>
+<rect x="220" y="684" width="518.8" height="12" fill="#f46d43" rx="3"/>
+<text x="744.8" y="694" text-anchor="start" class="small" fill="#222">SVR 62.5% (20/32)</text>
+<rect x="220" y="700" width="674.4" height="12" fill="#1a9850" rx="3"/>
+<text x="900.4" y="710" text-anchor="start" class="small" fill="#222">TSR 81.2% (26/32)</text>
+<rect x="220" y="716" width="155.6" height="12" fill="#4575b4" rx="3"/>
+<text x="381.6" y="726" text-anchor="start" class="small" fill="#222">STCR 18.8% (6/32)</text>
+<text x="36" y="771" class="label">gpt-5</text>
+<text x="36" y="787" class="small">n=39/40</text>
+<rect x="220" y="740" width="332.0" height="12" fill="#d73027" rx="3"/>
+<text x="558.0" y="750" text-anchor="start" class="small" fill="#222">ASR 40.0% (8/20)</text>
+<rect x="220" y="756" width="489.5" height="12" fill="#f46d43" rx="3"/>
+<text x="715.5" y="766" text-anchor="start" class="small" fill="#222">SVR 59.0% (23/39)</text>
+<rect x="220" y="772" width="617.2" height="12" fill="#1a9850" rx="3"/>
+<text x="843.2" y="782" text-anchor="start" class="small" fill="#222">TSR 74.4% (29/39)</text>
+<rect x="220" y="788" width="127.7" height="12" fill="#4575b4" rx="3"/>
+<text x="353.7" y="798" text-anchor="start" class="small" fill="#222">STCR 15.4% (6/39)</text>
+</svg>

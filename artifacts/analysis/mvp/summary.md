@@ -19,11 +19,15 @@
 | Model | Eval N | Infra Fail | TSR | SVR | STCR | ASR | Latent |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | deepseek-v3-2 | 40 | 0.000 | 0.350 | 0.500 | 0.075 | 0.600 | 0.125 |
-| gpt-4o | 40 |  | 0.575 | 0.625 | 0.025 | 0.800 | 0.200 |
+| deepseek-v4-flash | 40 | 0.000 | 0.825 | 0.900 | 0.075 | 0.800 | 0.225 |
+| deepseek-v4-pro | 40 | 0.000 | 0.900 | 0.900 | 0.100 | 0.800 | 0.275 |
+| gpt-4o | 40 | 0.000 | 0.575 | 0.625 | 0.025 | 0.800 | 0.200 |
 | gpt-4o-mini | 40 | 0.000 | 0.700 | 0.750 | 0.025 | 0.900 | 0.225 |
-| gpt-5-4 | 40 |  | 0.975 | 0.750 | 0.150 | 0.500 | 0.000 |
+| gpt-5-4 | 40 | 0.000 | 0.975 | 0.750 | 0.150 | 0.500 | 0.000 |
 | kimi-k2-5 | 40 | 0.000 | 0.750 | 0.625 | 0.125 | 0.500 | 0.050 |
+| gemini-3-1-pro-preview | 39 | 0.025 | 0.821 | 0.718 | 0.128 | 0.474 | 0.000 |
 | gpt-5 | 39 | 0.025 | 0.744 | 0.590 | 0.154 | 0.400 | 0.000 |
+| claude-opus-4-6 | 32 | 0.200 | 0.812 | 0.625 | 0.188 | 0.450 | 0.062 |
 | grok-4-20-non-reasoning | 0 | 0.900 |  |  |  |  |  |
 
 ## 3. Attribution over observed failures
@@ -181,7 +185,11 @@ This is not manual eyeballing: each failed/latent run is grouped by the benchmar
 
 | Model | Completed | Missing |
 | --- | --- | --- |
+| claude-opus-4-6 | naive | guarded, attribution_aware |
 | deepseek-v3-2 | attribution_aware, guarded, naive |  |
+| deepseek-v4-flash | naive | guarded, attribution_aware |
+| deepseek-v4-pro | naive | guarded, attribution_aware |
+| gemini-3-1-pro-preview | naive | guarded, attribution_aware |
 | gpt-4o | attribution_aware, guarded, naive |  |
 | gpt-4o-mini | naive | guarded, attribution_aware |
 | gpt-5 | naive | guarded, attribution_aware |
@@ -195,6 +203,9 @@ This is not manual eyeballing: each failed/latent run is grouped by the benchmar
 - `artifacts/analysis/mvp/all_naive_attribution_failure_breakdown.csv`
 - `artifacts/analysis/mvp/all_naive_family_breakdown.csv`
 - `artifacts/analysis/mvp/all_naive_summary.csv`
+- `artifacts/analysis/mvp/attribution_oracle_smoke.csv`
+- `artifacts/analysis/mvp/attribution_rule_smoke.csv`
+- `artifacts/analysis/mvp/attribution_rule_summary.csv`
 - `artifacts/analysis/mvp/focus_three_models_attribution_failure_breakdown.csv`
 - `artifacts/analysis/mvp/focus_three_models_family_breakdown.csv`
 - `artifacts/analysis/mvp/focus_three_models_summary.csv`

@@ -322,6 +322,22 @@
 
 不要标签写一个模型，实际跑的又是另一个。
 
+如果你接的是 OpenAI-compatible `/v1` 服务，默认环境变量是：
+
+```bash
+export OPENAI_API_KEY="你的 API key"
+export OPENAI_BASE_URL="https://你的服务地址/v1"
+export OPENAI_MODEL="真实模型名"
+```
+
+provider 兼容由运行层统一处理：
+
+- 默认 `compat_profile=auto`
+- `deepseek-v4*` 会自动关闭 thinking body，避免续轮缺 `reasoning_content`
+- `gemini-3*` 会自动保留/补充 tool-call `thought_signature`
+- 可以用 `HSE_LLM_COMPAT_PROFILE=none|auto|openai-compatible|deepseek-v4|gemini-3` 手动覆盖
+- 可以用 `OPENAI_EXTRA_BODY='{"key":"value"}'` 给 provider 透传额外 body
+
 ### 第三步：先跑 `test`
 
 对于当前模型，先跑主 benchmark：
