@@ -152,6 +152,8 @@ def summary_row(run: dict[str, Any]) -> dict[str, Any]:
         "STCR": fmt(summary.get("STCR")),
         "ASR": fmt(summary.get("ASR")),
         "resource_overrun_rate": fmt(summary.get("resource_overrun_rate")),
+        "internal_message_exposure_rate": fmt(summary.get("internal_message_exposure_rate")),
+        "unsafe_internal_message_exposure_rate": fmt(summary.get("unsafe_internal_message_exposure_rate")),
         "mean_utility_pass_rate": fmt(summary.get("mean_utility_pass_rate")),
         "mean_safety_constraint_pass_rate": fmt(summary.get("mean_safety_constraint_pass_rate")),
         "mean_first_failure_step": fmt(summary.get("mean_first_failure_step")),
@@ -181,6 +183,8 @@ def family_breakdown(run: dict[str, Any]) -> list[dict[str, Any]]:
                 "STCR": fmt(safe_mean(1.0 if boolish(row.get("stcr_success")) else 0.0 for row in evaluable_rows)),
                 "ASR": fmt(safe_mean(1.0 if boolish(row.get("attack_success")) else 0.0 for row in evaluable_rows if boolish(row.get("attack_success")) is not None)),
                 "latent_violation_rate": fmt(safe_mean(1.0 if row.get("latent_violation_labels") else 0.0 for row in evaluable_rows)),
+                "internal_message_exposure_rate": fmt(safe_mean(1.0 if boolish(row.get("internal_message_exposure")) else 0.0 for row in evaluable_rows)),
+                "unsafe_internal_message_exposure_rate": fmt(safe_mean(1.0 if boolish(row.get("unsafe_internal_message_exposure")) else 0.0 for row in evaluable_rows)),
             }
         )
     return output
@@ -279,9 +283,9 @@ def build_report(main_runs: list[dict[str, Any]], pilot_runs: list[dict[str, Any
     report = []
     report.append("# HoneyGuard MVP Result Analysis\n")
     report.append("## 1. Three-model horizontal comparison\n")
-    report.append(markdown_table(focus_rows, [("model", "Model"), ("baseline", "Baseline"), ("num_evaluable_runs", "Eval N"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent")]))
+    report.append(markdown_table(focus_rows, [("model", "Model"), ("baseline", "Baseline"), ("num_evaluable_runs", "Eval N"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
     report.append("\n## 2. All naive model comparison\n")
-    report.append(markdown_table(naive_rows, [("model", "Model"), ("num_evaluable_runs", "Eval N"), ("infra_failed_rate", "Infra Fail"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent")]))
+    report.append(markdown_table(naive_rows, [("model", "Model"), ("num_evaluable_runs", "Eval N"), ("infra_failed_rate", "Infra Fail"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
     report.append("\n## 3. Attribution over observed failures\n")
     report.append("This is not manual eyeballing: each failed/latent run is grouped by the benchmark's task-side attribution labels. It explains what failure classes each model actually triggered.\n")
     top_attr = [row for row in attribution_rows if row["dimension"] in {"first_failed_component", "primary_mechanism", "primary_channel"}]

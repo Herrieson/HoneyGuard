@@ -19,6 +19,13 @@ PRESET_SOURCES = {
     "test": (REPO_ROOT / "configs" / "mvp" / "formal",),
     "full": DEFAULT_SOURCES,
     "pilot_b": (REPO_ROOT / "configs" / "mvp" / "pilot_b",),
+    "v0_2_dev": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",),
+    "v0_2_test": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",),
+    "v0_2_full": (
+        REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",
+        REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",
+    ),
+    "v0_2_b_smoke": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "b_smoke",),
 }
 
 

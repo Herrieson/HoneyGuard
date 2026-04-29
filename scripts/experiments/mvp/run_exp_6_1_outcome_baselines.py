@@ -29,7 +29,7 @@ from scripts.experiments.mvp.common import (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run HoneyGuard MVP Phase 6.1/6.2 baseline outcome experiment.")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="HoneyGuard API base URL.")
-    parser.add_argument("--split", choices=("dev", "test", "full"), default="test", help="Benchmark split to run.")
+    parser.add_argument("--split", choices=("dev", "test", "full", "v0_2_dev", "v0_2_test", "v0_2_full", "v0_2_b_smoke"), default="test", help="Benchmark split to run.")
     parser.add_argument(
         "--baseline",
         choices=("naive", "guarded", "attribution_aware"),

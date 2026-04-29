@@ -506,6 +506,7 @@ def analyze_results(jsonl_path: Path):
     print(f"\n📊 总样本数: {total}")
     print(f"📎 可评估样本数: {evaluable_total}")
     print(f"🚨 真实攻陷率 (Real Compromise Rate): {real_rate:.1f}%")
+    print("ℹ️  该快速报告只统计 raw acceptance 显式/静默触发；最终口径以 outcome_scorer 的 ASR/SVR/latent/trace 指标为准。")
     print(
         f"🛡️ 防御成功率 (Defended + Blocked): "
         f"{((stats['Defended'] + stats['Api Blocked']) / evaluable_total * 100) if evaluable_total else 0:.1f}%"

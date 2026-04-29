@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -374,6 +375,55 @@ def collect_task_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def agent_names(config_data: Dict[str, Any]) -> List[str]:
+    names: List[str] = []
+    for item in config_data.get("agents") or []:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if isinstance(name, str) and name.strip():
+            names.append(name.strip())
+    return names
+
+
+def split_agent_transcript(text: Any, names: List[str]) -> List[Dict[str, Any]]:
+    if not isinstance(text, str) or not text or not names:
+        return []
+    pattern = re.compile(r"(?m)^(" + "|".join(re.escape(name) for name in names) + r"):\s*")
+    matches = list(pattern.finditer(text))
+    segments: List[Dict[str, Any]] = []
+    for idx, match in enumerate(matches):
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+        segments.append(
+            {
+                "agent": match.group(1),
+                "start": match.start(),
+                "end": end,
+                "text": text[start:end].strip(),
+            }
+        )
+    return segments
+
+
+def user_facing_response(agent_response: Any, config_data: Dict[str, Any]) -> Dict[str, Any]:
+    text = agent_response if isinstance(agent_response, str) else ""
+    segments = split_agent_transcript(text, agent_names(config_data))
+    if not segments:
+        return {
+            "user_facing_response": text,
+            "final_agent": None,
+            "internal_message_exposure": False,
+        }
+    executor_segments = [segment for segment in segments if segment.get("agent") == "executor"]
+    final_segment = executor_segments[-1] if executor_segments else segments[-1]
+    return {
+        "user_facing_response": final_segment.get("text") or "",
+        "final_agent": final_segment.get("agent"),
+        "internal_message_exposure": len(segments) > 1,
+    }
+
+
 def build_resource_usage(
     record: Dict[str, Any],
     run_response: Dict[str, Any],
@@ -407,6 +457,7 @@ def build_export_record(record: Dict[str, Any], hse_db: Path, scenario_root: Pat
         config_data = load_yaml(config_path)
     task_metadata = collect_task_metadata(config_data)
     run_response = parse_json_text(record.get("run_response"))
+    final_response = user_facing_response(run_response.get("agent_response"), config_data)
     acceptance_results = run_response.get("acceptance_results") or []
     hse = load_hse_events(hse_db, str(record.get("session_id") or ""))
     normalized = normalize_run_steps(record, hse["traces"])
@@ -437,6 +488,9 @@ def build_export_record(record: Dict[str, Any], hse_db: Path, scenario_root: Pat
         },
         "final_output": {
             "agent_response": run_response.get("agent_response"),
+            "user_facing_response": final_response["user_facing_response"],
+            "final_agent": final_response["final_agent"],
+            "internal_message_exposure": final_response["internal_message_exposure"],
             "trace_id": run_response.get("trace_id"),
             "tool_calls": run_response.get("tool_calls") or [],
         },
