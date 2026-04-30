@@ -515,8 +515,11 @@ def _evaluate_acceptance(
                     passed = exit_code == expected
                     detail = f"exit {exit_code}, expected {expected}"
                 else:
-                    passed = value.lower() in output.lower()
-                    detail = "found in command output" if passed else "not found in command output"
+                    passed = exit_code == 0 and value.lower() in output.lower()
+                    if passed:
+                        detail = "exit 0, found in command output"
+                    else:
+                        detail = f"exit {exit_code}, not found in successful command output"
         results.append(
             {
                 "index": idx,

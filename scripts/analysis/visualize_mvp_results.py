@@ -11,8 +11,10 @@ from pathlib import Path
 from typing import Any
 
 
-BASELINE_ORDER = {"naive": 0, "guarded": 1, "attribution_aware": 2}
-FAMILIES = ("A1", "A4", "C2.1", "C2.2")
+BASELINE_ORDER = {"naive": 0, "guarded": 1}
+FAMILIES = ("A1", "A2", "A3", "A4", "B1", "B2", "B3", "C1", "C2.1", "C2.2")
+OUTCOME_EXPS = ("mvp_outcome_benchmark", "exp_6_1_outcome_baselines")
+REPORT_SPLITS = ("v0_2_test", "test")
 METRICS = ("TSR", "SVR", "STCR", "ASR", "resource_overrun_rate", "latent_violation_rate")
 RISK_METRICS = {"SVR", "ASR", "resource_overrun_rate", "latent_violation_rate", "infra_failed_rate", *FAMILIES}
 GOOD_METRICS = {"TSR", "STCR", "evaluable_rate"}
@@ -74,7 +76,6 @@ def pct(value: Any) -> str:
 
 
 def short_label(label: str, max_len: int = 26) -> str:
-    label = label.replace("attribution_aware", "attr_aware")
     label = label.replace("gpt-5-4", "gpt-5.4")
     label = label.replace("deepseek-", "ds-")
     label = label.replace("gemini-3-1-pro-preview", "gemini-3.1-pro")
@@ -103,9 +104,22 @@ def metric_color(metric: str, value: float | None) -> str:
     return blend((239, 243, 255), (49, 130, 189), value)
 
 
+def iter_run_dirs(root: Path) -> list[Path]:
+    if (root / "manifest.json").exists():
+        return [root]
+    direct_runs = [path for path in sorted(root.glob("*")) if (path / "manifest.json").exists()]
+    if direct_runs:
+        return direct_runs
+    run_dirs: list[Path] = []
+    for exp_name in OUTCOME_EXPS:
+        exp_dir = root / exp_name
+        run_dirs.extend(path for path in sorted(exp_dir.glob("*")) if (path / "manifest.json").exists())
+    return run_dirs
+
+
 def discover_runs(root: Path) -> list[dict[str, Any]]:
     runs = []
-    for run_dir in sorted(root.glob("*")):
+    for run_dir in iter_run_dirs(root):
         manifest_path = run_dir / "manifest.json"
         summary_path = run_dir / "scores" / "outcome.summary.json"
         if not manifest_path.exists() or not summary_path.exists():
@@ -134,6 +148,7 @@ def discover_runs(root: Path) -> list[dict[str, Any]]:
             {
                 "run_dir": run_dir,
                 "run_name": run_dir.name,
+                "experiment_id": str(manifest.get("experiment_id") or run_dir.parent.name),
                 "model": str(manifest.get("model_label") or ""),
                 "baseline": str(manifest.get("baseline") or ""),
                 "split": str(manifest.get("split") or ""),
@@ -410,7 +425,7 @@ def write_summary_csv(path: Path, runs: list[dict[str, Any]]) -> None:
             writer.writerow(row)
 
 
-def write_index(path: Path, images: list[tuple[str, str]], naive_runs: list[dict[str, Any]], complete_models: list[str]) -> None:
+def write_index(path: Path, images: list[tuple[str, str]], naive_runs: list[dict[str, Any]], complete_models: list[str], source_root: Path) -> None:
     best_stcr = max(naive_runs, key=lambda run: run_value(run, "STCR") or -1)
     best_asr = min(naive_runs, key=lambda run: run_value(run, "ASR") if run_value(run, "ASR") is not None else math.inf)
     best_tsr = max(naive_runs, key=lambda run: run_value(run, "TSR") or -1)
@@ -420,13 +435,13 @@ def write_index(path: Path, images: list[tuple[str, str]], naive_runs: list[dict
         "<title>HoneyGuard MVP Visualizations</title>",
         "<style>body{font-family:Arial,Helvetica,sans-serif;margin:28px;color:#222;line-height:1.45} img{max-width:100%;border:1px solid #ddd;margin:12px 0 28px} code{background:#f4f4f4;padding:2px 4px} .note{color:#555}</style>",
         "<h1>HoneyGuard MVP Outcome Baselines</h1>",
-        '<p class="note">Generated from <code>artifacts/experiments/mvp/exp_6_1_outcome_baselines</code>.</p>',
+        f'<p class="note">Generated from <code>{esc(source_root)}</code>.</p>',
         "<h2>Quick Reads</h2>",
         "<ul>",
         f"<li>Highest naive STCR: <b>{esc(best_stcr['model'])}</b> ({pct(run_value(best_stcr, 'STCR'))}).</li>",
         f"<li>Lowest naive ASR: <b>{esc(best_asr['model'])}</b> ({pct(run_value(best_asr, 'ASR'))}).</li>",
         f"<li>Highest naive TSR: <b>{esc(best_tsr['model'])}</b> ({pct(run_value(best_tsr, 'TSR'))}).</li>",
-        f"<li>Complete 3-baseline models: <b>{esc(', '.join(complete_models) or 'none')}</b>.</li>",
+        f"<li>Complete 2-baseline models: <b>{esc(', '.join(complete_models) or 'none')}</b>.</li>",
         "</ul>",
     ]
     for filename, title in images:
@@ -437,12 +452,14 @@ def write_index(path: Path, images: list[tuple[str, str]], naive_runs: list[dict
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate SVG/HTML visualizations for HoneyGuard MVP outcome baseline results.")
-    parser.add_argument("--root", default="artifacts/experiments/mvp/exp_6_1_outcome_baselines")
+    parser.add_argument("--root", default="artifacts/experiments/mvp")
     parser.add_argument("--output", default="artifacts/analysis/mvp/visualizations")
+    parser.add_argument("--splits", nargs="*", default=list(REPORT_SPLITS))
     args = parser.parse_args()
 
-    runs = discover_runs(Path(args.root))
-    runs = [run for run in runs if run["split"] == "test"]
+    root = Path(args.root)
+    runs = discover_runs(root)
+    runs = [run for run in runs if run["split"] in set(args.splits)]
     if not runs:
         raise SystemExit("No test runs found")
 
@@ -544,7 +561,7 @@ def main() -> int:
     )
     images.append(("naive_availability_heatmap.svg", "Naive Runs: Availability / Evaluable Coverage"))
 
-    write_index(outdir / "index.html", images, naive_runs, complete_models)
+    write_index(outdir / "index.html", images, naive_runs, complete_models, root)
     print(f"WROTE {outdir}")
     for filename, _ in images:
         print(f"WROTE {outdir / filename}")

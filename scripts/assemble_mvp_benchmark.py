@@ -10,22 +10,22 @@ import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+LEGACY_V0_1_ROOT = REPO_ROOT / "configs" / "mvp" / "_archive" / "v0_1_splits"
 DEFAULT_SOURCES = (
-    REPO_ROOT / "configs" / "mvp" / "dev",
-    REPO_ROOT / "configs" / "mvp" / "formal",
+    LEGACY_V0_1_ROOT / "dev",
+    LEGACY_V0_1_ROOT / "formal",
 )
 PRESET_SOURCES = {
-    "dev": (REPO_ROOT / "configs" / "mvp" / "dev",),
-    "test": (REPO_ROOT / "configs" / "mvp" / "formal",),
+    "dev": (LEGACY_V0_1_ROOT / "dev",),
+    "test": (LEGACY_V0_1_ROOT / "formal",),
     "full": DEFAULT_SOURCES,
-    "pilot_b": (REPO_ROOT / "configs" / "mvp" / "pilot_b",),
+    "pilot_b": (LEGACY_V0_1_ROOT / "pilot_b",),
     "v0_2_dev": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",),
     "v0_2_test": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",),
     "v0_2_full": (
         REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",
         REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",
     ),
-    "v0_2_b_smoke": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "b_smoke",),
 }
 
 
@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
         "--source",
         action="append",
         default=[],
-        help="Optional source directory. Can be provided multiple times. Defaults to configs/mvp/dev and configs/mvp/formal.",
+        help="Optional source directory. Can be provided multiple times. Defaults to configs/mvp/_archive/v0_1_splits/dev and configs/mvp/_archive/v0_1_splits/formal.",
     )
     parser.add_argument(
         "--split",

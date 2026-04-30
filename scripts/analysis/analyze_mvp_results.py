@@ -9,10 +9,11 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Iterable
 
-BASELINES = ("naive", "guarded", "attribution_aware")
+BASELINES = ("naive", "guarded")
 FOCUS_MODELS = ("gpt-5-4", "gpt-4o", "deepseek-v3-2")
-MAIN_EXP = "exp_6_1_outcome_baselines"
-PILOT_EXP = "exp_6_5_internal_authority_pilot"
+MAIN_EXPS = ("mvp_outcome_benchmark", "exp_6_1_outcome_baselines")
+PILOT_EXPS = ("exp_6_5_internal_authority_pilot",)
+REPORT_SPLITS = ("v0_2_test", "test")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -103,9 +104,21 @@ def discover_runs(root: Path, exp_name: str) -> list[dict[str, Any]]:
                 "baseline": manifest.get("baseline", ""),
                 "split": manifest.get("split", ""),
                 "phase": manifest.get("phase", ""),
+                "experiment_id": manifest.get("experiment_id", exp_name),
             }
         )
     return runs
+
+
+def discover_runs_many(root: Path, exp_names: Iterable[str]) -> list[dict[str, Any]]:
+    runs: list[dict[str, Any]] = []
+    for exp_name in exp_names:
+        runs.extend(discover_runs(root, exp_name))
+    return runs
+
+
+def is_report_split(run: dict[str, Any], report_splits: set[str]) -> bool:
+    return str(run.get("split", "")) in report_splits
 
 
 def run_key(run: dict[str, Any]) -> tuple[str, str, str]:
@@ -143,6 +156,7 @@ def summary_row(run: dict[str, Any]) -> dict[str, Any]:
         "model": run["model"],
         "baseline": run["baseline"],
         "split": run["split"],
+        "experiment_id": run["experiment_id"],
         "run_name": run["run_name"],
         "num_runs": num_runs,
         "num_evaluable_runs": summary.get("num_evaluable_runs", evaluable_count or summary.get("num_runs", "")),
@@ -236,12 +250,13 @@ def attribution_failure_breakdown(run: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def build_report(main_runs: list[dict[str, Any]], pilot_runs: list[dict[str, Any]], outdir: Path) -> None:
-    complete_focus = [run for run in main_runs if run["model"] in FOCUS_MODELS and run["baseline"] in BASELINES and run["split"] == "test"]
-    naive_runs = [run for run in main_runs if run["baseline"] == "naive" and run["split"] == "test"]
+def build_report(main_runs: list[dict[str, Any]], pilot_runs: list[dict[str, Any]], outdir: Path, report_splits: set[str]) -> None:
+    selected_main_runs = [run for run in main_runs if is_report_split(run, report_splits)]
+    complete_focus = [run for run in selected_main_runs if run["model"] in FOCUS_MODELS and run["baseline"] in BASELINES]
+    naive_runs = [run for run in selected_main_runs if run["baseline"] == "naive"]
     pilot_complete = [run for run in pilot_runs if run["model"] in FOCUS_MODELS]
 
-    summary_rows = [summary_row(run) for run in sorted(main_runs, key=run_key)]
+    summary_rows = [summary_row(run) for run in sorted(selected_main_runs, key=run_key)]
     focus_rows = [summary_row(run) for run in sorted(complete_focus, key=run_key)]
     naive_rows = [summary_row(run) for run in sorted(naive_runs, key=lambda r: (to_float(r["summary"].get("infra_failed_rate")) or 0, r["model"]))]
     pilot_rows = [summary_row(run) for run in sorted(pilot_complete, key=run_key)]
@@ -267,9 +282,8 @@ def build_report(main_runs: list[dict[str, Any]], pilot_runs: list[dict[str, Any
     write_csv(outdir / "pilot_b_focus_summary.csv", pilot_rows, list(pilot_rows[0].keys()) if pilot_rows else [])
 
     model_baselines: dict[str, set[str]] = defaultdict(set)
-    for run in main_runs:
-        if run["split"] == "test":
-            model_baselines[str(run["model"])].add(str(run["baseline"]))
+    for run in selected_main_runs:
+        model_baselines[str(run["model"])].add(str(run["baseline"]))
     completeness = [
         {
             "model": model,
@@ -283,9 +297,9 @@ def build_report(main_runs: list[dict[str, Any]], pilot_runs: list[dict[str, Any
     report = []
     report.append("# HoneyGuard MVP Result Analysis\n")
     report.append("## 1. Three-model horizontal comparison\n")
-    report.append(markdown_table(focus_rows, [("model", "Model"), ("baseline", "Baseline"), ("num_evaluable_runs", "Eval N"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
+    report.append(markdown_table(focus_rows, [("model", "Model"), ("baseline", "Baseline"), ("split", "Split"), ("num_evaluable_runs", "Eval N"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
     report.append("\n## 2. All naive model comparison\n")
-    report.append(markdown_table(naive_rows, [("model", "Model"), ("num_evaluable_runs", "Eval N"), ("infra_failed_rate", "Infra Fail"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
+    report.append(markdown_table(naive_rows, [("model", "Model"), ("split", "Split"), ("num_evaluable_runs", "Eval N"), ("infra_failed_rate", "Infra Fail"), ("TSR", "TSR"), ("SVR", "SVR"), ("STCR", "STCR"), ("ASR", "ASR"), ("latent_violation_rate", "Latent"), ("unsafe_internal_message_exposure_rate", "Unsafe IntExp")]))
     report.append("\n## 3. Attribution over observed failures\n")
     report.append("This is not manual eyeballing: each failed/latent run is grouped by the benchmark's task-side attribution labels. It explains what failure classes each model actually triggered.\n")
     top_attr = [row for row in attribution_rows if row["dimension"] in {"first_failed_component", "primary_mechanism", "primary_channel"}]
@@ -302,13 +316,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze HoneyGuard MVP experiment results.")
     parser.add_argument("--root", default="artifacts/experiments/mvp")
     parser.add_argument("--output", default="artifacts/analysis/mvp")
+    parser.add_argument("--splits", nargs="*", default=list(REPORT_SPLITS))
     args = parser.parse_args()
 
     root = Path(args.root)
     outdir = Path(args.output)
-    main_runs = discover_runs(root, MAIN_EXP)
-    pilot_runs = discover_runs(root, PILOT_EXP)
-    build_report(main_runs, pilot_runs, outdir)
+    main_runs = discover_runs_many(root, MAIN_EXPS)
+    pilot_runs = discover_runs_many(root, PILOT_EXPS)
+    build_report(main_runs, pilot_runs, outdir, set(args.splits))
     print(f"WROTE {outdir}")
     return 0
 

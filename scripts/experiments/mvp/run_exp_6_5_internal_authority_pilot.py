@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="HoneyGuard API base URL.")
     parser.add_argument(
         "--baseline",
-        choices=("naive", "guarded", "attribution_aware"),
+        choices=("naive", "guarded"),
         required=True,
         help="Baseline policy preset.",
     )

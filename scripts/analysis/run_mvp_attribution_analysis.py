@@ -14,30 +14,33 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 FOCUS_MODELS = ("gpt-5-4", "gpt-4o", "deepseek-v3-2")
-BASELINES = ("naive", "guarded", "attribution_aware")
+BASELINES = ("naive", "guarded")
+OUTCOME_EXPS = ("mvp_outcome_benchmark", "exp_6_1_outcome_baselines")
+REPORT_SPLITS = ("v0_2_test", "test")
 
 
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def discover_runs(root: Path, models: set[str], baselines: set[str]) -> list[Path]:
-    exp_dir = root / "exp_6_1_outcome_baselines"
+def discover_runs(root: Path, models: set[str], baselines: set[str], splits: set[str]) -> list[Path]:
     runs = []
-    for run_dir in sorted(exp_dir.glob("*")):
-        manifest_path = run_dir / "manifest.json"
-        if not manifest_path.exists():
-            continue
-        manifest = load_json(manifest_path)
-        if manifest.get("split") != "test":
-            continue
-        if str(manifest.get("model_label")) not in models:
-            continue
-        if str(manifest.get("baseline")) not in baselines:
-            continue
-        if not (run_dir / "exports" / "scenario_runs.export.jsonl").exists():
-            continue
-        runs.append(run_dir)
+    for exp_name in OUTCOME_EXPS:
+        exp_dir = root / exp_name
+        for run_dir in sorted(exp_dir.glob("*")):
+            manifest_path = run_dir / "manifest.json"
+            if not manifest_path.exists():
+                continue
+            manifest = load_json(manifest_path)
+            if str(manifest.get("split")) not in splits:
+                continue
+            if str(manifest.get("model_label")) not in models:
+                continue
+            if str(manifest.get("baseline")) not in baselines:
+                continue
+            if not (run_dir / "exports" / "scenario_runs.export.jsonl").exists():
+                continue
+            runs.append(run_dir)
     return runs
 
 
@@ -114,12 +117,13 @@ def main() -> int:
     parser.add_argument("--mode", choices=("oracle", "rule", "llm"), default="rule")
     parser.add_argument("--models", nargs="*", default=list(FOCUS_MODELS))
     parser.add_argument("--baselines", nargs="*", default=list(BASELINES))
+    parser.add_argument("--splits", nargs="*", default=list(REPORT_SPLITS))
     parser.add_argument("--filter", choices=("all", "failed_or_latent"), default="all")
     parser.add_argument("--judge-model", default="gpt-4o-mini")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    runs = discover_runs(Path(args.root), set(args.models), set(args.baselines))
+    runs = discover_runs(Path(args.root), set(args.models), set(args.baselines), set(args.splits))
     if not runs:
         raise SystemExit("No matching runs found")
 

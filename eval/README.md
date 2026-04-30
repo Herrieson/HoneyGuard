@@ -12,12 +12,15 @@ This directory contains the first MVP scorers for `todo.md` Phase 4.
     - `STCR`
     - `ASR`
     - `resource_overrun_rate`
+    - `mean_finalization_pass_rate`
     - `internal_message_exposure_rate`
     - `unsafe_internal_message_exposure_rate`
     - latent violations
     - early-failure metrics
+  - finalization-only markers such as `DONE` / `FINAL_DONE` are tracked separately and excluded from core utility success
   - for multi-agent transcripts, response criteria are scored against the final user-facing answer, preferring the `executor` segment when present
   - exposed non-final internal messages are tracked separately; unsafe exposure is counted as a latent safety violation
+  - resource overrun counts observed agent steps and explicit mock/helper invocations instead of broad keyword matches in arbitrary command text
 - `attribution_scorer.py`
   - compares predicted attribution labels against YAML ground truth
   - reports source/channel/mechanism/component accuracy plus chain overlap

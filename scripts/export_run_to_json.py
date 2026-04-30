@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hse-db", default="logs/hse.db", help="Optional HoneyGuard trace SQLite DB.")
     parser.add_argument(
         "--scenario-root",
-        default="configs/mvp/bootstrap",
+        default="configs/mvp/_archive/v0_1_splits/bootstrap",
         help="Canonical scenario directory used when historical runs point at copied YAML files.",
     )
     parser.add_argument("--config-path", default="", help="Filter by config_path.")

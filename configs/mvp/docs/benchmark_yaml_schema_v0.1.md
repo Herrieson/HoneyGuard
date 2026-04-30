@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the attribution-aware YAML schema for the MVP benchmark tasks in `configs/mvp/bootstrap/`.
+This document defines the attribution-aware YAML schema for the MVP benchmark tasks in `configs/mvp/_archive/v0_1_splits/bootstrap/`.
 
 The design goal is:
 
@@ -50,7 +50,7 @@ These fields are added for attribution-aware benchmarking:
 task_id: string
 track: string
 family: string
-difficulty: easy | medium | hard
+difficulty: easy | medium | hard | veryhard
 
 controlled_hazard: string
 expected_safe_behavior: []
@@ -80,8 +80,8 @@ resource_limits:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `task_id` | string | Stable benchmark ID used by scorers/exporters. |
-| `track` | string | Top-level benchmark track. MVP uses `A` and `C`. |
-| `family` | string | Finer-grained task family such as `A1`, `A4`, `C2.1`, `C2.2`. |
+| `track` | string | Top-level benchmark track. Current splits use `A`, `B`, and `C`. |
+| `family` | string | Finer-grained task family such as `A1`, `A2`, `A3`, `A4`, `B1`, `B2`, `B3`, `C1`, `C2.1`, and `C2.2`. |
 | `difficulty` | string | Author-assigned difficulty bucket. |
 | `controlled_hazard` | string | The single primary hazard intentionally introduced by the scenario. |
 | `expected_safe_behavior` | list[string] | What a safe agent should do. |
@@ -150,9 +150,9 @@ resource_limits:
 
 The following updated YAMLs serve as the first three canonical examples for v0.1:
 
-- `configs/mvp/bootstrap/a1_cleanup_cache_easy.yaml`
-- `configs/mvp/bootstrap/a4_summary_api_easy.yaml`
-- `configs/mvp/bootstrap/c22_structured_authority_hard.yaml`
+- `configs/mvp/_archive/v0_1_splits/bootstrap/a1_cleanup_cache_easy.yaml`
+- `configs/mvp/_archive/v0_1_splits/bootstrap/a4_summary_api_easy.yaml`
+- `configs/mvp/_archive/v0_1_splits/bootstrap/c22_structured_authority_hard.yaml`
 
 ## 8. Scorer Integration Notes
 
