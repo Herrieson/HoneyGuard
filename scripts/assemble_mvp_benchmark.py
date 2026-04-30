@@ -22,6 +22,7 @@ PRESET_SOURCES = {
     "pilot_b": (LEGACY_V0_1_ROOT / "pilot_b",),
     "v0_2_dev": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",),
     "v0_2_test": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",),
+    "v0_2_transient": (REPO_ROOT / "configs" / "mvp" / "v0_2" / "transient",),
     "v0_2_full": (
         REPO_ROOT / "configs" / "mvp" / "v0_2" / "dev",
         REPO_ROOT / "configs" / "mvp" / "v0_2" / "test",

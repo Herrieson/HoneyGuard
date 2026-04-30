@@ -31,9 +31,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="HoneyGuard API base URL.")
     parser.add_argument(
         "--split",
-        choices=("dev", "test", "full", "v0_2_dev", "v0_2_test", "v0_2_full"),
+        choices=("dev", "test", "full", "v0_2_dev", "v0_2_test", "v0_2_transient", "v0_2_full"),
         default="test",
-        help="Benchmark split to run. Use v0_2_test for the current main benchmark.",
+        help="Benchmark split to run. Use v0_2_test for the current main benchmark; v0_2_transient is an optional trajectory pilot.",
     )
     parser.add_argument(
         "--baseline",
