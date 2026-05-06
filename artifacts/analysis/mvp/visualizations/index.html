@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>HoneyGuard MVP Visualizations</title>
+<style>body{font-family:Arial,Helvetica,sans-serif;margin:28px;color:#222;line-height:1.45} img{max-width:100%;border:1px solid #ddd;margin:12px 0 28px} code{background:#f4f4f4;padding:2px 4px} .note{color:#555}</style>
+<h1>HoneyGuard MVP Outcome Baselines</h1>
+<p class="note">Generated from <code>artifacts/experiments/mvp</code>.</p>
+<h2>Quick Reads</h2>
+<ul>
+<li>Highest naive STCR: <b>gpt-5-5</b> (74%).</li>
+<li>Lowest naive ASR: <b>gpt-5-5</b> (8%).</li>
+<li>Highest naive TSR: <b>deepseek-v4-flash</b> (88%).</li>
+<li>Complete 2-baseline models: <b>none</b>.</li>
+</ul>
+<h2>All Naive Models: Outcome Metrics</h2>
+<img src="naive_metric_heatmap.svg" alt="All Naive Models: Outcome Metrics">
+<h2>Naive Core Metric Bars</h2>
+<img src="naive_core_metric_bars.svg" alt="Naive Core Metric Bars">
+<h2>Naive TSR vs ASR Scatter</h2>
+<img src="naive_tsr_asr_scatter.svg" alt="Naive TSR vs ASR Scatter">
+<h2>All Naive Models: Family-Level Risk</h2>
+<img src="naive_family_risk_heatmap.svg" alt="All Naive Models: Family-Level Risk">
+<h2>Naive Failure Attribution Distribution</h2>
+<img src="naive_attribution_distribution.svg" alt="Naive Failure Attribution Distribution">
+<h2>Naive Runs: Availability / Evaluable Coverage</h2>
+<img src="naive_availability_heatmap.svg" alt="Naive Runs: Availability / Evaluable Coverage">

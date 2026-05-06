@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Naive Failure Attribution Distribution</text>
+<text x="28" y="52" class="subtitle">Aggregated over observed safety failures / latent violations. N=505 attribution labels counted per dimension.</text>
+<text x="48" y="86" class="label" font-weight="700">Hazard Channel</text>
+<text x="48" y="130" class="small">multi_agent_message</text>
+<rect x="258" y="114" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="129" class="small">166 (33%)</text>
+<text x="48" y="157" class="small">policy_prompt</text>
+<rect x="258" y="141" width="214.2" height="19" fill="#4e79a7" rx="3"/>
+<text x="480.2" y="156" class="small">127 (25%)</text>
+<text x="48" y="184" class="small">retrieved_content</text>
+<rect x="258" y="168" width="126.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="392.5" y="183" class="small">75 (15%)</text>
+<text x="48" y="211" class="small">memory_state</text>
+<rect x="258" y="195" width="64.1" height="19" fill="#4e79a7" rx="3"/>
+<text x="330.1" y="210" class="small">38 (8%)</text>
+<text x="48" y="238" class="small">user_instruction</text>
+<rect x="258" y="222" width="43.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="309.9" y="237" class="small">26 (5%)</text>
+<text x="48" y="265" class="small">tool_output</text>
+<rect x="258" y="249" width="43.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="309.9" y="264" class="small">26 (5%)</text>
+<text x="568" y="86" class="label" font-weight="700">Failure Mechanism</text>
+<text x="568" y="130" class="small">authority_overtrust</text>
+<rect x="778" y="114" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="1066.0" y="129" class="small">224 (44%)</text>
+<text x="568" y="157" class="small">goal_rewrite_without_authorization</text>
+<rect x="778" y="141" width="165.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="951.0" y="156" class="small">132 (26%)</text>
+<text x="568" y="184" class="small">privilege_boundary_failure</text>
+<rect x="778" y="168" width="45.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="831.0" y="183" class="small">36 (7%)</text>
+<text x="568" y="211" class="small">unsafe_tool_trust</text>
+<rect x="778" y="195" width="43.8" height="19" fill="#4e79a7" rx="3"/>
+<text x="829.8" y="210" class="small">35 (7%)</text>
+<text x="568" y="238" class="small">instruction_data_confusion</text>
+<rect x="778" y="222" width="28.8" height="19" fill="#4e79a7" rx="3"/>
+<text x="814.8" y="237" class="small">23 (5%)</text>
+<text x="568" y="265" class="small">over_compliance</text>
+<rect x="778" y="249" width="17.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="803.5" y="264" class="small">14 (3%)</text>
+<text x="48" y="306" class="label" font-weight="700">First Failed Component</text>
+<text x="48" y="350" class="small">instruction_resolver</text>
+<rect x="258" y="334" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="349" class="small">168 (33%)</text>
+<text x="48" y="377" class="small">planner</text>
+<rect x="258" y="361" width="211.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="477.7" y="376" class="small">127 (25%)</text>
+<text x="48" y="404" class="small">orchestrator</text>
+<rect x="258" y="388" width="110.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="376.0" y="403" class="small">66 (13%)</text>
+<text x="48" y="431" class="small">reviewer_agent</text>
+<rect x="258" y="415" width="106.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="372.7" y="430" class="small">64 (13%)</text>
+<text x="48" y="458" class="small">tool_argument_builder</text>
+<rect x="258" y="442" width="58.3" height="19" fill="#4e79a7" rx="3"/>
+<text x="324.3" y="457" class="small">35 (7%)</text>
+<text x="48" y="485" class="small">reasoner</text>
+<rect x="258" y="469" width="51.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="317.7" y="484" class="small">31 (6%)</text>
+<text x="568" y="306" class="label" font-weight="700">Block Point</text>
+<text x="568" y="350" class="small">multi_agent_review_gate</text>
+<rect x="778" y="334" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="1066.0" y="349" class="small">166 (33%)</text>
+<text x="568" y="377" class="small">privilege_confirmation</text>
+<rect x="778" y="361" width="251.3" height="19" fill="#4e79a7" rx="3"/>
+<text x="1037.3" y="376" class="small">149 (30%)</text>
+<text x="568" y="404" class="small">instruction_data_separation_after…</text>
+<rect x="778" y="388" width="96.1" height="19" fill="#4e79a7" rx="3"/>
+<text x="882.1" y="403" class="small">57 (11%)</text>
+<text x="568" y="431" class="small">memory_integrity_check</text>
+<rect x="778" y="415" width="64.1" height="19" fill="#4e79a7" rx="3"/>
+<text x="850.1" y="430" class="small">38 (8%)</text>
+<text x="568" y="458" class="small">pre_action_verification</text>
+<rect x="778" y="442" width="52.3" height="19" fill="#4e79a7" rx="3"/>
+<text x="838.3" y="457" class="small">31 (6%)</text>
+<text x="568" y="485" class="small">tool_argument_sanitization</text>
+<rect x="778" y="469" width="42.2" height="19" fill="#4e79a7" rx="3"/>
+<text x="828.2" y="484" class="small">25 (5%)</text>
+<text x="48" y="526" class="label" font-weight="700">Impact</text>
+<text x="48" y="570" class="small">data_exfiltration</text>
+<rect x="258" y="554" width="280.0" height="19" fill="#4e79a7" rx="3"/>
+<text x="546.0" y="569" class="small">450 (89%)</text>
+<text x="48" y="597" class="small">system_degradation</text>
+<rect x="258" y="581" width="19.9" height="19" fill="#4e79a7" rx="3"/>
+<text x="285.9" y="596" class="small">32 (6%)</text>
+<text x="48" y="624" class="small">hidden_policy_violation</text>
+<rect x="258" y="608" width="5.6" height="19" fill="#4e79a7" rx="3"/>
+<text x="271.6" y="623" class="small">9 (2%)</text>
+<text x="48" y="651" class="small">unauthorized_sensitive_exploration</text>
+<rect x="258" y="635" width="3.7" height="19" fill="#4e79a7" rx="3"/>
+<text x="269.7" y="650" class="small">6 (1%)</text>
+<text x="48" y="678" class="small">privilege_misuse</text>
+<rect x="258" y="662" width="2.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="268.5" y="677" class="small">4 (1%)</text>
+<text x="48" y="705" class="small">dangerous_action</text>
+<rect x="258" y="689" width="2.5" height="19" fill="#4e79a7" rx="3"/>
+<text x="268.5" y="704" class="small">4 (1%)</text>
+</svg>

@@ -1,0 +1,13 @@
+model,completed,missing
+claude-opus-4-6,naive,guarded
+claude-sonnet-4-6,naive,guarded
+deepseek-v4-flash,naive,guarded
+deepseek-v4-pro,naive,guarded
+gemini-3-1-flash-lite-preview,naive,guarded
+gemini-3-1-pro-preview,naive,guarded
+gemini-3-flash-preview,naive,guarded
+gpt-5,naive,guarded
+gpt-5-2,naive,guarded
+gpt-5-5,naive,guarded
+gpt-5-mini,naive,guarded
+grok-4,naive,guarded

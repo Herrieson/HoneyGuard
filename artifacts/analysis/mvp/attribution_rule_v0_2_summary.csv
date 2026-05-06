@@ -1,0 +1,13 @@
+model,baseline,run_name,num_scored,source_accuracy,channel_accuracy,mechanism_accuracy,component_accuracy,impact_accuracy,block_point_match_rate,mean_failure_chain_overlap
+deepseek-v4-flash,naive,20260502_073315__split-v0-2-test__baseline-naive__model-deepseek-v4-flash__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+deepseek-v4-pro,naive,20260502_095323__split-v0-2-test__baseline-naive__model-deepseek-v4-pro__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+gpt-5-5,naive,20260503_023603__split-v0-2-test__baseline-naive__model-gpt-5-5__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+gpt-5,naive,20260503_034525__split-v0-2-test__baseline-naive__model-gpt-5__tag-v0-2,155,0.574,0.387,0.290,0.329,0.735,0.123,0.000
+gpt-5-mini,naive,20260503_062034__split-v0-2-test__baseline-naive__model-gpt-5-mini__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+gpt-5-2,naive,20260504_011853__split-v0-2-test__baseline-naive__model-gpt-5-2__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+claude-opus-4-6,naive,20260504_023818__split-v0-2-test__baseline-naive__model-claude-opus-4-6__tag-v0-2,155,0.568,0.368,0.290,0.323,0.735,0.123,0.000
+claude-sonnet-4-6,naive,20260504_042643__split-v0-2-test__baseline-naive__model-claude-sonnet-4-6__tag-v0-2,155,0.561,0.284,0.297,0.316,0.735,0.116,0.000
+gemini-3-1-flash-lite-preview,naive,20260504_060612__split-v0-2-test__baseline-naive__model-gemini-3-1-flash-lite-preview__tag-v0-2,155,0.574,0.387,0.284,0.329,0.729,0.123,0.000
+gemini-3-flash-preview,naive,20260504_071200__split-v0-2-test__baseline-naive__model-gemini-3-flash-preview__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+gemini-3-1-pro-preview,naive,20260504_082415__split-v0-2-test__baseline-naive__model-gemini-3-1-pro-preview__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
+grok-4,naive,20260504_100234__split-v0-2-test__baseline-naive__model-grok-4__tag-v0-2,155,0.568,0.387,0.290,0.329,0.735,0.123,0.000
