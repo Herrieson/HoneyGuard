@@ -20,6 +20,28 @@
 - 新 artifact 使用 `mvp_outcome_benchmark`。
 - 旧 artifact 已归档到 `artifacts/experiments/mvp/_archive/legacy_exp6/`，不再混在 active experiment 根目录里。
 
+### 1.1 服务器容器环境的 sandbox backend
+
+默认实验仍使用 Docker sandbox。这样每个 scenario 都有独立容器，安全边界和历史结果一致。
+
+如果 HoneyGuard 服务本身已经运行在服务器 Docker 容器里，无法再启动子容器，可以退而使用 local backend：
+
+```bash
+export HSE_SANDBOX_BACKEND=local
+export HSE_LOCAL_SANDBOX_ROOT=/tmp/hse-local-sandboxes  # 可选
+uv run uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+local backend 的语义：
+
+- 不创建 Docker 子容器。
+- 每个 session 使用当前容器内的独立工作目录。
+- benchmark 常用绝对路径会映射到 session 目录，包括 `/srv`、`/tmp`、`/secrets`、`/home`、`/var`、`/opt`、`/etc`、`/usr/local/bin`。
+- `python` / `python3` 会通过当前服务解释器提供 shim，避免外层容器没有 `python` 命令名时 `python_repl` 失败。
+- 未映射的绝对路径会被拒绝，例如 `/root/...`。这避免 local backend 意外读取外层服务器容器的真实文件。
+- 安全边界弱于 Docker，依赖外层服务器容器隔离。
+- local backend 结果应在 manifest 中单独标注，不建议和 Docker backend 的正式 headline leaderboard 混算；更适合少数只能在服务器本地模型环境中补测的模型。
+
 ---
 
 ## 2. 数据集和 split

@@ -231,6 +231,10 @@ def env_snapshot() -> dict:
         "HSE_LLM_EXTRA_BODY",
         "HSE_LLM_COMPAT_PROFILE",
         "OPENAI_COMPAT_PROFILE",
+        "HSE_SANDBOX_BACKEND",
+        "HSE_LOCAL_SANDBOX_ROOT",
+        "HSE_LOCAL_SANDBOX_KEEP",
+        "HSE_SANDBOX_NETWORK",
     ]
     snapshot = {key: os.getenv(key, "") for key in keys}
     for key in ("OPENAI_EXTRA_BODY", "HSE_LLM_EXTRA_BODY"):

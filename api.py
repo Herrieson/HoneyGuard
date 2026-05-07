@@ -273,6 +273,12 @@ class RuntimeMetadataResponse(BaseModel):
         default_factory=dict,
         description="Selected server-side environment values relevant to runtime model resolution.",
     )
+    sandbox_backend: str = Field(
+        "docker", description="Sandbox execution backend: docker or local."
+    )
+    sandbox_local_root: str = Field(
+        "", description="Local backend session root directory when sandbox_backend=local."
+    )
 
 
 sandbox_manager = SandboxManager()
@@ -353,7 +359,18 @@ def _agent_error_detail(exc: AgentExecutionError) -> Dict[str, Any]:
 
 def _server_runtime_metadata() -> Dict[str, Any]:
     keys = ("OPENAI_MODEL", "MODEL", "MODEL_NAME", "AZURE_OPENAI_DEPLOYMENT")
-    snapshot = {key: os.getenv(key, "") for key in keys}
+    runtime_keys = (
+        *keys,
+        "HSE_SANDBOX_BACKEND",
+        "HSE_LOCAL_SANDBOX_ROOT",
+        "HSE_LOCAL_SANDBOX_KEEP",
+        "HSE_SANDBOX_NETWORK",
+    )
+    snapshot = {key: os.getenv(key, "") for key in runtime_keys}
+    sandbox_payload = {
+        "sandbox_backend": getattr(sandbox_manager, "backend", "docker"),
+        "sandbox_local_root": str(getattr(sandbox_manager, "local_root", "")),
+    }
     for key in keys:
         value = snapshot[key].strip()
         if value:
@@ -361,6 +378,7 @@ def _server_runtime_metadata() -> Dict[str, Any]:
                 "runtime_model_identifier": value,
                 "runtime_identifier_source": key,
                 "runtime_env_snapshot": snapshot,
+                **sandbox_payload,
             }
     fallback = resolve_llm_config({})
     fallback_identifier = str(fallback.get("deployment_name") or fallback.get("model") or "").strip()
@@ -369,11 +387,13 @@ def _server_runtime_metadata() -> Dict[str, Any]:
             "runtime_model_identifier": fallback_identifier,
             "runtime_identifier_source": "resolve_llm_config({})",
             "runtime_env_snapshot": snapshot,
+            **sandbox_payload,
         }
     return {
         "runtime_model_identifier": "",
         "runtime_identifier_source": "",
         "runtime_env_snapshot": snapshot,
+        **sandbox_payload,
     }
 
 

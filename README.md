@@ -15,6 +15,10 @@ uv run uvicorn api:app --reload
    - 可选：设置鉴权与日志保留  
      - 鉴权：`export HSE_API_TOKEN=your_token`（所有端点需携带 `X-API-Token`）
      - 日志保留天数：`export HSE_LOG_RETENTION_DAYS=7`
+   - 受限服务器备用方案：如果 HoneyGuard 本身运行在 Docker 容器里、无法再创建子容器，可以显式使用本容器内伪沙箱：
+     - `export HSE_SANDBOX_BACKEND=local`
+     - 可选：`export HSE_LOCAL_SANDBOX_ROOT=/tmp/hse-local-sandboxes`
+     - 该模式会在当前容器内创建 per-session 工作目录并重写常见绝对路径，适合补测本地部署模型；隔离性弱于 Docker，不建议和 Docker backend 的正式 leaderboard 结果混算。local backend 会拒绝访问未映射的绝对路径，例如 `/root/...`。
 3) 用配置文件初始化会话（推荐方案 A）  
 ```
 python scripts/init_from_config.py --config configs/demo.yaml --base-url http://127.0.0.1:8000
@@ -34,6 +38,7 @@ curl -X DELETE http://127.0.0.1:8000/v1/environment/<session_id>
 核心能力
 --------
 - 会话隔离：`SandboxManager` 为每个 session 启停 Docker 容器，支持命令执行、文件挂载、reset/cleanup。
+- 备用本地后端：设置 `HSE_SANDBOX_BACKEND=local` 时不再启动 Docker，而是在当前进程所在容器内为每个 session 创建本地工作目录；这是服务器容器里无法 Docker-in-Docker 时的兼容方案，安全边界依赖外层容器。
 - 工具层：read_file、bash_command、python_repl、search_knowledge_base；白名单和默认集由配置决定，工具配额与写操作白名单可配置。工具执行与 Agent 解耦：Agent 产出 tool call，独立工具节点顺序执行并记录状态/耗时，便于扩展并行/投票/回退。
 - 知识库：Chroma 封装，内置轻量哈希 embedding，支持 metadata 过滤查询。
 - 代理/编排：FastAPI 对外暴露 `/v1/environment/*`；支持单/多代理（规则或 LLM），LangGraph 驱动迭代调用，支持自定义 graph 模板（`graph_template`，module:function）。终止条件可配置 `stop_signals`、`max_steps`、工具累计耗时上限。支持 per-agent 记忆策略（窗口/关闭）与共享黑板（`shared_context`，可按读写键限制）。
@@ -154,6 +159,7 @@ HTTP API 速览
   - 运行期还可以调用 `ToolRegistry.register("my_tool", lambda sid: MyTool(...))` 覆盖/新增工厂，便于快速试验。
   - 安全默认：动态导入（`pkg.module:Class`）默认开启，可用 `HSE_ALLOW_DYNAMIC_TOOLS=false` 关闭；导入的代码会复制到容器内并在沙箱中执行，宿主不再直接执行用户代码。
   - 网络与资源：沙箱容器默认断网（`HSE_SANDBOX_NETWORK` 未设置时使用 `none`，可改为 `bridge` 等）；可用 `HSE_SANDBOX_CPUS`（如 `1.0`）和 `HSE_SANDBOX_MEMORY`（如 `512m`）设置容器级 CPU/内存上限。
+  - 本地后端：`HSE_SANDBOX_BACKEND=local` 会跳过 Docker；`/srv`、`/tmp`、`/secrets`、`/home`、`/var`、`/opt`、`/etc` 和 `/usr/local/bin` 下的 benchmark 路径会映射到 session 工作目录。该模式会为 `python`/`python3` 提供当前解释器 shim，但不会提供 Docker 级网络/资源隔离。
 - 示例工具：`tools/real_tools/echo.py` 提供最小模板（回显字符串）。
 - 沙箱镜像：`environment/sandbox/Dockerfile`（基础依赖）、`SandboxManager(image_tag, base_image)`。
 
