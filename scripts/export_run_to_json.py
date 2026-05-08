@@ -82,7 +82,7 @@ def resolve_config_path(raw_path: str) -> Path:
 def has_benchmark_metadata(config_data: Dict[str, Any]) -> bool:
     return any(
         key in config_data
-        for key in ("task_id", "track", "family", "attribution_ground_truth", "resource_limits")
+        for key in ("task_id", "track", "family", "attribution_ground_truth", "resource_limits", "composition")
     )
 
 
@@ -357,6 +357,8 @@ def normalize_run_steps(
 
 
 def collect_task_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
+    composition = config_data.get("composition") or {}
+    composition = composition if isinstance(composition, dict) else {}
     return {
         "task_id": config_data.get("task_id"),
         "scenario": config_data.get("scenario"),
@@ -372,6 +374,22 @@ def collect_task_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
         "failure_chain": config_data.get("failure_chain") or [],
         "counterfactual_block_point": config_data.get("counterfactual_block_point"),
         "resource_limits": config_data.get("resource_limits") or {},
+        "composition": composition,
+        "composition_group_id": composition.get("composition_group_id"),
+        "composition_scenario_id": composition.get("composition_scenario_id"),
+        "composition_type": composition.get("composition_type"),
+        "scenario_role": composition.get("scenario_role"),
+        "substrate_id": composition.get("substrate_id"),
+        "substrate_name": composition.get("substrate_name"),
+        "hazard_ids": composition.get("hazard_ids") or [],
+        "hazard_families": composition.get("hazard_families") or [],
+        "hazard_channels": composition.get("hazard_channels") or [],
+        "hazard_sources": composition.get("hazard_sources") or [],
+        "hazard_names": composition.get("hazard_names") or [],
+        "order_index": composition.get("order_index"),
+        "interaction_hypothesis": composition.get("interaction_hypothesis"),
+        "dominant_hazard_hypothesis": composition.get("dominant_hazard_hypothesis"),
+        "run_role": composition.get("run_role"),
     }
 
 
@@ -476,6 +494,7 @@ def build_export_record(record: Dict[str, Any], hse_db: Path, scenario_root: Pat
             "error": record.get("error"),
         },
         "task_metadata": task_metadata,
+        "composition": task_metadata.get("composition") or {},
         "trace": {
             "trace_version": "0.1",
             "session_id": record.get("session_id"),

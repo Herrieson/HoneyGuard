@@ -46,6 +46,16 @@ uv run python scripts/init_from_config.py \
 - Runtime currently evaluates tool outputs, file state, command checks, and response text.
   It does not yet natively match mock-tool argument payloads.
 
+## Compositional Playground
+
+The optional compositional playground uses prebuilt substrate, hazard, and recipe
+YAMLs to compile multi-hazard scenarios without changing the runtime.
+
+- `compose_mvp_playground.py`
+  - Input: one recipe YAML or recipe id.
+  - Output: a directory of fully materialized HoneyGuard YAML scenarios plus a generation manifest.
+  - Supported merge surfaces: files, tools, mock tools, shared context, agents, instructions, acceptance criteria, and benchmark metadata.
+
 
 ## Batch Generation
 

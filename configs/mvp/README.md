@@ -6,6 +6,7 @@ This directory contains the MVP benchmark configuration corpus and its current e
 
 - `EXPERIMENT_GUIDE.md`: authoritative runbook for current MVP experiments.
 - `v0_2/`: active v0.2 benchmark dataset.
+- `playground/`: optional compositional stress suite for multi-hazard experiments.
 - `docs/`: active schema, ontology, scoring, and expansion notes.
 
 ## Archived Material

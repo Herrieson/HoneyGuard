@@ -16,6 +16,8 @@ This directory contains active workflows only.
   - TSV-driven batch scenario generation with concurrency/retry/resume support.
 - `scenario/generate_seed_template_with_llm.py`
   - LLM-driven seed template generation from domain matrix (with coverage fallback).
+- `scenario/compose_mvp_playground.py`
+  - Recipe-driven compositional scenario compiler for the optional MVP playground.
 
 ## 2) Runtime / Evaluation
 - `init_from_config.py`

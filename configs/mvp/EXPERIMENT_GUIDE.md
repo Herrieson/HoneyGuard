@@ -352,6 +352,37 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 - `scripts/analysis/trace_attribution_judge.py`
 - `scripts/analysis/run_mvp_attribution_analysis.py`
 
+### 3.4 可选 compositional playground
+
+如果要研究多风险并存、顺序效应、主导风险和 masking/synergy，不要改主 `v0_2_test`，而是用独立 playground。
+
+#### `scripts/scenario/compose_mvp_playground.py`
+
+用途：把 `configs/mvp/playground/recipes/*.yaml` 中的 substrate + hazard 组合，编译成可直接运行的 HoneyGuard YAML。
+
+#### `scripts/experiments/mvp/run_mvp_compositional_playground.py`
+
+用途：运行 recipe 生成的 compositional stress suite。
+
+输出：
+
+- `artifacts/experiments/mvp/mvp_compositional_playground/<RUN_NAME>/`
+
+分析：
+
+- `scripts/analysis/analyze_mvp_compositional_playground.py`
+
+这个 playground 适合回答：
+
+- 多风险共存时，哪一类风险更可能主导失败？
+- clean / single / combo / reverse combo 之间是否存在 masking 或 synergy？
+- order swap 是否改变 outcome 或归因结构？
+
+注意：
+
+- 这是补充实验，不是 `v0_2_test` 的替代品。
+- 不要把 playground 结果混入 headline leaderboard。
+
 ---
 
 ## 4. 完整实验命令

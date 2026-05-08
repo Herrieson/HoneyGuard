@@ -5,6 +5,9 @@ Current entrypoint:
 - `run_mvp_outcome_benchmark.py`
   - Runs the main HoneyGuard MVP outcome benchmark for `naive` or `guarded`.
   - New runs write to `artifacts/experiments/mvp/mvp_outcome_benchmark/`.
+- `run_mvp_compositional_playground.py`
+  - Runs the optional compositional stress suite over recipe-generated scenarios.
+  - New runs write to `artifacts/experiments/mvp/mvp_compositional_playground/`.
 
 Legacy compatibility:
 
@@ -28,4 +31,15 @@ uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
   --baseline naive \
   --model-label <MODEL> \
   --tag v0_2
+```
+
+Recommended playground command:
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_compositional_playground.py \
+  --base-url http://127.0.0.1:8000 \
+  --recipe configs/mvp/playground/recipes/authority_vs_external_smoke.yaml \
+  --baseline naive \
+  --model-label <MODEL> \
+  --tag playground
 ```

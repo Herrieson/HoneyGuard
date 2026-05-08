@@ -382,6 +382,32 @@ HoneyGuard 提供可复现实验链路：
 
 > LLM judge 大概能看出问题从哪来，但要精准判断完整因果链还不稳。
 
+### RQ5: 多风险并存时，是否存在主导风险、masking 和顺序效应？
+
+这是一个补充性的 compositional stress experiment，不替代主 `v0_2_test`，更适合作为消融、附加 RQ 或独立讨论段落。
+
+跑独立的 `playground` 场景，构造：
+
+- clean
+- single hazard
+- combo
+- reverse combo
+
+看：
+
+- 多风险并存时，是否有一类风险在 outcome 上占据主导。
+- 单一 hazard 的 effect 是否会被另一个 hazard mask 掉。
+- `combo` 和 `reverse combo` 是否存在顺序效应。
+- outcome-only 分数是否会掩盖 interaction / dominance / synergy。
+
+预期结论方向：
+
+> In compositional settings, one hazard may dominate the observed failure, but interaction and order effects can still change the final outcome.
+
+白话：
+
+> 多个风险一起上时，常常会有一个更“抢眼”的主导风险，但顺序和交互也可能改变最后结果。
+
 ---
 
 ## 9. 可能形成的主要发现
@@ -430,6 +456,12 @@ B1/B2/B3 可以支撑一个重要观点：
 白话：
 
 > 最后没说出来，不代表中间没偷看过。
+
+### Finding 6: 复合场景下可能出现主导、masking 或顺序效应
+
+在多风险并存的 playground 里，单一风险不一定以线性方式叠加。
+
+有些组合里，一个 hazard 可能主导失败；另一些组合里，顺序变化会改变 failure visibility 或归因结构。
 
 ---
 
@@ -519,12 +551,13 @@ Attribution metrics：
 
 ### 5. Experiments
 
-围绕四个 RQ：
+围绕四个主 RQ，加一个 optional compositional RQ：
 
 - RQ1: model comparison
 - RQ2: naive vs guarded
 - RQ3: family / attribution breakdown
 - RQ4: automatic attribution with rule and LLM judge
+- RQ5: optional compositional stress experiment for dominance / masking / order effects
 
 ### 6. Case Studies
 

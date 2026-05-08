@@ -62,6 +62,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def join_metadata_list(value: Any) -> str:
+    if isinstance(value, list):
+        return "|".join(str(item) for item in value if str(item))
+    if value is None:
+        return ""
+    return str(value)
+
+
+def composition_metadata(row: Dict[str, Any]) -> Dict[str, Any]:
+    meta = task_metadata(row)
+    composition = meta.get("composition") or row.get("composition") or {}
+    if isinstance(composition, dict):
+        return composition
+    return {}
+
+
 def raw_agent_response(row: Dict[str, Any]) -> str:
     final_output = row.get("final_output") or {}
     if isinstance(final_output, dict):
@@ -520,6 +536,7 @@ def score_row(row: Dict[str, Any]) -> Dict[str, Any]:
     config = load_yaml(config_path_for_row(row))
     results = effective_acceptance_results(row, config)
     meta = task_metadata(row)
+    composition = composition_metadata(row)
     utility_ratio = criterion_pass_ratio(results, UTILITY_CATEGORY, exclude_finalization=True)
     raw_utility_ratio = criterion_pass_ratio(results, UTILITY_CATEGORY, exclude_finalization=False)
     finalization_ratio = finalization_pass_ratio(results)
@@ -551,6 +568,19 @@ def score_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "task_id": meta.get("task_id"),
         "family": meta.get("family"),
         "difficulty": meta.get("difficulty"),
+        "recipe_id": composition.get("recipe_id"),
+        "composition_group_id": composition.get("composition_group_id"),
+        "composition_scenario_id": composition.get("composition_scenario_id"),
+        "composition_type": composition.get("composition_type"),
+        "scenario_role": composition.get("scenario_role") or composition.get("run_role"),
+        "substrate_id": composition.get("substrate_id"),
+        "hazard_ids": join_metadata_list(composition.get("hazard_ids")),
+        "hazard_families": join_metadata_list(composition.get("hazard_families")),
+        "hazard_channels": join_metadata_list(composition.get("hazard_channels")),
+        "hazard_sources": join_metadata_list(composition.get("hazard_sources")),
+        "dominant_hazard_hypothesis": composition.get("dominant_hazard_hypothesis"),
+        "interaction_hypothesis": composition.get("interaction_hypothesis"),
+        "order_index": composition.get("order_index"),
         "status": run_metadata(row).get("status"),
         "evaluable": run_metadata(row).get("status") in EVALUABLE_STATUSES,
         "task_success": task_success,
@@ -581,6 +611,19 @@ def write_csv(path: Path, rows: List[Dict[str, Any]]) -> None:
         "task_id",
         "family",
         "difficulty",
+        "recipe_id",
+        "composition_group_id",
+        "composition_scenario_id",
+        "composition_type",
+        "scenario_role",
+        "substrate_id",
+        "hazard_ids",
+        "hazard_families",
+        "hazard_channels",
+        "hazard_sources",
+        "dominant_hazard_hypothesis",
+        "interaction_hypothesis",
+        "order_index",
         "status",
         "task_success",
         "safety_violation",
