@@ -32,6 +32,13 @@ This directory contains active workflows only.
 - `export_run_to_json.py`
   - Converts one or more `run_scenarios.py` records plus optional `logs/hse.db`
     trace rows into a normalized scorer-facing JSON format.
+- `analysis/replay_run_trace.py`
+  - Post-hoc trace replayer. Rebuilds a task YAML in a fresh sandbox, replays
+    recorded tool calls, and reports output divergence, watched-path diffs, and
+    optional stepwise safety/risk probes.
+- `analysis/analyze_replay_dominance.py`
+  - Consumes replay run/step outputs for compositional playground runs and reports
+    observed dominant hazard support, masking, amplification, and order effects.
 - `llm_judge_attack_behavior.py`
   - LLM-based supplementary evaluator for malicious behavior.
 

@@ -213,6 +213,47 @@ uv run python eval/outcome_scorer.py \
   --output-csv <RUN_DIR>/scores/outcome.rows.csv
 ```
 
+#### `scripts/analysis/replay_run_trace.py`
+
+用途：测试后 execution-grounded trace replay。它不会重新调用 LLM，也不会重新规划；它从 export JSONL 读取真实 run 的工具调用，在 fresh sandbox 里按原参数重放 `read_file`、`bash_command` 和 mock tools，并重新计算验收标准。
+
+适合回答：
+
+- trace 里的工具调用是否能在 task YAML 还原出的环境里复现？
+- 哪一步第一次发生 sensitive read / sensitive access / untrusted sink？
+- 如果打开 `--stepwise-acceptance`，哪一步第一次触发 safety failure / risk positive？
+- watched paths 在每一步之后是否出现 created / changed / deleted？
+- replay 后的 acceptance / safety violation 是否和原始 run 一致？
+- 对 compositional playground，后续 dominance analyzer 可以检查实际 failure path 是否支持 dominant hazard hypothesis。
+
+常用命令：
+
+```bash
+uv run python scripts/analysis/replay_run_trace.py \
+  --export-jsonl <RUN_DIR>/exports/scenario_runs.export.jsonl \
+  --scenario-root <RUN_DIR>/configs/baseline \
+  --output-jsonl <RUN_DIR>/analysis/replay.rows.jsonl \
+  --output-csv <RUN_DIR>/analysis/replay.rows.csv \
+  --steps-jsonl <RUN_DIR>/analysis/replay.steps.jsonl \
+  --summary-json <RUN_DIR>/analysis/replay.summary.json \
+  --stepwise-acceptance
+```
+
+输出：
+
+- `replay.rows.jsonl` / `.csv`：run-level replay status、divergence、first sensitive step、first stepwise safety/risk step、watched-state first-change step。
+- `replay.steps.jsonl`：step-level replay evidence，包括 output match、sensitive/sink flags、stepwise acceptance probes、watched-path hash/diff，适合 case study。
+- `replay.summary.json`：replay status 计数、敏感访问计数、stepwise failure 计数和 watched-state change 计数。
+
+注意：
+
+- 默认 `--backend local`，使用本地隔离目录和绝对路径重写，不需要 Docker。
+- 这是 execution-grounded validation，不是第二次 model evaluation。
+- `--stepwise-acceptance` 只重跑非 response 类、看起来 read-only 的 acceptance probes。默认 scope 是 `safety_risk`，避免把 final answer 相关 criteria 误归因到工具步骤，也避免用可能改写环境的 command probe 污染 replay。
+- watched-state 默认开启，跟踪 YAML 初始文件、sensitive paths、acceptance criteria 涉及路径和工具调用中引用的路径；如果某些场景 probe 很重，可以加 `--no-watched-state`。
+- 不支持的工具会标记为 `unsupported_tool`，不会让脚本猜测或补全动作。
+- `replay_exact` 是最强结果；历史 run 也可能出现 stdout 不完全一致但 safety-equivalent，或者 replay 后 safety divergence。后者通常值得单独看 case study，因为它可能暴露 trace/export/scorer 语义差异或非确定性执行。
+
 #### `scripts/analysis/trace_attribution_judge.py`
 
 用途：对单个 run 的 trace 生成归因预测。
@@ -371,12 +412,43 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 分析：
 
 - `scripts/analysis/analyze_mvp_compositional_playground.py`
+- `scripts/analysis/replay_run_trace.py`
+- `scripts/analysis/analyze_replay_dominance.py`
+
+推荐顺序：
+
+```bash
+uv run python scripts/analysis/replay_run_trace.py \
+  --export-jsonl <RUN_DIR>/exports/scenario_runs.export.jsonl \
+  --scenario-root <RUN_DIR>/configs/baseline \
+  --output-jsonl <RUN_DIR>/analysis/replay.rows.jsonl \
+  --output-csv <RUN_DIR>/analysis/replay.rows.csv \
+  --steps-jsonl <RUN_DIR>/analysis/replay.steps.jsonl \
+  --summary-json <RUN_DIR>/analysis/replay.summary.json \
+  --stepwise-acceptance
+
+uv run python scripts/analysis/analyze_replay_dominance.py \
+  --rows-jsonl <RUN_DIR>/analysis/replay.rows.jsonl \
+  --steps-jsonl <RUN_DIR>/analysis/replay.steps.jsonl \
+  --output-dir <RUN_DIR>/analysis/replay_dominance \
+  --model-label <MODEL> \
+  --baseline <BASELINE> \
+  --run-name <RUN_NAME>
+```
 
 这个 playground 适合回答：
 
 - 多风险共存时，哪一类风险更可能主导失败？
 - clean / single / combo / reverse combo 之间是否存在 masking 或 synergy？
 - order swap 是否改变 outcome 或归因结构？
+- YAML 中配置了某个 hazard，并不代表 agent 实际使用了它；replay dominance 会区分 configured hazards 和 observed activated hazards。
+- `dominant_hazard_hypothesis` 是否被实际 replay path 支持，还是被另一个 hazard 覆盖。
+
+`analyze_replay_dominance.py` 输出：
+
+- `replay_dominance.groups.jsonl` / `.csv`：每个 composition group 的 observed first hazard、dominant support、masking、amplification、order-effect 标记。
+- `replay_dominance.summary.json`：dominant support / contradicted / order effect / masking / amplification 的 group 计数。
+- `summary.md`：可直接浏览的简表。
 
 注意：
 

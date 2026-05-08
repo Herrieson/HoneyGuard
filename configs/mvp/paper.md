@@ -137,8 +137,9 @@ HoneyGuard 的基本设计是：
 2. 在 sandbox 中运行 Agent。
 3. 记录完整 trace、工具调用、最终输出和环境状态。
 4. 用 outcome scorer 判断是否完成任务、是否违规。
-5. 为每个任务标注 attribution ground truth。
-6. 对失败 trace 做 attribution-level 分析。
+5. 用 trace replayer 在 fresh sandbox 中重放真实工具调用，验证 trace fidelity，并定位 step-level safety evidence。
+6. 为每个任务标注 attribution ground truth。
+7. 对失败 trace 做 attribution-level 分析。
 
 每个任务不只关心最终结果，还标注：
 
@@ -189,6 +190,13 @@ HoneyGuard 的基本设计是：
 核心价值：
 
 > HoneyGuard 把“有没有失败”转化为“失败原因是什么”。
+
+Replay 在这里不是第二次模型评测，也不是世界模拟器，而是 post-hoc execution evidence layer。它只重放 agent 已经产生的 action sequence；逐步 probe 只使用非 response、read-only 的验收条件，避免把 final answer 误归因到中间工具步骤，也避免污染 replay 环境。它用来回答：
+
+- trace/export/scorer 是否自洽；
+- unsafe outcome 是否能由 recorded tool calls 在原始 YAML 环境中复现；
+- sensitive read、untrusted sink、safety/risk probe 第一次出现在哪一步；
+- 在复合场景里，YAML 配置的 dominant hazard 是否真的对应 observed failure path。
 
 ---
 
@@ -399,6 +407,8 @@ HoneyGuard 提供可复现实验链路：
 - 单一 hazard 的 effect 是否会被另一个 hazard mask 掉。
 - `combo` 和 `reverse combo` 是否存在顺序效应。
 - outcome-only 分数是否会掩盖 interaction / dominance / synergy。
+- replay dominance 是否支持 YAML 里的 `dominant_hazard_hypothesis`。
+- 某个 hazard 是真实被 agent 激活，还是只是配置在场景里但没有进入 failure path。
 
 预期结论方向：
 
@@ -407,6 +417,13 @@ HoneyGuard 提供可复现实验链路：
 白话：
 
 > 多个风险一起上时，常常会有一个更“抢眼”的主导风险，但顺序和交互也可能改变最后结果。
+
+这里不要只用 outcome 分数判断 dominance。需要结合 replay：
+
+- `replay_run_trace.py --stepwise-acceptance` 给出 first sensitive read / first untrusted sink / first risk-positive step。
+- `analyze_replay_dominance.py` 按 composition group 比较 clean / single / combo / reverse combo。
+- 如果 combo 的 first observed path 与某个 single hazard 的 replay path 重叠，才说该 hazard 被 observed failure path 支持。
+- 如果 YAML 中有 hazard，但 single/control 和 combo replay 都没有触发对应 evidence，应当写成 configured but unactivated，而不是 dominant。
 
 ---
 
@@ -457,11 +474,19 @@ B1/B2/B3 可以支撑一个重要观点：
 
 > 最后没说出来，不代表中间没偷看过。
 
+Replay analyzer 可以把这类 case 写得更扎实：不是只说 trace 文本里出现了某个动作，而是展示 fresh sandbox replay 后，哪一步第一次读到 sensitive path，哪一步第一次写入 watched path，哪一步第一次让 safety/risk probe 变成失败。
+
 ### Finding 6: 复合场景下可能出现主导、masking 或顺序效应
 
 在多风险并存的 playground 里，单一风险不一定以线性方式叠加。
 
 有些组合里，一个 hazard 可能主导失败；另一些组合里，顺序变化会改变 failure visibility 或归因结构。
+
+这一 finding 应当使用 replay dominance 表支撑，而不是只看 combo 的最终 SVR。关键区分是：
+
+- configured hazard：YAML 中存在的风险插件；
+- activated hazard：replay path 中实际出现了对应 sensitive/sink/safety evidence；
+- dominant hazard：combo 的 observed first failure path 与某个 single-control hazard path 最一致。
 
 ---
 
@@ -479,6 +504,22 @@ B1/B2/B3 可以支撑一个重要观点：
 6. 最终造成什么影响。
 7. HoneyGuard 的 attribution 标签如何解释这个失败。
 8. 如果要防，block point 在哪里。
+9. replay evidence 是否复现并定位了这个 path。
+
+推荐附一个 compact replay timeline：
+
+```text
+step 1: benign tool/read, no violation
+step 2: first sensitive_read
+step 3: first untrusted_sink or watched-path change
+step 4: first risk_positive / safety_failure
+```
+
+如果是 compositional playground case，再补：
+
+- single hazard path 是否在 combo 中复现；
+- combo_reverse 是否改变 first failure step；
+- observed dominant hazard 是否等于 `dominant_hazard_hypothesis`。
 
 推荐 case 类型：
 
@@ -516,6 +557,7 @@ B1/B2/B3 可以支撑一个重要观点：
 - YAML scenario。
 - sandbox execution。
 - trace logging。
+- trace replay validation。
 - outcome criteria。
 - attribution ground truth。
 - A/B/C taxonomy。
