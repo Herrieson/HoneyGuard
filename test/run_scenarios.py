@@ -41,6 +41,7 @@ FIVE_METRIC_CATEGORIES: Tuple[str, ...] = (
     "silent_leakage",
     "stealth_detectability",
 )
+RESUME_SKIP_STATUSES = {"passed", "failed", "api_error", "init_failed", "run_failed"}
 
 
 def _criterion_category(item: Dict[str, Any]) -> str:
@@ -67,6 +68,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--token-env", default="HSE_API_TOKEN", help="Env var name for API token; empty to skip auth header")
     parser.add_argument("--output", default="logs/advanced_results.jsonl", help="Path to JSONL log file")
     parser.add_argument("--db-path", default="logs/advanced_results.db", help="Path to SQLite DB for recording results")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Skip scenarios whose latest JSONL record has a stable terminal status; retry infra/retryable failures.",
+    )
     return parser.parse_args()
 
 
@@ -233,6 +239,85 @@ def append_jsonl(path: Path, record: Dict[str, Any]) -> None:
         f.write(json.dumps(record, default=str) + "\n")
 
 
+def load_jsonl_records(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+    records: List[Dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except Exception:
+                continue
+            if isinstance(record, dict):
+                records.append(record)
+    return records
+
+
+def normalize_config_key(raw_path: Any) -> str:
+    if not raw_path:
+        return ""
+    try:
+        return str(Path(str(raw_path)).resolve())
+    except Exception:
+        return str(raw_path)
+
+
+def record_resume_key(record: Dict[str, Any], fallback_index: int = -1) -> str:
+    config_key = normalize_config_key(record.get("config_path"))
+    if config_key:
+        return f"config:{config_key}"
+    session_id = str(record.get("session_id") or "").strip()
+    if session_id:
+        return f"session:{session_id}"
+    return f"record:{fallback_index}"
+
+
+def config_resume_key(path: Path) -> str:
+    return f"config:{normalize_config_key(path)}"
+
+
+def latest_records_by_resume_key(records: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    latest: Dict[str, Dict[str, Any]] = {}
+    for idx, record in enumerate(records):
+        latest[record_resume_key(record, idx)] = record
+    return latest
+
+
+def dedupe_records(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    latest: Dict[str, Tuple[int, Dict[str, Any]]] = {}
+    for idx, record in enumerate(records):
+        latest[record_resume_key(record, idx)] = (idx, record)
+    return [item[1] for item in sorted(latest.values(), key=lambda item: item[0])]
+
+
+def resume_record_is_complete(record: Dict[str, Any]) -> bool:
+    if bool(record.get("retryable")):
+        return False
+    return str(record.get("status") or "").strip() in RESUME_SKIP_STATUSES
+
+
+def format_duration(seconds: float) -> str:
+    seconds = max(int(seconds), 0)
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def progress_bar(done: int, total: int, width: int = 24) -> str:
+    if total <= 0:
+        return "[" + "-" * width + "]"
+    filled = min(width, max(0, round(width * done / total)))
+    return "[" + "#" * filled + "-" * (width - filled) + "]"
+
+
 def run_scenario(config_path: Path, base_url: str, override_instr: str, headers: Dict[str, str], timeout: float) -> Dict[str, Any]:
     # 1. Initialize
     session_id = None
@@ -384,14 +469,9 @@ def analyze_results(jsonl_path: Path):
     
     total = 0
     
-    with open(jsonl_path, 'r', encoding='utf-8') as f:
-        # 只读取本次运行的日志（如果是追加写入，这里可能读到旧的，建议每次运行前清理或按时间戳过滤）
-        # 这里简化处理：读取文件中所有的记录进行汇总
-        for line in f:
+    records = dedupe_records(load_jsonl_records(jsonl_path))
+    for record in records:
             try:
-                line = line.strip()
-                if not line: continue
-                record = json.loads(line)
                 total += 1
                 
                 status = record.get('status')
@@ -554,18 +634,32 @@ def main() -> int:
     headers = build_headers(args.token_env)
     jsonl_path = Path(args.output)
     db_path = Path(args.db_path)
+    jsonl_path.parent.mkdir(parents=True, exist_ok=True)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     ensure_db(conn)
 
-    # 建议在运行新一轮测试前清理旧日志，或者在 analyze_results 里做过滤
-    # 这里不做自动清理，避免误删数据
+    existing_records = load_jsonl_records(jsonl_path) if args.resume else []
+    latest_records = latest_records_by_resume_key(existing_records)
+    pending_configs: List[Path] = []
+    skipped = 0
+    if args.resume:
+        for cfg_path in configs:
+            existing = latest_records.get(config_resume_key(cfg_path))
+            if existing and resume_record_is_complete(existing):
+                skipped += 1
+                continue
+            pending_configs.append(cfg_path)
+    else:
+        pending_configs = list(configs)
     
     success = 0
-    print(f"🚀 Starting execution of {len(configs)} scenarios...")
+    if args.resume:
+        print(f"Resume mode: skipping {skipped}/{len(configs)} completed scenarios; {len(pending_configs)} pending.")
+    print(f"Starting execution of {len(pending_configs)} pending scenarios ({len(configs)} total).")
     
-    # 简单的进度展示
-    for idx, cfg_path in enumerate(configs, start=1):
+    started = time.monotonic()
+    for run_idx, cfg_path in enumerate(pending_configs, start=1):
         record = run_scenario(cfg_path, args.base_url, args.instruction, headers, args.timeout)
         
         # 实时打印状态图标
@@ -583,16 +677,28 @@ def main() -> int:
             icon = "❌"
         else:
             icon = "⚠️ "
-            
-        print(f"[{idx}/{len(configs)}] {icon} {record['status']} | {cfg_path.name}")
+
+        elapsed = time.monotonic() - started
+        avg = elapsed / run_idx if run_idx else 0.0
+        remaining = max(len(pending_configs) - run_idx, 0)
+        eta = avg * remaining
+        completed_total = skipped + run_idx
+        pct = (completed_total / len(configs) * 100.0) if configs else 100.0
+        bar = progress_bar(completed_total, len(configs))
+        print(
+            f"{bar} {completed_total}/{len(configs)} ({pct:5.1f}%) "
+            f"run {run_idx}/{len(pending_configs)} eta={format_duration(eta)} "
+            f"| {icon} {record['status']} | {cfg_path.name}"
+        )
         
         append_jsonl(jsonl_path, record)
         insert_db(conn, record)
 
-    print(f"\nExecution finished. {success}/{len(configs)} passed strictly.")
+    print(f"\nExecution finished. {success}/{len(pending_configs)} newly executed scenarios passed strictly. Skipped {skipped}.")
     
     # 调用分析逻辑
     analyze_results(jsonl_path)
+    conn.close()
     
     return 0
 

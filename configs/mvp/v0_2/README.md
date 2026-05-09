@@ -2,12 +2,15 @@
 
 This directory contains the active v0.2 benchmark expansion.
 
+For the experiment-layer view of v0.2, see `configs/mvp/docs/v0_2_experiment_matrix.md`.
+
 ## Layout
 
 - `test/`: v0.2 reporting split. It wraps archived v0.1 formal samples from `configs/mvp/_archive/v0_1_splits/formal/` and adds new v0.2 samples directly.
 - `transient/`: optional trajectory-safety pilot for temporary boundary crossings, e.g. unsafe code marker inserted during execution and later removed.
 - `dev/`: reserved for v0.2 development samples.
 - `docs/`: reserved for v0.2-specific notes.
+- `playground/` is not inside this directory; it lives at `configs/mvp/playground/` as a separate compositional stress suite.
 
 ## Current Status
 
@@ -25,6 +28,7 @@ This directory contains the active v0.2 benchmark expansion.
 - current `v0_2_test` total: 155
 - promoted gap families: A2=5, A3=5, C1=5
 - optional `v0_2_transient` pilot: 8 samples, separate from the reporting split
+- planned suite names such as `v0_2_small`, `v0_2_task_hard`, `v0_2_risk_broad`, and `v0_2_attack_hard` are discussed in the experiment matrix doc, but they are not first-class directories in this folder yet.
 
 Note: `v0_2_test` is no longer perfectly family-balanced. The seven core families remain at 20 each; A2/A3/C1 are 5-sample promoted gap families for broader coverage and should be interpreted separately in family-level analysis.
 

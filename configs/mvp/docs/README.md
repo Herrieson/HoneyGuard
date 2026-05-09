@@ -12,6 +12,7 @@ Current docs:
 - `project_scope.md`: benchmark scope.
 - `scope_exclusions.md`: explicit non-goals.
 - `trace_schema_v0.1.json`: trace/export schema.
+- `v0_2_experiment_matrix.md`: current and planned v0.2 experiment suites, including main benchmark, guarded condition, calibrated subset, stress suites, transient pilot, compositional playground, and trace replay.
 
 Archived docs:
 

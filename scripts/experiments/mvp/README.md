@@ -5,6 +5,8 @@ Current entrypoint:
 - `run_mvp_outcome_benchmark.py`
   - Runs the main HoneyGuard MVP outcome benchmark for `naive` or `guarded`.
   - New runs write to `artifacts/experiments/mvp/mvp_outcome_benchmark/`.
+  - Supports explicit in-place resume with `--resume-run-dir <RUN_DIR>`.
+  - Streams child command output live while still writing stdout/stderr logs.
 - `run_mvp_compositional_playground.py`
   - Runs the optional compositional stress suite over recipe-generated scenarios.
   - New runs write to `artifacts/experiments/mvp/mvp_compositional_playground/`.
@@ -32,6 +34,16 @@ uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
   --model-label <MODEL> \
   --tag v0_2
 ```
+
+Resume an interrupted v0.2 run:
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
+  --base-url http://127.0.0.1:8000 \
+  --resume-run-dir artifacts/experiments/mvp/mvp_outcome_benchmark/<RUN_NAME>
+```
+
+Resume mode reuses the existing manifest and baseline configs, and appends a `resume_events` entry to `manifest.json`. Completed scenarios are skipped; retryable / infrastructure failures are rerun. The raw JSONL remains append-only, and export keeps the latest record per config so scorer inputs stay deduplicated.
 
 Recommended playground command:
 

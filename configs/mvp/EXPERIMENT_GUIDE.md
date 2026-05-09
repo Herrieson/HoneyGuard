@@ -1,13 +1,15 @@
 # HoneyGuard MVP 实验指南
 
-这份文档是 `configs/mvp/` 当前实验入口的权威说明。目标是减少脚本和旧 task 编号带来的混淆：v0.2 主实验只需要跑 outcome benchmark；internal authority 已经作为 B1/B2/B3 并入 `v0_2_test`，不再需要单独跑旧 pilot。
+这份文档是 `configs/mvp/` 当前实验入口的权威说明。目标是减少脚本和旧 task 编号带来的混淆：v0.2 的主结果仍然围绕 `v0_2_test` 的 outcome benchmark 展开，但论文和后分析会同时使用 guarded 对照、trajectory-safety pilot、compositional playground、以及 trace replay 这几层补充实验。
 
 ---
 
 ## 1. 当前结论
 
 - **主数据集**：`--split v0_2_test`，对应 `configs/mvp/v0_2/test/`，当前 155 条。
-- **可选 pilot**：`--split v0_2_transient`，对应 `configs/mvp/v0_2/transient/`，用于观察“中途越界、最终恢复/未恢复”的 trajectory-safety 现象，不并入主 leaderboard。
+- **条件对照**：同一 `v0_2_test` 上跑 `baseline=guarded`，用于观察 prompt-only safety awareness 的影响；它不是新数据集。
+- **可选 pilot / stress suites**：`v0_2_transient`、compositional playground，以及计划中的 `v0_2_small`、`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 都不并入主 leaderboard。
+- **实验矩阵说明**：见 `configs/mvp/docs/v0_2_experiment_matrix.md`。
 - **主实验入口**：`scripts/experiments/mvp/run_mvp_outcome_benchmark.py`。
 - **主输出目录**：`artifacts/experiments/mvp/mvp_outcome_benchmark/<RUN_NAME>/`。
 - **必跑 baseline**：`naive`；论文论点需要时再跑 `guarded`。
@@ -20,7 +22,25 @@
 - 新 artifact 使用 `mvp_outcome_benchmark`。
 - 旧 artifact 已归档到 `artifacts/experiments/mvp/_archive/legacy_exp6/`，不再混在 active experiment 根目录里。
 
-### 1.1 服务器容器环境的 sandbox backend
+### 1.1 v0.2 实验层级
+
+论文和实验组织按下面层级理解：
+
+| Layer | Suite / condition | Status | 用途 |
+|---|---|---|---|
+| Core benchmark | `v0_2_test` | current | 主 leaderboard，RQ1/RQ3/RQ4 的主要来源 |
+| Controlled condition | `v0_2_test + guarded` | current | prompt-only safety reminder 对照，回答 RQ2 |
+| Calibrated subset | `v0_2_small` | planned / derived | 24 样本低成本 screening，不做主结论 |
+| Task stress | `v0_2_task_hard` | planned | 更复杂任务对安全性的影响 |
+| Risk extension | `v0_2_risk_broad` | planned | 更广义风险面的扩展性检查 |
+| Attack stress | `v0_2_attack_hard` | planned | 更强攻击下主实验优秀模型是否仍稳 |
+| Trajectory pilot | `v0_2_transient` | current | endpoint-safe 不等于 trajectory-safe |
+| Compositional stress | compositional playground (`mvp_compositional_playground`) | current | 多风险 dominance / masking / order effect |
+| Post-hoc analysis | trace replayer | current | fidelity、step-level localization、dominance support |
+
+当前代码的一等 `--split` preset 只包含 `v0_2_test`、`v0_2_transient` 等已 materialize 的 split。`v0_2_small`、`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 是推荐保留的 suite 名称，真正报告数值前需要先固定样本列表或实现 preset。
+
+### 1.2 服务器容器环境的 sandbox backend
 
 默认实验仍使用 Docker sandbox。这样每个 scenario 都有独立容器，安全边界和历史结果一致。
 
@@ -77,7 +97,21 @@ local backend 的语义：
   - 当前样本用 stdout-capturing unit tests 制造恢复机会：如果模型先加入 `print(marker)`，测试会失败，模型有机会删除 marker 后再通过测试。
   - 这类样本适合做 case study 和论文叙事，不建议直接和 `v0_2_test` headline 指标混算。
 
-### 2.3 历史 split
+### 2.3 推荐保留的派生 suite 名称
+
+以下名字目前主要用于论文设计和后续实现规划，是否 materialize 成独立 preset 取决于具体实验需要：
+
+- `v0_2_small`：24 样本校准子集，用于低成本 screening。
+- `v0_2_task_hard`：更复杂任务条件下的 stress suite。
+- `v0_2_risk_broad`：更广义风险面的扩展 suite。
+- `v0_2_attack_hard`：更强攻击压力测试。
+
+原则：
+
+- 不要把这些 planned/derived suite 名称和 `v0_2_test` 混成一个主 leaderboard。
+- 真的要报告数值时，先固定样本列表或把它们实现成独立 preset。
+
+### 2.4 历史 split
 
 - `test`：兼容旧 v0.1 formal set，源 YAML 在 `configs/mvp/_archive/v0_1_splits/formal/`。
 - `dev` / `full`：兼容旧 v0.1 调试 split，源 YAML 在 `configs/mvp/_archive/v0_1_splits/`。
@@ -108,10 +142,21 @@ local backend 的语义：
 - `--tag <TAG>`
 - `--base-url <URL>`
 - `--timeout <SECONDS>`
+- `--resume-run-dir <RUN_DIR>`：从已有 run 目录继续跑；不会重新 assemble，也不会新建 timestamped run。
 
 输出：
 
 - `artifacts/experiments/mvp/mvp_outcome_benchmark/<RUN_NAME>/`
+
+断点续跑：
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
+  --base-url http://127.0.0.1:8000 \
+  --resume-run-dir artifacts/experiments/mvp/mvp_outcome_benchmark/<RUN_NAME>
+```
+
+普通重跑同一条命令会创建新的 `<RUN_NAME>`，不会自动接上旧 run。断点续跑必须显式传 `--resume-run-dir`，这样 provenance 更清楚。续跑事件会追加写入 `manifest.json` 的 `resume_events`。续跑时 `test/run_scenarios.py --resume` 会跳过已经有稳定终态的样本，只重跑 `infra_failed`、`exception` 或 `retryable=true` 这类不稳定记录；`export_run_to_json.py` 会对同一个 config 的多次尝试取最后一次记录，避免 scorer 重复计数。主 runner 的 stdout/stderr 现在会实时 tee 到日志文件，因此场景级进度会在终端里即时显示。
 
 #### `scripts/experiments/mvp/run_exp_6_1_outcome_baselines.py`
 
@@ -177,6 +222,21 @@ uv run python test/run_scenarios.py \
   --db-path logs/mvp_v02_test.db
 ```
 
+可选断点续跑：
+
+```bash
+uv run python test/run_scenarios.py \
+  --base-url http://127.0.0.1:8000 \
+  --target /tmp/hg_mvp_v02_test \
+  --limit 0 \
+  --timeout 120 \
+  --output logs/mvp_v02_test.jsonl \
+  --db-path logs/mvp_v02_test.db \
+  --resume
+```
+
+`--resume` 依据 JSONL 中同一 config 的最新记录判断是否跳过。稳定终态包括 `passed`、`failed`、`api_error`、`init_failed`、`run_failed`；`infra_failed`、`exception`、`retryable=true` 会被重新运行。进度输出包含 `completed/total`、百分比、pending run 计数和 ETA。
+
 #### `scripts/export_run_to_json.py`
 
 用途：把 raw scenario run JSONL 转成统一 export JSONL。export 会包含 task metadata、attribution ground truth、trace、final output、final state 和 safety events。
@@ -189,6 +249,8 @@ uv run python scripts/export_run_to_json.py \
   --output logs/mvp_v02_test.export.jsonl \
   --scenario-root /tmp/hg_mvp_v02_test
 ```
+
+如果 raw JSONL 里因为续跑出现同一 config 的多次记录，export 会保留最后一次记录。这保持 raw log 的审计性，同时保证后续 scorer 不重复计数。
 
 #### `eval/outcome_scorer.py`
 

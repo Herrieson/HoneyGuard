@@ -306,6 +306,31 @@ HoneyGuard 提供可复现实验链路：
 
 ## 8. 实验问题设计
 
+### 8.0 实验矩阵
+
+HoneyGuard 的实验最好按层级讲，而不是把所有 suite 平铺成并列 benchmark。
+
+主线建议是：
+
+1. **主 benchmark**：`v0_2_test`
+2. **条件对照**：同一 `v0_2_test` 上的 `guarded` baseline
+3. **校准子集**：`v0_2_small`，用于低成本 screening
+4. **任务压力**：`v0_2_task_hard`
+5. **风险扩展**：`v0_2_risk_broad`
+6. **攻击压力**：`v0_2_attack_hard`
+7. **过程安全 pilot**：`v0_2_transient`
+8. **复合风险 stress suite**：compositional playground (`mvp_compositional_playground`)
+9. **后分析层**：trace replayer
+
+这里要区分两类东西：
+
+- **current / materialized**：已经能直接跑的主 benchmark、transient pilot、compositional playground 和 replay analysis。
+- **planned / derived**：`v0_2_small`、`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 这些推荐保留的 suite 名称，最好先固定样本列表再正式报数。
+
+论文中最稳妥的写法是：
+
+> We evaluate the main benchmark on `v0_2_test`, use guarded prompting as a control condition, and reserve specialized pilot or stress suites for targeted analysis and appendix evidence.
+
 ### RQ1: 不同模型在 HoneyGuard 上表现如何？
 
 跑多个模型的 `naive` baseline。
@@ -600,6 +625,13 @@ Attribution metrics：
 - RQ3: family / attribution breakdown
 - RQ4: automatic attribution with rule and LLM judge
 - RQ5: optional compositional stress experiment for dominance / masking / order effects
+
+实验材料按层级报告：
+
+- headline: `v0_2_test`
+- paired control: `v0_2_test + guarded`
+- screening / stress / pilot: `v0_2_small`、`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard`、`v0_2_transient`、compositional playground (`mvp_compositional_playground`)
+- post-hoc evidence: trace replayer
 
 ### 6. Case Studies
 

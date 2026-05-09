@@ -5,6 +5,8 @@ import os
 import re
 import shlex
 import subprocess
+import sys
+import threading
 from urllib import error, request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -128,6 +130,11 @@ def build_run_name(split: str, baseline: str, model_label: str, tag: str) -> str
 
 def build_paths(output_root: Path, experiment_id: str, run_name: str) -> ExperimentPaths:
     run_dir = output_root / experiment_id / run_name
+    paths = build_paths_from_run_dir(run_dir)
+    return paths
+
+
+def build_paths_from_run_dir(run_dir: Path) -> ExperimentPaths:
     paths = ExperimentPaths(
         run_dir=run_dir,
         logs_dir=run_dir / "logs",
@@ -156,16 +163,55 @@ def quote_command(parts: List[str]) -> str:
     return " ".join(shlex.quote(part) for part in parts)
 
 
+def _pump_stream(stream, log_handle, printer) -> None:
+    try:
+        for line in iter(stream.readline, ""):
+            if not line:
+                break
+            log_handle.write(line)
+            log_handle.flush()
+            printer(line)
+    finally:
+        try:
+            stream.close()
+        except Exception:
+            pass
+
+
 def run_logged_command(parts: List[str], *, cwd: Path, log_dir: Path, log_name: str) -> None:
-    result = subprocess.run(parts, cwd=str(cwd), capture_output=True, text=True)
-    (log_dir / f"{log_name}.stdout.log").write_text(result.stdout, encoding="utf-8")
-    (log_dir / f"{log_name}.stderr.log").write_text(result.stderr, encoding="utf-8")
-    if result.stdout:
-        print(result.stdout, end="")
-    if result.stderr:
-        print(result.stderr, end="")
-    if result.returncode != 0:
-        raise SystemExit(result.returncode)
+    env = os.environ.copy()
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    stdout_path = log_dir / f"{log_name}.stdout.log"
+    stderr_path = log_dir / f"{log_name}.stderr.log"
+    with stdout_path.open("w", encoding="utf-8") as stdout_log, stderr_path.open("w", encoding="utf-8") as stderr_log:
+        proc = subprocess.Popen(
+            parts,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            env=env,
+        )
+        assert proc.stdout is not None
+        assert proc.stderr is not None
+        stdout_thread = threading.Thread(
+            target=_pump_stream,
+            args=(proc.stdout, stdout_log, lambda line: print(line, end="", flush=True)),
+            daemon=True,
+        )
+        stderr_thread = threading.Thread(
+            target=_pump_stream,
+            args=(proc.stderr, stderr_log, lambda line: print(line, end="", file=sys.stderr, flush=True)),
+            daemon=True,
+        )
+        stdout_thread.start()
+        stderr_thread.start()
+        returncode = proc.wait()
+        stdout_thread.join()
+        stderr_thread.join()
+    if returncode != 0:
+        raise SystemExit(returncode)
 
 
 def prepend_baseline_prompt(system_prompt: str, baseline: str) -> str:

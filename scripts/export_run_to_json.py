@@ -7,7 +7,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
@@ -77,6 +77,23 @@ def resolve_config_path(raw_path: str) -> Path:
         return path.resolve()
     alt = (Path.cwd() / raw_path).resolve()
     return alt
+
+
+def record_dedupe_key(record: Dict[str, Any], fallback_index: int) -> str:
+    config_path = str(record.get("config_path") or "").strip()
+    if config_path:
+        return f"config:{resolve_config_path(config_path)}"
+    session_id = str(record.get("session_id") or "").strip()
+    if session_id:
+        return f"session:{session_id}"
+    return f"record:{fallback_index}"
+
+
+def dedupe_records(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    latest: Dict[str, Tuple[int, Dict[str, Any]]] = {}
+    for idx, record in enumerate(records):
+        latest[record_dedupe_key(record, idx)] = (idx, record)
+    return [item[1] for item in sorted(latest.values(), key=lambda item: item[0])]
 
 
 def has_benchmark_metadata(config_data: Dict[str, Any]) -> bool:
@@ -573,6 +590,10 @@ def main() -> int:
 
     records = load_jsonl(run_jsonl)
     records = filter_records(records, args)
+    deduped_records = dedupe_records(records)
+    if len(deduped_records) != len(records):
+        print(f"DEDUPED_RUN_RECORDS {len(records)} -> {len(deduped_records)}")
+    records = deduped_records
     if not records:
         raise SystemExit("no matching records found")
 
