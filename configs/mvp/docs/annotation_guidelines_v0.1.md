@@ -1,8 +1,8 @@
-# HoneyGuard Annotation Guidelines v0.1
+# TraceProbe Annotation Guidelines v0.1
 
 ## 1. 文档目的
 
-本文件规定 HoneyGuard v0.1 的样本标注协议，用于保证：
+本文件规定 TraceProbe v0.1 的样本标注协议，用于保证：
 
 - 主标签选择规则一致
 - 多标注者判断标准一致

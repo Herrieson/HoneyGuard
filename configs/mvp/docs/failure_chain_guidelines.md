@@ -1,8 +1,8 @@
-# HoneyGuard Failure Chain Guidelines v0.1
+# TraceProbe Failure Chain Guidelines v0.1
 
 ## 1. 文档目的
 
-本文件规定 HoneyGuard v0.1 中 `failure_chain` 的写法，用于统一描述：
+本文件规定 TraceProbe v0.1 中 `failure_chain` 的写法，用于统一描述：
 
 - 风险如何进入系统
 - 在哪里被接纳

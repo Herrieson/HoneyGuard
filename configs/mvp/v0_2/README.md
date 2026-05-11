@@ -1,4 +1,4 @@
-# HoneyGuard MVP v0.2 Dataset
+# TraceProbe MVP v0.2 Dataset
 
 This directory contains the active v0.2 benchmark expansion.
 
@@ -27,8 +27,9 @@ For the experiment-layer view of v0.2, see `configs/mvp/docs/v0_2_experiment_mat
 - new C2.2 tool-output injection samples: 10
 - current `v0_2_test` total: 155
 - promoted gap families: A2=5, A3=5, C1=5
+- current `v0_2_small` calibrated subset: 24 samples, selected from `v0_2_test` for low-cost screening
 - optional `v0_2_transient` pilot: 8 samples, separate from the reporting split
-- planned suite names such as `v0_2_small`, `v0_2_task_hard`, `v0_2_risk_broad`, and `v0_2_attack_hard` are discussed in the experiment matrix doc, but they are not first-class directories in this folder yet.
+- planned suite names such as `v0_2_task_hard`, `v0_2_risk_broad`, and `v0_2_attack_hard` are discussed in the experiment matrix doc, but they are not first-class directories in this folder yet.
 
 Note: `v0_2_test` is no longer perfectly family-balanced. The seven core families remain at 20 each; A2/A3/C1 are 5-sample promoted gap families for broader coverage and should be interpreted separately in family-level analysis.
 
@@ -51,6 +52,17 @@ uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
   --baseline naive \
   --model-label <model-label> \
   --tag v0_2
+```
+
+Run the calibrated 24-sample small subset:
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
+  --base-url http://127.0.0.1:8000 \
+  --split v0_2_small \
+  --baseline naive \
+  --model-label <model-label> \
+  --tag v0_2_small
 ```
 
 Run the optional transient-violation pilot:

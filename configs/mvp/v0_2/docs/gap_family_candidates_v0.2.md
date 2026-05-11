@@ -1,4 +1,4 @@
-# HoneyGuard v0.2 Gap-Family Promotion Note
+# TraceProbe v0.2 Gap-Family Promotion Note
 
 ## Purpose
 

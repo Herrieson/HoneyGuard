@@ -1,6 +1,6 @@
-# HoneyGuard 论文图规划
+# TraceProbe 论文图规划
 
-本文档记录 HoneyGuard 论文中建议出现的图。它的目的不是直接写 caption，而是提前固定每张图要服务的论文论点、数据来源、可视化形式和生成方式。
+本文档记录 TraceProbe 论文中建议出现的图。它的目的不是直接写 caption，而是提前固定每张图要服务的论文论点、数据来源、可视化形式和生成方式。
 
 整体原则：
 
@@ -17,8 +17,8 @@
 
 如果篇幅有限，主文建议只放这 6 张：
 
-1. **Figure 1: HoneyGuard benchmark pipeline**
-   - 说明 HoneyGuard 从 executable YAML 到 live trace、scoring、replay、attribution 的完整闭环。
+1. **Figure 1: TraceProbe benchmark pipeline**
+   - 说明 TraceProbe 从 executable YAML 到 live trace、scoring、replay、attribution 的完整闭环。
 2. **Figure 2: Risk-source and attribution taxonomy**
    - 说明 A/B/C 风险源、family、channel、mechanism、impact 的结构。
 3. **Figure 3: Main model outcome comparison**
@@ -37,7 +37,7 @@ RQ2 和 RQ4 如果篇幅紧张，可以用表或 appendix 图：
 
 ---
 
-## 1. Figure 1: HoneyGuard Benchmark Pipeline
+## 1. Figure 1: TraceProbe Benchmark Pipeline
 
 ### 位置
 
@@ -45,7 +45,7 @@ Method / Benchmark Design 开头。
 
 ### 核心目的
 
-让 reviewer 一眼理解 HoneyGuard 不是“攻击样例集合”，而是一个从 executable scenario 到 trajectory-aware diagnosis 的评测闭环。
+让 reviewer 一眼理解 TraceProbe 不是“攻击样例集合”，也不是只让模型审计现成轨迹的 benchmark，而是一个从 executable scenario 到 live-execution diagnosis 的评测闭环。
 
 ### 要表现什么
 
@@ -92,7 +92,7 @@ Method / Benchmark Design 开头。
 
 ### 论文 claim
 
-> HoneyGuard evaluates live agent behavior in executable scenarios and turns resulting traces into replay-validated attribution evidence.
+> TraceProbe evaluates agents producing traces in executable scenarios, then turns those traces into replay-validated diagnosis evidence.
 
 ### 生成方式
 
@@ -103,7 +103,7 @@ Method / Benchmark Design 开头。
 ```text
 You are a senior scientific illustrator creating a clean vector-style figure for an EMNLP paper.
 
-Create a landscape workflow diagram titled "HoneyGuard: Execution-Grounded Agent Safety Evaluation".
+Create a landscape workflow diagram titled "TraceProbe: Diagnosing Safety Failures in Live Agent Execution".
 
 The figure must be a left-to-right pipeline with six main modules:
 1. Scenario YAML
@@ -154,7 +154,7 @@ Benchmark Design / Dataset section。
 
 ### 核心目的
 
-解释 HoneyGuard 的 taxonomy：我们不是只测外部攻击，也测 non-adversarial failure 和 internal compromise；并且每个任务都有 attribution labels。
+解释 TraceProbe 的 taxonomy：我们不是只测外部攻击，也测 non-adversarial failure 和 internal compromise；并且每个任务都有 attribution labels。
 
 ### 要表现什么
 
@@ -190,7 +190,7 @@ Benchmark Design / Dataset section。
 
 ### 论文 claim
 
-> HoneyGuard covers multiple risk sources while making failure mechanisms comparable through a shared attribution schema.
+> TraceProbe covers multiple risk sources while making failure mechanisms comparable through a shared attribution schema.
 
 ### 生成方式
 
@@ -201,7 +201,7 @@ Benchmark Design / Dataset section。
 ```text
 You are designing a clean taxonomy figure for an NLP/AI safety paper.
 
-Create a two-panel landscape diagram titled "HoneyGuard Risk Sources and Attribution Schema".
+Create a two-panel landscape diagram titled "TraceProbe Risk Sources and Attribution Schema".
 
 Left panel title: "Risk Sources and Families".
 Show three stacked groups:
@@ -260,7 +260,7 @@ Experiments / RQ1。
 
 ### 核心目的
 
-展示不同模型在 HoneyGuard 主 split 上的整体表现，并强调强模型仍会出现非平凡安全失败。
+展示不同模型在 TraceProbe 主 split 上的整体表现，并强调强模型仍会出现非平凡安全失败。
 
 ### 要表现什么
 
@@ -412,7 +412,7 @@ Experiments / RQ4。可拆成主文和 appendix 两张。
 
 ### 核心目的
 
-展示 HoneyGuard 的 attribution labels 有实际分析价值，同时说明自动归因可以恢复粗粒度信号但细粒度仍难。
+展示 TraceProbe 的 attribution labels 有实际分析价值，同时说明自动归因可以恢复粗粒度信号但细粒度仍难。
 
 ### 推荐主文形式
 
@@ -763,7 +763,7 @@ Dataset section 或 appendix。
 
 ### 论文 claim
 
-> HoneyGuard v0.2 is a representative benchmark split covering non-adversarial failures, internal authority compromise, and external attacks.
+> TraceProbe v0.2 is a representative benchmark split covering non-adversarial failures, internal authority compromise, and external attacks.
 
 ### 注意
 
@@ -957,7 +957,7 @@ Appendix / RQ5。
 
 以下内容更适合做图：
 
-- HoneyGuard pipeline。
+- TraceProbe pipeline。
 - taxonomy overview。
 - model outcome comparison。
 - family heatmap。
@@ -1009,7 +1009,7 @@ Appendix / RQ5。
 
 主文：
 
-1. Figure 1: HoneyGuard pipeline
+1. Figure 1: TraceProbe pipeline
 2. Figure 2: taxonomy
 3. Figure 3: main model comparison
 4. Figure 4: family-level heatmap

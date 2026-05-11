@@ -1,4 +1,4 @@
-# HoneyGuard Latent Violation Policy v0.1
+# TraceProbe Latent Violation Policy v0.1
 
 ## 1. Purpose
 

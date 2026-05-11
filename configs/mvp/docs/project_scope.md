@@ -1,10 +1,10 @@
-# HoneyGuard MVP Project Scope v0.1
+# TraceProbe MVP Project Scope v0.1
 
 ## 1. 文档目的
 
-本文件用于冻结 HoneyGuard 当前 MVP 阶段的论文主线、方法边界、研究问题与最小交付范围，作为后续 ontology、任务样本、评分器与实验设计的统一依据。
+本文件用于冻结 TraceProbe 当前 MVP 阶段的论文主线、方法边界、研究问题与最小交付范围，作为后续 ontology、任务样本、评分器与实验设计的统一依据。
 
-本阶段的目标不是再做一个“能跑”的 Agent benchmark 系统。HoneyGuard 已经具备：
+本阶段的目标不是再做一个“能跑”的 Agent benchmark 系统。TraceProbe 已经具备：
 
 - YAML 场景定义
 - Docker 隔离执行
@@ -18,11 +18,11 @@
 
 ## 2. 论文主张
 
-HoneyGuard MVP 需要明确围绕下面这个主张展开：
+TraceProbe MVP 需要明确围绕下面这个主张展开：
 
 > 现有 Agent 安全评测大多停留在 outcome-only 层面，只能回答系统最终是否失败，却无法系统回答失败从哪里开始、通过什么通道进入、在哪个组件首次被错误接纳，以及如何传播成最终后果。因此，Agent 安全评测需要从结果级升级到轨迹感知、归因级评测。
 
-这意味着 HoneyGuard 的论文定位不是：
+这意味着 TraceProbe 的论文定位不是：
 
 - 单纯的 attack list 聚合
 - 单纯的 sandbox / systems 工程论文
@@ -36,7 +36,7 @@ HoneyGuard MVP 需要明确围绕下面这个主张展开：
 
 ## 3. 项目核心方法
 
-HoneyGuard MVP 的方法核心由四部分构成：
+TraceProbe MVP 的方法核心由四部分构成：
 
 ### 3.1 统一的归因语言
 
@@ -67,7 +67,7 @@ HoneyGuard MVP 的方法核心由四部分构成：
 
 ### 3.4 双层指标体系
 
-HoneyGuard MVP 同时保留：
+TraceProbe MVP 同时保留：
 
 - outcome metrics：TSR / SVR / STCR / ASR
 - attribution metrics：source / channel / component / mechanism / failure chain / block point
@@ -96,7 +96,7 @@ MVP 阶段优先围绕以下三个研究问题组织实验与论文叙事。
 
 ## 5. MVP 范围
 
-HoneyGuard v0.1 的最小可行范围应冻结为以下四类任务：
+TraceProbe v0.1 的最小可行范围应冻结为以下四类任务：
 
 - `A1` 决策失控
 - `A4` 数据边界失效
@@ -148,12 +148,12 @@ MVP 的验收标准不是样本数最大化，而是以下问题能否被 benchm
 
 ## 7. 成功标准
 
-若 HoneyGuard v0.1 成功，至少应满足以下条件：
+若 TraceProbe v0.1 成功，至少应满足以下条件：
 
 1. 能构造一批带归因真值的、可复现的 Agent 安全任务。
 2. 能从运行轨迹中自动或半自动提取 outcome 与 attribution 相关证据。
 3. 能展示 endpoint-only 指标无法揭示的安全差异。
-4. 能形成清晰论文叙事：HoneyGuard 不只是列出“哪些攻击有效”，而是解释“失败是如何发生的”。
+4. 能形成清晰论文叙事：TraceProbe 不只是列出“哪些攻击有效”，而是解释“失败是如何发生的”。
 
 ---
 

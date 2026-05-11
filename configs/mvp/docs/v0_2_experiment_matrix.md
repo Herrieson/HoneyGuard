@@ -1,4 +1,4 @@
-# HoneyGuard v0.2 Experiment Matrix
+# TraceProbe v0.2 Experiment Matrix
 
 本文档把 v0.2 相关实验按“主 benchmark、条件对照、校准子集、stress suites、后分析层”拆开，避免把不同目的的实验混成一个 leaderboard。
 
@@ -6,7 +6,7 @@
 
 - `v0_2_test` 是主 benchmark。
 - `guarded` 是同一主 benchmark 上的 prompt-only 对照，不是新任务集。
-- `v0_2_small`、`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 是建议的派生 stress suites，当前可视为设计层或后续实现层，不要和主 benchmark 混算。
+- `v0_2_small` 是已 materialize 的 24 条 calibrated subset；`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 仍是建议的派生 stress suites，当前可视为设计层或后续实现层，不要和主 benchmark 混算。
 - `v0_2_transient` 是 trajectory-safety pilot。
 - compositional playground (`mvp_compositional_playground`) 是多风险组合 stress suite。
 - trace replayer 是后分析层，不是数据集。
@@ -29,7 +29,7 @@
 
 它回答：
 
-- 不同模型在 HoneyGuard 上表现如何？
+- 不同模型在 TraceProbe 上表现如何？
 - 不同 family 的失败结构是否不同？
 - attribution labels 是否能被规则或 LLM judge 恢复？
 
@@ -64,9 +64,9 @@
 
 ---
 
-## 2. 建议保留的派生 stress suites
+## 2. Calibrated subset 与建议保留的派生 stress suites
 
-这些名字代表论文和实验设计中建议保留的扩展条件。它们的实现方式可以是：
+这些名字代表论文和实验设计中建议保留的扩展条件。`v0_2_small` 已经固定为 24 条 calibrated subset；其余 stress suites 的实现方式可以是：
 
 - 独立 preset split
 - 固定 sampled subset
@@ -77,20 +77,20 @@
 
 | Suite | Status | Suggested size | What it tests | Typical use |
 |---|---|---:|---|---|
-| `v0_2_small` | planned / derived | 24 | 与全集 ASR 近似的 calibrated subset | 大量模型的低成本 screening |
+| `v0_2_small` | current calibrated subset | 24 | 与全集 ASR 近似的 calibrated subset | 大量模型的低成本 screening |
 | `v0_2_task_hard` | planned | small | 更复杂任务条件下的安全表现 | task complexity stress |
 | `v0_2_risk_broad` | planned | small | 更广义风险面的外推能力 | risk extensibility check |
 | `v0_2_attack_hard` | planned | small | 更强攻击下的鲁棒性 | 只跑主实验表现好的模型 |
 
 ### 2.1 `v0_2_small`
 
-这是一个校准子集，用来降低额外模型的运行成本。
+这是一个已经 materialize 的校准子集，用来降低额外模型的运行成本。
 
 建议要求：
 
 - 任务数少，但要保持 ASR / SVR / family 覆盖与全集近似。
 - 只能用于 screening 或 appendix，不用于 headline 结论。
-- 最好在文档中固定抽样规则或固定样本列表，避免临时挑样。
+- 抽样规则已经固定为 24 条，建议在论文里把它写成 calibrated subset，而不是随手抽样。
 
 ### 2.2 `v0_2_task_hard`
 

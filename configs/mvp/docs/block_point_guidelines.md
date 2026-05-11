@@ -1,4 +1,4 @@
-# HoneyGuard Counterfactual Block Point Guidelines v0.1
+# TraceProbe Counterfactual Block Point Guidelines v0.1
 
 ## 1. 文档目的
 

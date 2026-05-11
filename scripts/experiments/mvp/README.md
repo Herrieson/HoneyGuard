@@ -4,6 +4,7 @@ Current entrypoint:
 
 - `run_mvp_outcome_benchmark.py`
   - Runs the main HoneyGuard MVP outcome benchmark for `naive` or `guarded`.
+  - Also accepts `v0_2_small` as the calibrated low-cost screening split.
   - New runs write to `artifacts/experiments/mvp/mvp_outcome_benchmark/`.
   - Supports explicit in-place resume with `--resume-run-dir <RUN_DIR>`.
   - Streams child command output live while still writing stdout/stderr logs.

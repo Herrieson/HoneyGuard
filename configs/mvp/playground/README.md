@@ -1,4 +1,4 @@
-# HoneyGuard MVP Compositional Playground
+# TraceProbe MVP Compositional Playground
 
 This directory contains the optional compositional stress suite for MVP.
 

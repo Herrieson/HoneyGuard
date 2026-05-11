@@ -1,8 +1,8 @@
-# HoneyGuard MVP Scope Exclusions v0.1
+# TraceProbe MVP Scope Exclusions v0.1
 
 ## 1. 文档目的
 
-本文件用于明确 HoneyGuard v0.1 **暂不纳入** 的内容，避免后续在 benchmark 扩展、场景设计和论文叙事上不断失焦。
+本文件用于明确 TraceProbe v0.1 **暂不纳入** 的内容，避免后续在 benchmark 扩展、场景设计和论文叙事上不断失焦。
 
 本文件的作用不是否定这些方向的重要性，而是保证 v0.1 保持：
 
@@ -104,7 +104,7 @@ v0.1 不以大规模 internal compromise benchmark 为交付目标。
 
 ### 3.3 评测方法优先于攻击收集
 
-HoneyGuard v0.1 的目标是建立 attribution-level evaluation methodology，而不是证明“我们收集了最多场景”。
+TraceProbe v0.1 的目标是建立 attribution-level evaluation methodology，而不是证明“我们收集了最多场景”。
 
 ### 3.4 可复现优先于开放世界依赖
 
@@ -151,6 +151,6 @@ v0.1 更现实的目标是：
 
 ## 6. 一句话边界总结
 
-HoneyGuard v0.1 的边界不是“做尽可能多的 Agent 安全任务”，而是：
+TraceProbe v0.1 的边界不是“做尽可能多的 Agent 安全任务”，而是：
 
 > **在现有基础设施上，做一个范围收敛、主因清晰、轨迹可审计、归因可 defend 的最小可行 benchmark。**

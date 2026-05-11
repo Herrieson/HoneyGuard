@@ -1,4 +1,4 @@
-# HoneyGuard MVP Configs
+# TraceProbe MVP Configs
 
 This directory contains the MVP benchmark configuration corpus and its current experiment guide.
 
@@ -35,4 +35,5 @@ For paper planning, keep the following distinction in mind:
 - `v0_2_test`: main benchmark.
 - `v0_2_transient`: trajectory-safety pilot.
 - compositional playground (`mvp_compositional_playground`): multi-hazard stress suite.
-- `v0_2_small` / `v0_2_task_hard` / `v0_2_risk_broad` / `v0_2_attack_hard`: recommended derived suite names, currently treated as design/planning terms unless materialized separately.
+- `v0_2_small`: current calibrated subset with 24 fixed samples.
+- `v0_2_task_hard` / `v0_2_risk_broad` / `v0_2_attack_hard`: recommended derived suite names, currently treated as design/planning terms unless materialized separately.

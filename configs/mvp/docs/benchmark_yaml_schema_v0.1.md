@@ -1,4 +1,4 @@
-# HoneyGuard MVP Benchmark YAML Schema v0.1
+# TraceProbe MVP Benchmark YAML Schema v0.1
 
 ## 1. Purpose
 
@@ -6,13 +6,13 @@ This document defines the attribution-aware YAML schema for the MVP benchmark ta
 
 The design goal is:
 
-- keep the current HoneyGuard runtime executable without breaking existing workflows
+- keep the current TraceProbe runtime executable without breaking existing workflows
 - add enough task-side ground truth for attribution-aware scoring
 - keep one file as the single source of truth for both runtime config and benchmark metadata
 
 ## 2. Compatibility Rule
 
-HoneyGuard already uses the top-level `scenario` field as the runtime-facing scenario name.
+TraceProbe already uses the top-level `scenario` field as the runtime-facing scenario name.
 
 For MVP v0.1:
 
@@ -26,7 +26,7 @@ This avoids breaking `scripts/init_from_config.py`, `test/run_scenarios.py`, and
 
 ### 3.1 Runtime Core
 
-These fields are already consumed by HoneyGuard runtime:
+These fields are already consumed by TraceProbe runtime:
 
 ```yaml
 scenario: string

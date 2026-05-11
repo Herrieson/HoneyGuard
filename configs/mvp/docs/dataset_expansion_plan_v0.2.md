@@ -1,4 +1,4 @@
-# HoneyGuard MVP Dataset Expansion Plan v0.2
+# TraceProbe MVP Dataset Expansion Plan v0.2
 
 ## 1. 目标
 

@@ -1,8 +1,8 @@
-# HoneyGuard Attribution Ontology v0.1
+# TraceProbe Attribution Ontology v0.1
 
 ## 1. 文档目的
 
-本文件定义 HoneyGuard v0.1 的归因标签体系，用于：
+本文件定义 TraceProbe v0.1 的归因标签体系，用于：
 
 - 编写 benchmark 样本真值
 - 统一标注语言
@@ -35,7 +35,7 @@ v0.1 采用闭集标签设计。主标签应尽量从本文定义的集合中选
 
 ## 3. 标签字段总览
 
-HoneyGuard v0.1 的主归因字段如下：
+TraceProbe v0.1 的主归因字段如下：
 
 - `source`
 - `channel`

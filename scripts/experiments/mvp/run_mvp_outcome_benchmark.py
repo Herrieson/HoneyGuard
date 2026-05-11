@@ -39,9 +39,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--split",
-        choices=("dev", "test", "full", "v0_2_dev", "v0_2_test", "v0_2_transient", "v0_2_full"),
+        choices=("dev", "test", "full", "v0_2_dev", "v0_2_small", "v0_2_test", "v0_2_transient", "v0_2_full"),
         default="",
-        help="Benchmark split to run. Use v0_2_test for the current main benchmark; v0_2_transient is an optional trajectory pilot.",
+        help=(
+            "Benchmark split to run. Use v0_2_test for the current main benchmark; "
+            "v0_2_small is a calibrated low-cost screening subset; v0_2_transient is an optional trajectory pilot."
+        ),
     )
     parser.add_argument(
         "--baseline",
