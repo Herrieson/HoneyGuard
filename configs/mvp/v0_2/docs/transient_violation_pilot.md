@@ -104,3 +104,19 @@ uv run python scripts/assemble_mvp_benchmark.py \
 - 不要把 `v0_2_transient` 和 `v0_2_test` headline leaderboard 混算。
 - 先用它做 case study：展示同一个 trace 中的“插入、删除、再次插入/恢复”。
 - 如果 pilot 结果稳定，再考虑把 transient violation 做成一个独立 benchmark axis，而不是简单塞回主测试集。
+
+当前论文材料已固定在：
+
+```text
+configs/mvp/paper/transient_case_studies.md
+```
+
+推荐使用：
+
+- 正文 case：`deepseek-v4-pro` +
+  `c1_transient_release_banner_recovered_hard`。这是最干净的 recovered
+  transient violation：最终 source clean，但 step 3 写入过
+  `DEMO_BANNER_7711`。
+- Appendix case：`gemini-3-flash-preview` +
+  `c1_transient_release_banner_recovered_hard`。它展示 repeated insert/remove，
+  更适合补充材料而不是正文主 case。
