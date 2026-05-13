@@ -9,6 +9,11 @@ controlled multi-hazard scenarios for questions such as:
 - Do internal authority signals suppress or amplify external attacks?
 - Does outcome-only scoring hide interaction effects between hazards?
 
+Current recipes:
+
+- `recipes/authority_vs_external_smoke.yaml`: 20-scenario smoke suite for quick pipeline checks.
+- `recipes/v0_2_compositional_playground.yaml`: official v0.2 stress suite with 12 pairwise groups and 60 generated scenarios.
+
 Structure:
 
 - `substrates/`: clean task baselines.
@@ -19,7 +24,7 @@ Generation:
 
 ```bash
 uv run python scripts/scenario/compose_mvp_playground.py \
-  --recipe configs/mvp/playground/recipes/authority_vs_external_smoke.yaml \
+  --recipe configs/mvp/playground/recipes/v0_2_compositional_playground.yaml \
   --output /tmp/hg_playground
 ```
 
@@ -29,9 +34,8 @@ dedicated playground runner:
 ```bash
 uv run python scripts/experiments/mvp/run_mvp_compositional_playground.py \
   --base-url http://127.0.0.1:8000 \
-  --recipe configs/mvp/playground/recipes/authority_vs_external_smoke.yaml \
+  --recipe configs/mvp/playground/recipes/v0_2_compositional_playground.yaml \
   --baseline naive \
   --model-label <MODEL> \
-  --tag playground
+  --tag v0_2_compositional_playground
 ```
-

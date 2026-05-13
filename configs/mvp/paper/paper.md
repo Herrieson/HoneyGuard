@@ -393,7 +393,7 @@ Dataset counts:
 - Core 20-sample families: A1, A4, B1, B2, B3, C2.1, C2.2.
 - Promoted 5-sample gap families: A2, A3, C1.
 - Optional trajectory pilot: `v0_2_transient`, 8 scenarios.
-- Optional compositional stress suite: `mvp_compositional_playground`.
+- Optional compositional stress suite: `mvp_compositional_playground`, 60 generated scenarios from 12 pairwise composition groups.
 
 Writing rule:
 
@@ -631,12 +631,15 @@ Figure:
 
 - Family-level failure heatmap.
 
-### 7.5 RQ4: Can failure attribution be recovered from traces?
+### 7.5 RQ4: Can failure attribution be recovered from execution evidence?
 
 Data:
 
-- Rule attribution analysis.
-- LLM-as-a-judge attribution analysis, if run.
+- Structured attribution evidence extracted from export traces.
+- Optional replay-grounded evidence, when replay has been run.
+- Deterministic evidence-rule attribution analysis.
+- Evidence-grounded LLM attribution analysis, if run.
+- Raw-trace LLM judge only as a weak baseline / ablation, not as the main method.
 - Ground-truth attribution labels.
 
 Metrics:
@@ -648,22 +651,35 @@ Metrics:
 - Impact accuracy.
 - Block point match.
 - Failure-chain overlap.
+- Evidence-supported prediction rate.
+- Invalid evidence-reference rate.
+- Abstention rate.
 
 Expected supported finding:
 
-> Coarse attribution dimensions can be recovered automatically, but fine-grained
-> causal attribution remains challenging.
+> Coarse attribution signals can be recovered from structured execution evidence,
+> especially source and channel. Fine-grained mechanism, component, and block-point
+> labels remain harder, and raw LLM trajectory judgment is less reliable than
+> evidence-grounded recovery.
 
 How to write:
 
-> Automatic attribution recovers high-level source and channel labels more reliably
-> than mechanism, component, or block-point labels. This suggests that trace-based
-> judges can provide scalable first-pass triage, but benchmark ground truth and
-> replay evidence remain important for fine-grained diagnosis.
+> Because prior work has shown raw LLM trajectory judgment to be unreliable,
+> TraceProbe does not use LLM judgments as safety labels or attribution ground
+> truth. Each scenario instead provides task-side attribution annotations, and
+> post-hoc analysis first extracts structured, redacted execution evidence from
+> traces and replay outputs. We then evaluate deterministic and constrained LLM
+> recovery baselines against the benchmark labels. The constrained LLM sees only
+> evidence packets, must choose from the closed TraceProbe schema, and must cite
+> evidence event identifiers; unsupported predictions are counted separately. This
+> turns LLM participation into an auditable recovery baseline rather than a
+> free-form judge.
 
 Figure:
 
-- Attribution judge performance bar chart or appendix confusion matrices.
+- Attribution recovery bar chart by dimension.
+- Evidence-support quality chart.
+- Raw-trace LLM judge ablation or appendix confusion matrices.
 
 ### 7.6 RQ5: Does endpoint safety imply trajectory safety?
 
@@ -1013,8 +1029,10 @@ Be explicit. This will make the paper stronger.
    This is why trace and replay analysis matter.
 5. **Replay is exact-action evidence, not causal proof.** It validates and localizes
    recorded actions but does not by itself prove counterfactual causality.
-6. **LLM-as-a-judge attribution is imperfect.** Coarse labels may be recoverable, but
-   fine-grained mechanism/component/block-point attribution remains challenging.
+6. **Raw LLM trajectory judgment is imperfect.** We do not use LLM judgments as
+   safety labels or attribution ground truth. LLMs appear only as constrained
+   evidence-grounded recovery baselines, and unsupported predictions are counted
+   separately.
 7. **Model and provider drift.** Some evaluated models may change over time. The
    paper should report model IDs, dates, endpoints, and runtime metadata where
    possible.
@@ -1030,6 +1048,7 @@ Avoid:
 - "TraceProbe comprehensively covers all agent risks."
 - "Trace replay proves causality."
 - "LLM judge provides reliable causal attribution."
+- "Raw trace LLM judgment is our attribution method."
 - "Guarded prompting is a defense."
 - "A configured hazard is the same as an activated hazard."
 

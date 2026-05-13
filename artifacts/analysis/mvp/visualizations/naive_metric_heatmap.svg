@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="804" height="512" viewBox="0 0 804 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="804" height="542" viewBox="0 0 804 542">
 <style>
 text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 .title{font-size:22px;font-weight:700}
@@ -17,7 +17,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="544.0" y="74" text-anchor="middle" class="axis">ASR</text>
 <text x="628.0" y="74" text-anchor="middle" class="axis">Resource</text>
 <text x="712.0" y="74" text-anchor="middle" class="axis">Latent</text>
-<text x="40" y="106" class="label">gpt-5-5</text>
+<text x="40" y="106" class="label">claude-opus-4.6</text>
 <rect x="250" y="86" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="105" text-anchor="middle" class="small">—</text>
 <rect x="334" y="86" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -30,7 +30,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="105" text-anchor="middle" class="small">—</text>
 <rect x="670" y="86" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="105" text-anchor="middle" class="small">—</text>
-<text x="40" y="136" class="label">claude-opus-4.6</text>
+<text x="40" y="136" class="label">minimax-m2-5</text>
 <rect x="250" y="116" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="135" text-anchor="middle" class="small">—</text>
 <rect x="334" y="116" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -43,7 +43,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="135" text-anchor="middle" class="small">—</text>
 <rect x="670" y="116" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="135" text-anchor="middle" class="small">—</text>
-<text x="40" y="166" class="label">claude-sonnet-4-6</text>
+<text x="40" y="166" class="label">gpt-5-5</text>
 <rect x="250" y="146" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="165" text-anchor="middle" class="small">—</text>
 <rect x="334" y="146" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -56,7 +56,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="165" text-anchor="middle" class="small">—</text>
 <rect x="670" y="146" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="165" text-anchor="middle" class="small">—</text>
-<text x="40" y="196" class="label">gpt-5</text>
+<text x="40" y="196" class="label">gpt-5-2</text>
 <rect x="250" y="176" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="195" text-anchor="middle" class="small">—</text>
 <rect x="334" y="176" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -69,7 +69,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="195" text-anchor="middle" class="small">—</text>
 <rect x="670" y="176" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="195" text-anchor="middle" class="small">—</text>
-<text x="40" y="226" class="label">gpt-5-2</text>
+<text x="40" y="226" class="label">claude-sonnet-4-6</text>
 <rect x="250" y="206" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="225" text-anchor="middle" class="small">—</text>
 <rect x="334" y="206" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -82,7 +82,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="225" text-anchor="middle" class="small">—</text>
 <rect x="670" y="206" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="225" text-anchor="middle" class="small">—</text>
-<text x="40" y="256" class="label">gemini-3.1-pro</text>
+<text x="40" y="256" class="label">gemma-4-31b-it</text>
 <rect x="250" y="236" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="255" text-anchor="middle" class="small">—</text>
 <rect x="334" y="236" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -95,7 +95,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="255" text-anchor="middle" class="small">—</text>
 <rect x="670" y="236" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="255" text-anchor="middle" class="small">—</text>
-<text x="40" y="286" class="label">ds-v4-pro</text>
+<text x="40" y="286" class="label">gemini-3.1-pro</text>
 <rect x="250" y="266" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="285" text-anchor="middle" class="small">—</text>
 <rect x="334" y="266" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -108,7 +108,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="285" text-anchor="middle" class="small">—</text>
 <rect x="670" y="266" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="285" text-anchor="middle" class="small">—</text>
-<text x="40" y="316" class="label">grok-4</text>
+<text x="40" y="316" class="label">ds-v4-pro</text>
 <rect x="250" y="296" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="315" text-anchor="middle" class="small">—</text>
 <rect x="334" y="296" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -121,7 +121,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="315" text-anchor="middle" class="small">—</text>
 <rect x="670" y="296" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="315" text-anchor="middle" class="small">—</text>
-<text x="40" y="346" class="label">ds-v4-flash</text>
+<text x="40" y="346" class="label">gpt-5-mini</text>
 <rect x="250" y="326" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="345" text-anchor="middle" class="small">—</text>
 <rect x="334" y="326" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -134,7 +134,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="345" text-anchor="middle" class="small">—</text>
 <rect x="670" y="326" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="345" text-anchor="middle" class="small">—</text>
-<text x="40" y="376" class="label">gpt-5-mini</text>
+<text x="40" y="376" class="label">ds-v4-flash</text>
 <rect x="250" y="356" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="292.0" y="375" text-anchor="middle" class="small">—</text>
 <rect x="334" y="356" width="82" height="28" fill="#eeeeee" rx="3"/>
@@ -173,4 +173,17 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="628.0" y="435" text-anchor="middle" class="small">—</text>
 <rect x="670" y="416" width="82" height="28" fill="#eeeeee" rx="3"/>
 <text x="712.0" y="435" text-anchor="middle" class="small">—</text>
+<text x="40" y="466" class="label">mirothinker-1-7</text>
+<rect x="250" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="292.0" y="465" text-anchor="middle" class="small">—</text>
+<rect x="334" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="376.0" y="465" text-anchor="middle" class="small">—</text>
+<rect x="418" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="460.0" y="465" text-anchor="middle" class="small">—</text>
+<rect x="502" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="544.0" y="465" text-anchor="middle" class="small">—</text>
+<rect x="586" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="628.0" y="465" text-anchor="middle" class="small">—</text>
+<rect x="670" y="446" width="82" height="28" fill="#eeeeee" rx="3"/>
+<text x="712.0" y="465" text-anchor="middle" class="small">—</text>
 </svg>

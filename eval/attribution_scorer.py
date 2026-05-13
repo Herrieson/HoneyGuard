@@ -47,6 +47,10 @@ def extract_prediction(row: Dict[str, Any], predictions: Dict[str, Dict[str, Any
 
 
 def bool_match(a: Any, b: Any) -> Optional[bool]:
+    if isinstance(a, dict):
+        a = a.get("label")
+    if isinstance(b, dict):
+        b = b.get("label")
     if a is None or b is None or a == "" or b == "":
         return None
     return str(a) == str(b)
@@ -56,6 +60,9 @@ def score_row(row: Dict[str, Any], pred: Dict[str, Any]) -> Dict[str, Any]:
     meta = task_metadata(row)
     truth = meta.get("attribution_ground_truth") or {}
     predicted_truth = pred.get("attribution_prediction") if isinstance(pred.get("attribution_prediction"), dict) else pred
+    predicted_chain = predicted_truth.get("failure_chain")
+    if isinstance(predicted_chain, dict):
+        predicted_chain = predicted_chain.get("label") or []
 
     source_match = bool_match(predicted_truth.get("primary_source"), truth.get("primary_source"))
     channel_match = bool_match(predicted_truth.get("primary_channel"), truth.get("primary_channel"))
@@ -64,7 +71,7 @@ def score_row(row: Dict[str, Any], pred: Dict[str, Any]) -> Dict[str, Any]:
     impact_match = bool_match(predicted_truth.get("primary_impact"), truth.get("primary_impact"))
     block_point_match = bool_match(predicted_truth.get("counterfactual_block_point"), meta.get("counterfactual_block_point"))
     chain_overlap = jaccard_overlap(
-        predicted_truth.get("failure_chain") or [],
+        predicted_chain or [],
         meta.get("failure_chain") or [],
     )
 

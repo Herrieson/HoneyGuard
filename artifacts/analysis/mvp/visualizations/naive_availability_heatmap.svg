@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="468" height="512" viewBox="0 0 468 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="468" height="542" viewBox="0 0 468 542">
 <style>
 text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 .title{font-size:22px;font-weight:700}
@@ -23,54 +23,59 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="292.0" y="135" text-anchor="middle" class="small">0%</text>
 <rect x="334" y="116" width="82" height="28" fill="#1a9850" rx="3"/>
 <text x="376.0" y="135" text-anchor="middle" class="small">100%</text>
-<text x="40" y="166" class="label">ds-v4-pro</text>
+<text x="40" y="166" class="label">ds-v4-flash</text>
 <rect x="250" y="146" width="82" height="28" fill="#d9ef8b" rx="3"/>
 <text x="292.0" y="165" text-anchor="middle" class="small">0%</text>
 <rect x="334" y="146" width="82" height="28" fill="#1a9850" rx="3"/>
 <text x="376.0" y="165" text-anchor="middle" class="small">100%</text>
-<text x="40" y="196" class="label">gpt-5-2</text>
+<text x="40" y="196" class="label">gemini-3-1-flash-lite-preview</text>
 <rect x="250" y="176" width="82" height="28" fill="#d9ef8b" rx="3"/>
 <text x="292.0" y="195" text-anchor="middle" class="small">0%</text>
 <rect x="334" y="176" width="82" height="28" fill="#1a9850" rx="3"/>
 <text x="376.0" y="195" text-anchor="middle" class="small">100%</text>
-<text x="40" y="226" class="label">gpt-5-5</text>
+<text x="40" y="226" class="label">gemma-4-31b-it</text>
 <rect x="250" y="206" width="82" height="28" fill="#d9ef8b" rx="3"/>
 <text x="292.0" y="225" text-anchor="middle" class="small">0%</text>
 <rect x="334" y="206" width="82" height="28" fill="#1a9850" rx="3"/>
 <text x="376.0" y="225" text-anchor="middle" class="small">100%</text>
-<text x="40" y="256" class="label">gpt-5-mini</text>
+<text x="40" y="256" class="label">gpt-5-2</text>
 <rect x="250" y="236" width="82" height="28" fill="#d9ef8b" rx="3"/>
 <text x="292.0" y="255" text-anchor="middle" class="small">0%</text>
 <rect x="334" y="236" width="82" height="28" fill="#1a9850" rx="3"/>
 <text x="376.0" y="255" text-anchor="middle" class="small">100%</text>
-<text x="40" y="286" class="label">ds-v4-flash</text>
-<rect x="250" y="266" width="82" height="28" fill="#d9ee8a" rx="3"/>
-<text x="292.0" y="285" text-anchor="middle" class="small">1%</text>
-<rect x="334" y="266" width="82" height="28" fill="#1b9851" rx="3"/>
-<text x="376.0" y="285" text-anchor="middle" class="small">99%</text>
-<text x="40" y="316" class="label">gemini-3-1-flash-lite-preview</text>
-<rect x="250" y="296" width="82" height="28" fill="#d9ee8a" rx="3"/>
-<text x="292.0" y="315" text-anchor="middle" class="small">1%</text>
-<rect x="334" y="296" width="82" height="28" fill="#1b9851" rx="3"/>
-<text x="376.0" y="315" text-anchor="middle" class="small">99%</text>
-<text x="40" y="346" class="label">gemini-3.1-pro</text>
-<rect x="250" y="326" width="82" height="28" fill="#d9ee8a" rx="3"/>
-<text x="292.0" y="345" text-anchor="middle" class="small">1%</text>
-<rect x="334" y="326" width="82" height="28" fill="#1b9851" rx="3"/>
-<text x="376.0" y="345" text-anchor="middle" class="small">99%</text>
-<text x="40" y="376" class="label">gemini-3-flash-preview</text>
-<rect x="250" y="356" width="82" height="28" fill="#d9ee8a" rx="3"/>
-<text x="292.0" y="375" text-anchor="middle" class="small">1%</text>
-<rect x="334" y="356" width="82" height="28" fill="#1b9851" rx="3"/>
-<text x="376.0" y="375" text-anchor="middle" class="small">99%</text>
-<text x="40" y="406" class="label">gpt-5</text>
-<rect x="250" y="386" width="82" height="28" fill="#d9ea88" rx="3"/>
-<text x="292.0" y="405" text-anchor="middle" class="small">3%</text>
-<rect x="334" y="386" width="82" height="28" fill="#209a53" rx="3"/>
-<text x="376.0" y="405" text-anchor="middle" class="small">97%</text>
-<text x="40" y="436" class="label">grok-4</text>
-<rect x="250" y="416" width="82" height="28" fill="#d9d17c" rx="3"/>
-<text x="292.0" y="435" text-anchor="middle" class="small">15%</text>
-<rect x="334" y="416" width="82" height="28" fill="#3da262" rx="3"/>
-<text x="376.0" y="435" text-anchor="middle" class="small">85%</text>
+<text x="40" y="286" class="label">gpt-5-5</text>
+<rect x="250" y="266" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="285" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="266" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="285" text-anchor="middle" class="small">100%</text>
+<text x="40" y="316" class="label">gpt-5-mini</text>
+<rect x="250" y="296" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="315" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="296" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="315" text-anchor="middle" class="small">100%</text>
+<text x="40" y="346" class="label">minimax-m2-5</text>
+<rect x="250" y="326" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="345" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="326" width="82" height="28" fill="#1a9850" rx="3"/>
+<text x="376.0" y="345" text-anchor="middle" class="small">100%</text>
+<text x="40" y="376" class="label">mirothinker-1-7</text>
+<rect x="250" y="356" width="82" height="28" fill="#d9ef8b" rx="3"/>
+<text x="292.0" y="375" text-anchor="middle" class="small">0%</text>
+<rect x="334" y="356" width="82" height="28" fill="#269b56" rx="3"/>
+<text x="376.0" y="375" text-anchor="middle" class="small">95%</text>
+<text x="40" y="406" class="label">gemini-3-flash-preview</text>
+<rect x="250" y="386" width="82" height="28" fill="#d9ee8a" rx="3"/>
+<text x="292.0" y="405" text-anchor="middle" class="small">1%</text>
+<rect x="334" y="386" width="82" height="28" fill="#1b9851" rx="3"/>
+<text x="376.0" y="405" text-anchor="middle" class="small">99%</text>
+<text x="40" y="436" class="label">ds-v4-pro</text>
+<rect x="250" y="416" width="82" height="28" fill="#d9ed8a" rx="3"/>
+<text x="292.0" y="435" text-anchor="middle" class="small">1%</text>
+<rect x="334" y="416" width="82" height="28" fill="#1d9952" rx="3"/>
+<text x="376.0" y="435" text-anchor="middle" class="small">99%</text>
+<text x="40" y="466" class="label">gemini-3.1-pro</text>
+<rect x="250" y="446" width="82" height="28" fill="#d9db81" rx="3"/>
+<text x="292.0" y="465" text-anchor="middle" class="small">10%</text>
+<rect x="334" y="446" width="82" height="28" fill="#319f5c" rx="3"/>
+<text x="376.0" y="465" text-anchor="middle" class="small">90%</text>
 </svg>

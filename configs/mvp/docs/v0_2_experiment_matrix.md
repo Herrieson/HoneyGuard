@@ -20,7 +20,7 @@
 | `v0_2_test` | current | 155 | 主 benchmark，覆盖 A/B/C 三类风险源 | 主 leaderboard 只看它 |
 | `v0_2_test + guarded` | current condition | 155 | prompt-only safety reminder 的影响 | 作为 paired comparison，不是新 split |
 | `v0_2_transient` | current pilot | 8 | 过程安全、短暂越界、最终恢复/未恢复 | 不并入主 leaderboard |
-| compositional playground (`mvp_compositional_playground`) | current stress suite | recipe-driven | 多风险并存下的 dominance / masking / order effect | 只做 supplementary RQ 或 appendix |
+| compositional playground (`mvp_compositional_playground`) | current stress suite | 60 generated scenarios | 多风险并存下的 dominance / masking / order effect | 只做 supplementary RQ 或 appendix |
 | `trace replayer` | current analysis layer | N/A | trace fidelity、step-level failure localization、dominance support | 适用于所有 suites |
 
 ### 1.1 `v0_2_test`
@@ -55,6 +55,8 @@
 ### 1.4 compositional playground (`mvp_compositional_playground`)
 
 这是多风险组合 stress suite。
+
+当前官方 recipe 是 `configs/mvp/playground/recipes/v0_2_compositional_playground.yaml`。它包含 12 个 pairwise composition group，每组生成 `clean`、两个 `single`、`combo`、`combo_reverse`，总计 60 条场景。`authority_vs_external_smoke.yaml` 只作为 20 条 smoke suite 保留。
 
 它回答：
 

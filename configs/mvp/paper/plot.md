@@ -33,7 +33,7 @@
 RQ2 和 RQ4 如果篇幅紧张，可以用表或 appendix 图：
 
 - RQ2 naive vs guarded：主文可用一张小 paired delta plot 或放 appendix。
-- RQ4 attribution judge：主文可用一张 compact bar chart；如果主文已有 6 图，放 appendix。
+- RQ4 evidence-grounded attribution recovery：主文可用一张 compact bar chart；raw LLM judge 只放 appendix ablation。
 
 ---
 
@@ -293,7 +293,7 @@ uv run python scripts/analysis/analyze_mvp_results.py \
   --output artifacts/analysis/mvp
 
 uv run python scripts/analysis/visualize_mvp_results.py \
-  --analysis-dir artifacts/analysis/mvp \
+  --root artifacts/experiments/mvp \
   --output artifacts/analysis/mvp/visualizations
 ```
 
@@ -347,6 +347,17 @@ Experiments / RQ2。主文可选；如果篇幅紧张放 appendix。
 
 - `artifacts/analysis/mvp/all_main_summary.csv`
 - run directories under `artifacts/experiments/mvp/mvp_outcome_benchmark/`
+- `artifacts/analysis/mvp/guard_delta_summary.csv`
+- `artifacts/analysis/mvp/guard_delta_family_breakdown.csv`
+
+### 生成命令
+
+```bash
+uv run python scripts/analysis/build_mvp_guard_deltas.py \
+  --root artifacts/experiments/mvp \
+  --splits v0_2_test \
+  --output artifacts/analysis/mvp
+```
 
 ### 论文 claim
 
@@ -404,7 +415,7 @@ Experiments / RQ3。
 
 ---
 
-## 6. Figure 6: Attribution Distribution and Judge Performance
+## 6. Figure 6: Evidence-Grounded Attribution Recovery
 
 ### 位置
 
@@ -412,7 +423,7 @@ Experiments / RQ4。可拆成主文和 appendix 两张。
 
 ### 核心目的
 
-展示 TraceProbe 的 attribution labels 有实际分析价值，同时说明自动归因可以恢复粗粒度信号但细粒度仍难。
+展示 TraceProbe 的 attribution labels 有实际分析价值，同时说明 attribution 不依赖 raw LLM judge：先抽取结构化 execution evidence，再做 deterministic / constrained LLM recovery，并单独检查预测是否有证据支撑。
 
 ### 推荐主文形式
 
@@ -422,7 +433,7 @@ Panel A: attribution ground-truth distribution
 - channel distribution: user instruction / retrieved content / tool output / policy prompt / memory / multi-agent / environment
 - mechanism distribution: top mechanisms
 
-Panel B: attribution judge performance
+Panel B: attribution recovery performance
 
 - x-axis: attribution dimension
   - source
@@ -433,36 +444,57 @@ Panel B: attribution judge performance
   - block point
   - failure chain
 - y-axis: accuracy / F1 / overlap score
-- bars: rule baseline vs LLM judge
+- bars: raw trace rule / raw trace LLM / evidence rule / evidence LLM
+
+Panel C: evidence support quality
+
+- y-axis:
+  - all cited labels supported
+  - invalid evidence reference rate
+  - abstention rate
+  - prediction has evidence rate
+- bars: evidence rule vs evidence LLM
 
 ### 数据来源
 
 - `artifacts/analysis/mvp/all_naive_attribution_failure_breakdown.csv`
-- `artifacts/analysis/mvp/attribution_rule_v0_2_summary.csv`
-- 如果跑 LLM judge：
-  - `artifacts/analysis/mvp/attribution_llm_v0_2_summary.csv`
+- `artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv`
+- 如果跑 evidence-grounded LLM：
+  - `artifacts/analysis/mvp/attribution_evidence_llm_v0_2_summary.csv`
+- 单 run 证据文件：
+  - `<RUN_DIR>/analysis/attribution_evidence.jsonl`
+  - `<RUN_DIR>/scores/attribution_evidence_rule.evidence_summary.json`
+  - `<RUN_DIR>/scores/attribution_evidence_llm.evidence_summary.json`
 
 ### 相关命令
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
   --splits v0_2_test \
-  --mode rule \
-  --output artifacts/analysis/mvp/attribution_rule_v0_2_summary.csv
+  --mode evidence_rule \
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --filter failed_or_latent \
+  --output artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv
 
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
   --splits v0_2_test \
-  --mode llm \
-  --output artifacts/analysis/mvp/attribution_llm_v0_2_summary.csv
+  --mode evidence_llm \
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --filter failed_or_latent \
+  --judge-model <JUDGE_MODEL> \
+  --output artifacts/analysis/mvp/attribution_evidence_llm_v0_2_summary.csv
 ```
 
 ### 论文 claim
 
-> Coarse attribution signals can be recovered automatically, but fine-grained causal attribution remains challenging.
+> Attribution recovery is more reliable when constrained by structured execution evidence than when using raw trajectory judgment, but fine-grained causal labels remain challenging.
 
 ### Appendix 扩展
 
 - per-family attribution distribution。
+- raw trace LLM judge as a weak baseline / ablation。
 - confusion matrix for source/channel。
 - failure-chain overlap distribution。
 
@@ -638,6 +670,7 @@ Panel D: one example group
 - playground outcome:
   - `artifacts/experiments/mvp/mvp_compositional_playground/<RUN_NAME>/scores/outcome.rows.csv`
   - `scripts/analysis/analyze_mvp_compositional_playground.py`
+  - official recipe: `configs/mvp/playground/recipes/v0_2_compositional_playground.yaml` (60 scenarios)
 - replay dominance:
   - `<RUN_DIR>/analysis/replay.rows.jsonl`
   - `<RUN_DIR>/analysis/replay.steps.jsonl`
@@ -804,7 +837,7 @@ Appendix。
 
 ---
 
-## 11. Appendix Figure A2: Attribution Confusion Matrices
+## 11. Appendix Figure A2: Attribution Recovery Confusion Matrices
 
 ### 位置
 
@@ -812,7 +845,7 @@ Appendix / RQ4 extended analysis。
 
 ### 核心目的
 
-展示 LLM-as-a-judge 在不同 attribution dimension 上的错误模式。
+展示 raw-trace LLM、evidence-rule、evidence-LLM 在不同 attribution dimension 上的错误模式。重点不是把 LLM judge 当真值，而是比较 raw trajectory judgment 和 evidence-grounded recovery 的差异。
 
 ### 要表现什么
 
@@ -826,14 +859,18 @@ Appendix / RQ4 extended analysis。
 
 ### 数据来源
 
-- `attribution_llm.rows.csv`
-- `attribution_rule_v0_2_summary.csv`
-- `attribution_llm_v0_2_summary.csv`
+- `<RUN_DIR>/scores/attribution_evidence_rule.rows.csv`
+- `<RUN_DIR>/scores/attribution_evidence_rule.evidence_rows.csv`
+- `artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv`
+- 如果跑 LLM：
+  - `<RUN_DIR>/scores/attribution_evidence_llm.rows.csv`
+  - `<RUN_DIR>/scores/attribution_evidence_llm.evidence_rows.csv`
+  - `artifacts/analysis/mvp/attribution_evidence_llm_v0_2_summary.csv`
 
 ### 注意
 
-- 如果 LLM judge 样本量不足，改成 per-dimension accuracy bar。
-- 不要声称 LLM judge 是最终真值。
+- 如果 LLM 样本量不足，改成 per-dimension accuracy bar。
+- 不要声称 raw LLM judge 是最终真值或可靠 causal attribution。
 
 ---
 
@@ -1020,7 +1057,7 @@ Appendix：
 
 1. A1 complete metric heatmap
 2. A2 naive vs guarded delta
-3. A3 attribution judge performance / confusion matrices
+3. A3 attribution recovery / evidence-support confusion matrices
 4. A4 replay fidelity details
 5. A5 replay step evidence examples
 6. A6 compositional group examples

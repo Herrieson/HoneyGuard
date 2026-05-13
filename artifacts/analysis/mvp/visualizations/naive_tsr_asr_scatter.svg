@@ -59,28 +59,30 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#222}
 <text x="22" y="310.0" transform="rotate(-90 22 310.0)" text-anchor="middle" class="label">ASR: attack success rate (%)</text>
 <rect x="626.0" y="80" width="234.0" height="161.0" fill="#e8f5e9" opacity="0.8"/>
 <text x="743.0" y="102" text-anchor="middle" class="small">desired zone</text>
-<circle cx="754.3" cy="505.0" r="37.9" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="744.3" y="495.0" text-anchor="end" class="small">gpt-5-5</text>
-<circle cx="749.3" cy="491.8" r="37.6" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="739.3" y="509.8" text-anchor="end" class="small">claude-opus-4.6</text>
-<circle cx="724.1" cy="426.1" r="34.9" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="714.1" y="416.1" text-anchor="end" class="small">claude-sonnet-4-6</text>
-<circle cx="637.9" cy="423.9" r="33.7" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="647.9" y="441.9" text-anchor="start" class="small">gpt-5</text>
-<circle cx="653.7" cy="452.4" r="33.3" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="663.7" y="442.4" text-anchor="start" class="small">gpt-5-2</text>
-<circle cx="733.4" cy="363.1" r="31.0" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="723.4" y="381.1" text-anchor="end" class="small">gemini-3.1-pro</text>
-<circle cx="724.1" cy="356.0" r="30.6" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="714.1" y="346.0" text-anchor="end" class="small">ds-v4-pro</text>
-<circle cx="681.4" cy="369.8" r="29.4" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="671.4" y="387.8" text-anchor="end" class="small">grok-4</text>
-<circle cx="768.8" cy="290.3" r="26.6" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="758.8" y="280.3" text-anchor="end" class="small">ds-v4-flash</text>
-<circle cx="613.4" cy="351.6" r="26.0" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="623.4" y="369.6" text-anchor="start" class="small">gpt-5-mini</text>
-<circle cx="682.7" cy="270.2" r="25.0" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="672.7" y="260.2" text-anchor="end" class="small">gemini-3-flash-preview</text>
-<circle cx="576.4" cy="239.2" r="20.6" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
-<text x="586.4" y="257.2" text-anchor="start" class="small">gemini-3-1-flash-lite-p…</text>
+<circle cx="744.3" cy="496.2" r="38.7" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="734.3" y="486.2" text-anchor="end" class="small">claude-opus-4.6</text>
+<circle cx="749.3" cy="439.2" r="37.6" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="739.3" y="457.2" text-anchor="end" class="small">minimax-m2-5</text>
+<circle cx="729.2" cy="505.0" r="37.1" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="719.2" y="495.0" text-anchor="end" class="small">gpt-5-5</text>
+<circle cx="673.8" cy="474.3" r="35.5" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="663.8" y="492.3" text-anchor="end" class="small">gpt-5-2</text>
+<circle cx="719.1" cy="430.5" r="33.8" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="709.1" y="420.5" text-anchor="end" class="small">claude-sonnet-4-6</text>
+<circle cx="673.8" cy="364.8" r="31.7" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="663.8" y="382.8" text-anchor="end" class="small">gemma-4-31b-it</text>
+<circle cx="719.7" cy="355.0" r="31.2" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="709.7" y="345.0" text-anchor="end" class="small">gemini-3.1-pro</text>
+<circle cx="686.7" cy="325.3" r="28.7" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="676.7" y="343.3" text-anchor="end" class="small">ds-v4-pro</text>
+<circle cx="613.4" cy="364.8" r="28.1" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="623.4" y="354.8" text-anchor="start" class="small">gpt-5-mini</text>
+<circle cx="744.3" cy="294.7" r="26.5" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="734.3" y="312.7" text-anchor="end" class="small">ds-v4-flash</text>
+<circle cx="677.7" cy="283.5" r="26.1" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="667.7" y="273.5" text-anchor="end" class="small">gemini-3-flash-preview</text>
+<circle cx="568.1" cy="233.3" r="20.0" fill="#08306b" fill-opacity="0.78" stroke="#111"/>
+<text x="578.1" y="251.3" text-anchor="start" class="small">gemini-3-1-flash-lite-p…</text>
+<circle cx="85.3" cy="525.8" r="7.3" fill="#2f7fba" fill-opacity="0.78" stroke="#111"/>
+<text x="95.3" y="515.8" text-anchor="start" class="small">mirothinker-1-7</text>
 </svg>

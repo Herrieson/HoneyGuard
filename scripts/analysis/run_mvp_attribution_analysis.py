@@ -67,6 +67,8 @@ def write_summary(runs: list[Path], output: Path, mode: str) -> None:
         if not summary_path.exists():
             continue
         summary = load_json(summary_path)
+        evidence_summary_path = run_dir / "scores" / f"attribution_{mode}.evidence_summary.json"
+        evidence_summary = load_json(evidence_summary_path) if evidence_summary_path.exists() else {}
         rows.append(
             {
                 "model": manifest.get("model_label"),
@@ -80,6 +82,10 @@ def write_summary(runs: list[Path], output: Path, mode: str) -> None:
                 "impact_accuracy": fmt(summary.get("impact_accuracy")),
                 "block_point_match_rate": fmt(summary.get("block_point_match_rate")),
                 "mean_failure_chain_overlap": fmt(summary.get("mean_failure_chain_overlap")),
+                "all_cited_labels_supported_rate": fmt(evidence_summary.get("all_cited_labels_supported_rate")),
+                "invalid_evidence_reference_rate": fmt(evidence_summary.get("invalid_evidence_reference_rate")),
+                "abstention_rate": fmt(evidence_summary.get("abstention_rate")),
+                "prediction_has_evidence_rate": fmt(evidence_summary.get("prediction_has_evidence_rate")),
             }
         )
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -95,17 +101,21 @@ def write_summary(runs: list[Path], output: Path, mode: str) -> None:
         "impact_accuracy",
         "block_point_match_rate",
         "mean_failure_chain_overlap",
+        "all_cited_labels_supported_rate",
+        "invalid_evidence_reference_rate",
+        "abstention_rate",
+        "prediction_has_evidence_rate",
     ]
     with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
     md = ["# HoneyGuard MVP Attribution Summary", ""]
-    md.append("| Model | Baseline | N | Source | Channel | Mechanism | Component | Impact | Block |")
-    md.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    md.append("| Model | Baseline | N | Source | Channel | Mechanism | Component | Impact | Block | Evidence support |")
+    md.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for row in rows:
         md.append(
-            "| {model} | {baseline} | {num_scored} | {source_accuracy} | {channel_accuracy} | {mechanism_accuracy} | {component_accuracy} | {impact_accuracy} | {block_point_match_rate} |".format(**row)
+            "| {model} | {baseline} | {num_scored} | {source_accuracy} | {channel_accuracy} | {mechanism_accuracy} | {component_accuracy} | {impact_accuracy} | {block_point_match_rate} | {all_cited_labels_supported_rate} |".format(**row)
         )
     (output.with_suffix(".md")).write_text("\n".join(md) + "\n", encoding="utf-8")
 
@@ -114,7 +124,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run MVP attribution prediction + scoring for selected completed runs.")
     parser.add_argument("--root", default="artifacts/experiments/mvp")
     parser.add_argument("--output", default="artifacts/analysis/mvp/attribution_rule_summary.csv")
-    parser.add_argument("--mode", choices=("oracle", "rule", "llm"), default="rule")
+    parser.add_argument("--mode", choices=("oracle", "rule", "llm", "evidence_rule", "evidence_llm"), default="rule")
     parser.add_argument("--models", nargs="*", default=list(FOCUS_MODELS))
     parser.add_argument("--baselines", nargs="*", default=list(BASELINES))
     parser.add_argument("--splits", nargs="*", default=list(REPORT_SPLITS))
@@ -130,24 +140,61 @@ def main() -> int:
     for run_dir in runs:
         export_path = run_dir / "exports" / "scenario_runs.export.jsonl"
         outcome_rows = run_dir / "scores" / "outcome.rows.csv"
+        evidence_path = run_dir / "analysis" / "attribution_evidence.jsonl"
+        evidence_csv_path = run_dir / "analysis" / "attribution_evidence.csv"
+        replay_rows = run_dir / "analysis" / "replay.rows.jsonl"
+        replay_steps = run_dir / "analysis" / "replay.steps.jsonl"
         pred_path = run_dir / "scores" / f"attribution_{args.mode}.predictions.jsonl"
         summary_path = run_dir / "scores" / f"attribution_{args.mode}.summary.json"
         rows_path = run_dir / "scores" / f"attribution_{args.mode}.rows.csv"
-        judge_cmd = [
-            sys.executable,
-            "scripts/analysis/trace_attribution_judge.py",
-            "--input",
-            str(export_path),
-            "--output",
-            str(pred_path),
-            "--mode",
-            args.mode,
-            "--filter",
-            args.filter,
-            "--outcome-rows",
-            str(outcome_rows),
-        ]
+        if args.mode.startswith("evidence_"):
+            extract_cmd = [
+                sys.executable,
+                "scripts/analysis/extract_attribution_evidence.py",
+                "--export-jsonl",
+                str(export_path),
+                "--outcome-rows",
+                str(outcome_rows),
+                "--output",
+                str(evidence_path),
+                "--output-csv",
+                str(evidence_csv_path),
+            ]
+            if replay_rows.exists():
+                extract_cmd.extend(["--replay-rows", str(replay_rows)])
+            if replay_steps.exists():
+                extract_cmd.extend(["--replay-steps", str(replay_steps)])
+            judge_cmd = [
+                sys.executable,
+                "scripts/analysis/trace_attribution_judge.py",
+                "--evidence-jsonl",
+                str(evidence_path),
+                "--output",
+                str(pred_path),
+                "--mode",
+                args.mode,
+                "--filter",
+                args.filter,
+            ]
+        else:
+            extract_cmd = []
+            judge_cmd = [
+                sys.executable,
+                "scripts/analysis/trace_attribution_judge.py",
+                "--input",
+                str(export_path),
+                "--output",
+                str(pred_path),
+                "--mode",
+                args.mode,
+                "--filter",
+                args.filter,
+                "--outcome-rows",
+                str(outcome_rows),
+            ]
         if args.mode == "llm":
+            judge_cmd.extend(["--model", args.judge_model])
+        if args.mode == "evidence_llm":
             judge_cmd.extend(["--model", args.judge_model])
         score_cmd = [
             sys.executable,
@@ -161,8 +208,24 @@ def main() -> int:
             "--output-csv",
             str(rows_path),
         ]
+        evidence_score_cmd = [
+            sys.executable,
+            "scripts/analysis/attribution_evidence_scorer.py",
+            "--evidence-jsonl",
+            str(evidence_path),
+            "--predictions",
+            str(pred_path),
+            "--output-json",
+            str(run_dir / "scores" / f"attribution_{args.mode}.evidence_summary.json"),
+            "--output-csv",
+            str(run_dir / "scores" / f"attribution_{args.mode}.evidence_rows.csv"),
+        ]
+        if extract_cmd:
+            run_command(extract_cmd, args.dry_run)
         run_command(judge_cmd, args.dry_run)
         run_command(score_cmd, args.dry_run)
+        if args.mode.startswith("evidence_"):
+            run_command(evidence_score_cmd, args.dry_run)
 
     if not args.dry_run:
         write_summary(runs, Path(args.output), args.mode)

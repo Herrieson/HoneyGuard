@@ -35,7 +35,7 @@
 | Risk extension | `v0_2_risk_broad` | planned | 更广义风险面的扩展性检查 |
 | Attack stress | `v0_2_attack_hard` | planned | 更强攻击下主实验优秀模型是否仍稳 |
 | Trajectory pilot | `v0_2_transient` | current | endpoint-safe 不等于 trajectory-safe |
-| Compositional stress | compositional playground (`mvp_compositional_playground`) | current | 多风险 dominance / masking / order effect |
+| Compositional stress | compositional playground (`mvp_compositional_playground`) | current, 60 generated scenarios | 多风险 dominance / masking / order effect |
 | Post-hoc analysis | trace replayer | current | fidelity、step-level localization、dominance support |
 
 当前代码的一等 `--split` preset 包含 `v0_2_test`、`v0_2_small`、`v0_2_transient` 等已 materialize 的 split。`v0_2_task_hard`、`v0_2_risk_broad`、`v0_2_attack_hard` 是推荐保留的 suite 名称，真正报告数值前需要先固定样本列表或实现 preset。
@@ -157,6 +157,82 @@ uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
 ```
 
 普通重跑同一条命令会创建新的 `<RUN_NAME>`，不会自动接上旧 run。断点续跑必须显式传 `--resume-run-dir`，这样 provenance 更清楚。续跑事件会追加写入 `manifest.json` 的 `resume_events`。续跑时 `test/run_scenarios.py --resume` 会跳过已经有稳定终态的样本，只重跑 `infra_failed`、`exception` 或 `retryable=true` 这类不稳定记录；`export_run_to_json.py` 会对同一个 config 的多次尝试取最后一次记录，避免 scorer 重复计数。主 runner 的 stdout/stderr 现在会实时 tee 到日志文件，因此场景级进度会在终端里即时显示。
+
+#### `scripts/experiments/mvp/run_mvp_model_batch.py`
+
+用途：批量跑多个模型。它会为每个模型自动完成：
+
+1. 用该模型的环境变量启动一个新的 TraceProbe API server。
+2. 等待 `/v1/server/runtime_metadata` 可用，并检查 runtime model 和 `--model-label` 一致。
+3. 在同一个 server 上连续运行一个或多个实验 job，例如 `naive` + `guarded`。
+4. 干净关闭 server，再切到下一个模型。
+5. 写入 batch manifest 和每个模型的 server / runner 外层日志。
+
+这个脚本解决的是“服务端需要按模型重启”的调度问题；它不绕过现有 provenance 校验。单次实验仍然由 `run_mvp_outcome_benchmark.py` 或 `run_mvp_compositional_playground.py` 负责，因此输出目录和 scorer 格式保持不变。
+
+常用命令：
+
+```bash
+export OPENAI_API_KEY="你的 API key"
+export OPENAI_BASE_URL="https://你的服务地址/v1"
+
+uv run python scripts/experiments/mvp/run_mvp_model_batch.py \
+  --models deepseek-v4-flash deepseek-v4-pro gpt-5.5 gpt-5-mini \
+  --baseline naive \
+  --baseline guarded \
+  --tag v0_2 \
+  --continue-on-error
+```
+
+这会按模型依次启动 server，并对每个模型跑：
+
+- `v0_2_test` + `naive` + `tag=v0_2`
+- `v0_2_test` + `guarded` + `tag=v0_2`
+
+输出：
+
+- 正式实验 run：`artifacts/experiments/mvp/mvp_outcome_benchmark/<RUN_NAME>/`
+- batch manifest / server 日志：`artifacts/experiments/mvp/batch_runs/<BATCH_RUN_NAME>/`
+
+如果不同模型需要不同 provider、base URL 或 key，用 matrix YAML，而不是在终端手动 export / restart：
+
+```yaml
+models:
+  - label: gpt-5.5
+    env:
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL_OPENAI}
+      OPENAI_API_KEY: ${OPENAI_API_KEY_OPENAI}
+      OPENAI_MODEL: gpt-5.5
+  - label: claude-sonnet-4-6
+    env:
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL_ANTHROPIC_COMPAT}
+      OPENAI_API_KEY: ${OPENAI_API_KEY_ANTHROPIC}
+      OPENAI_MODEL: claude-sonnet-4-6
+jobs:
+  - suite: outcome
+    split: v0_2_test
+    baseline: naive
+    tag: v0_2
+  - suite: outcome
+    split: v0_2_test
+    baseline: guarded
+    tag: v0_2
+```
+
+然后运行：
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_model_batch.py \
+  --matrix configs/mvp/private_model_matrix.yaml \
+  --continue-on-error
+```
+
+注意：
+
+- matrix 文件可以放在私有路径里；不要把真实 API key 写进 repo，建议用 `${ENV_NAME}` 引用外部环境变量。
+- batch runner 会清掉继承环境里的旧 `OPENAI_MODEL` / `MODEL` / `MODEL_NAME` / `AZURE_OPENAI_DEPLOYMENT`，再注入当前模型，避免 server 和 manifest 记录成上一个模型。
+- `--continue-on-error` 适合长批次；失败会记录在 `batch_manifest.json`，后续模型继续跑。
+- `--dry-run` 可以只打印 server / client 命令，不启动服务、不发请求。
 
 #### `scripts/experiments/mvp/run_exp_6_1_outcome_baselines.py`
 
@@ -316,17 +392,66 @@ uv run python scripts/analysis/replay_run_trace.py \
 - 不支持的工具会标记为 `unsupported_tool`，不会让脚本猜测或补全动作。
 - `replay_exact` 是最强结果；历史 run 也可能出现 stdout 不完全一致但 safety-equivalent，或者 replay 后 safety divergence。后者通常值得单独看 case study，因为它可能暴露 trace/export/scorer 语义差异或非确定性执行。
 
+#### `scripts/analysis/extract_attribution_evidence.py`
+
+用途：把 raw export / outcome / optional replay 压成结构化、redacted evidence packet。这个脚本是 attribution 分析的推荐第一步，避免直接把整条 raw trace 扔给 LLM judge。
+
+它会抽取：
+
+- task context：controlled hazard、forbidden actions、safety constraints，经过 redaction。
+- observed events：tool call、sensitive read/access、untrusted sink、instruction-like tool output、destructive action、final response leakage。
+- optional replay evidence：first sensitive read / first untrusted sink / first safety failure 等 replay 定位信号。
+- label candidates：每个 evidence event 可支持哪些 source / channel / component / mechanism / impact / block point。
+- truth：YAML attribution ground truth，只用于 scorer；`evidence_llm` prompt 不会把 truth 发给 LLM。
+
+常用命令：
+
+```bash
+uv run python scripts/analysis/extract_attribution_evidence.py \
+  --export-jsonl <RUN_DIR>/exports/scenario_runs.export.jsonl \
+  --outcome-rows <RUN_DIR>/scores/outcome.rows.csv \
+  --replay-rows <RUN_DIR>/analysis/replay.rows.jsonl \
+  --replay-steps <RUN_DIR>/analysis/replay.steps.jsonl \
+  --output <RUN_DIR>/analysis/attribution_evidence.jsonl \
+  --output-csv <RUN_DIR>/analysis/attribution_evidence.csv
+```
+
+`--replay-rows` / `--replay-steps` 是可选的；如果还没跑 replay，仍然可以做 trace-only evidence attribution。
+
 #### `scripts/analysis/trace_attribution_judge.py`
 
-用途：对单个 run 的 trace 生成归因预测。
+用途：生成归因预测。现在分成 raw-trace baseline 和 evidence-grounded baseline。
 
 模式：
 
 - `oracle`：复制 YAML 真值，只用于 sanity check。
-- `rule`：可复现规则 baseline。
-- `llm`：LLM-as-a-judge，从 trace evidence 预测归因标签。
+- `rule`：旧的 raw trace 规则 baseline。
+- `llm`：旧的 raw-trace LLM judge baseline；不作为推荐主方法。
+- `evidence_rule`：从 structured evidence packet 做 deterministic attribution recovery。
+- `evidence_llm`：只给 LLM structured evidence packet，要求闭集标签、JSON 输出、引用 evidence event id，并允许 abstain。
 
-常用命令：
+推荐命令：
+
+```bash
+uv run python scripts/analysis/trace_attribution_judge.py \
+  --evidence-jsonl <RUN_DIR>/analysis/attribution_evidence.jsonl \
+  --output <RUN_DIR>/scores/attribution_evidence_rule.predictions.jsonl \
+  --mode evidence_rule \
+  --filter failed_or_latent
+```
+
+可选 LLM baseline：
+
+```bash
+uv run python scripts/analysis/trace_attribution_judge.py \
+  --evidence-jsonl <RUN_DIR>/analysis/attribution_evidence.jsonl \
+  --output <RUN_DIR>/scores/attribution_evidence_llm.predictions.jsonl \
+  --mode evidence_llm \
+  --filter failed_or_latent \
+  --model <JUDGE_MODEL>
+```
+
+不推荐把下面这种 raw-trace LLM judge 当主结果；它只适合作为 weak baseline / ablation：
 
 ```bash
 uv run python scripts/analysis/trace_attribution_judge.py \
@@ -357,9 +482,31 @@ uv run python scripts/analysis/trace_attribution_judge.py \
 ```bash
 uv run python eval/attribution_scorer.py \
   --input <RUN_DIR>/exports/scenario_runs.export.jsonl \
-  --predictions <RUN_DIR>/scores/attribution_llm.predictions.jsonl \
-  --output-json <RUN_DIR>/scores/attribution_llm.summary.json \
-  --output-csv <RUN_DIR>/scores/attribution_llm.rows.csv
+  --predictions <RUN_DIR>/scores/attribution_evidence_rule.predictions.jsonl \
+  --output-json <RUN_DIR>/scores/attribution_evidence_rule.summary.json \
+  --output-csv <RUN_DIR>/scores/attribution_evidence_rule.rows.csv
+```
+
+#### `scripts/analysis/attribution_evidence_scorer.py`
+
+用途：检查预测不仅标签是否正确，还检查每个预测是否引用了存在的 evidence event，以及引用的 event 是否真的支持该标签。它用于避免“LLM 猜中但没有证据”或“引用不存在证据”的情况。
+
+核心指标：
+
+- `all_cited_labels_supported_rate`
+- `prediction_has_evidence_rate`
+- `invalid_evidence_reference_rate`
+- `abstention_rate`
+- 每个 attribution dimension 的 `*_evidence_supported_rate`
+
+常用命令：
+
+```bash
+uv run python scripts/analysis/attribution_evidence_scorer.py \
+  --evidence-jsonl <RUN_DIR>/analysis/attribution_evidence.jsonl \
+  --predictions <RUN_DIR>/scores/attribution_evidence_rule.predictions.jsonl \
+  --output-json <RUN_DIR>/scores/attribution_evidence_rule.evidence_summary.json \
+  --output-csv <RUN_DIR>/scores/attribution_evidence_rule.evidence_rows.csv
 ```
 
 ---
@@ -401,31 +548,59 @@ uv run python scripts/analysis/analyze_mvp_results.py \
 - `artifacts/analysis/mvp/all_naive_attribution_failure_breakdown.csv`
 - `artifacts/analysis/mvp/main_completeness.csv`
 
+#### `scripts/analysis/build_mvp_guard_deltas.py`
+
+用途：从同一批 `v0_2_test` 运行里配对 `naive` / `guarded`，生成论文里常用的 paired delta 表。
+
+```bash
+uv run python scripts/analysis/build_mvp_guard_deltas.py \
+  --root artifacts/experiments/mvp \
+  --splits v0_2_test \
+  --output artifacts/analysis/mvp
+```
+
+主要输出：
+
+- `artifacts/analysis/mvp/guard_delta_summary.csv`
+- `artifacts/analysis/mvp/guard_delta_family_breakdown.csv`
+
 #### `scripts/analysis/run_mvp_attribution_analysis.py`
 
-用途：批量运行 `trace_attribution_judge.py` + `eval/attribution_scorer.py`。
+用途：批量运行 attribution pipeline。对于 `evidence_rule` / `evidence_llm`，它会依次调用：
+
+1. `extract_attribution_evidence.py`
+2. `trace_attribution_judge.py`
+3. `eval/attribution_scorer.py`
+4. `attribution_evidence_scorer.py`
 
 默认读取新旧 outcome artifact 目录，并默认关注 `v0_2_test` 和历史 `test` split。正式 v0.2 建议显式传 `--splits v0_2_test`。
 
-Rule baseline：
+推荐 deterministic evidence baseline：
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
-  --mode rule \
+  --mode evidence_rule \
   --splits v0_2_test \
-  --output artifacts/analysis/mvp/attribution_rule_v0_2_summary.csv
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --filter failed_or_latent \
+  --output artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv
 ```
 
-LLM judge：
+Evidence-grounded LLM baseline：
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
-  --mode llm \
+  --mode evidence_llm \
   --filter failed_or_latent \
   --splits v0_2_test \
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
   --judge-model <JUDGE_MODEL> \
-  --output artifacts/analysis/mvp/attribution_llm_v0_2_summary.csv
+  --output artifacts/analysis/mvp/attribution_evidence_llm_v0_2_summary.csv
 ```
+
+保留 `--mode llm` 作为 raw-trace LLM judge 弱 baseline。论文里不应把它作为主 attribution 方法。
 
 #### `scripts/analysis/visualize_mvp_results.py`
 
@@ -459,13 +634,35 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 
 如果要研究多风险并存、顺序效应、主导风险和 masking/synergy，不要改主 `v0_2_test`，而是用独立 playground。
 
+官方 v0.2 recipe 是：
+
+- `configs/mvp/playground/recipes/v0_2_compositional_playground.yaml`
+
+它包含 12 个 pairwise composition group，每组生成 `clean`、两个 `single`、`combo`、`combo_reverse`，总计 60 条场景。旧的 `authority_vs_external_smoke.yaml` 保留为 20 条 smoke suite，只用于快速管线检查。
+
 #### `scripts/scenario/compose_mvp_playground.py`
 
 用途：把 `configs/mvp/playground/recipes/*.yaml` 中的 substrate + hazard 组合，编译成可直接运行的 TraceProbe YAML。
 
+```bash
+uv run python scripts/scenario/compose_mvp_playground.py \
+  --recipe configs/mvp/playground/recipes/v0_2_compositional_playground.yaml \
+  --output /tmp/hg_playground_v0_2 \
+  --print-manifest
+```
+
 #### `scripts/experiments/mvp/run_mvp_compositional_playground.py`
 
 用途：运行 recipe 生成的 compositional stress suite。
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_compositional_playground.py \
+  --base-url http://127.0.0.1:8000 \
+  --recipe configs/mvp/playground/recipes/v0_2_compositional_playground.yaml \
+  --baseline naive \
+  --model-label <MODEL> \
+  --tag v0_2_compositional_playground
+```
 
 输出：
 
@@ -554,7 +751,47 @@ Provider 兼容策略：
 - 可用 `HSE_LLM_COMPAT_PROFILE=auto|none|openai-compatible|deepseek-v4|gemini-3` 强制指定。
 - 可用 `OPENAI_EXTRA_BODY='{"key":"value"}'` 或 `HSE_LLM_EXTRA_BODY='{"key":"value"}'` 透传额外 body。
 
-### 4.2 跑一个模型的 naive 主结果
+### 4.2 推荐：批量跑主实验模型
+
+如果多个模型共享同一个 OpenAI-compatible provider，只需要在父环境里设置 key 和 base URL，然后把模型列表交给 batch runner：
+
+```bash
+export OPENAI_API_KEY="你的 API key"
+export OPENAI_BASE_URL="https://你的服务地址/v1"
+
+uv run python scripts/experiments/mvp/run_mvp_model_batch.py \
+  --models \
+    deepseek-v4-flash \
+    deepseek-v4-pro \
+    gpt-5.5 \
+    gpt-5.2 \
+    gpt-5 \
+    gpt-5-mini \
+    claude-opus-4-6 \
+    claude-sonnet-4-6 \
+    gemini-3-flash-preview \
+    gemini-3.1-pro-preview \
+    gemini-3.1-flash-lite-preview \
+    grok-4 \
+  --baseline naive \
+  --tag v0_2 \
+  --continue-on-error
+```
+
+如果想对同一批模型顺便补 `guarded`，把 baseline 重复传入即可。batch runner 会在同一个模型 server 上先跑 `naive`，再跑 `guarded`，然后才关闭 server：
+
+```bash
+uv run python scripts/experiments/mvp/run_mvp_model_batch.py \
+  --models deepseek-v4-flash deepseek-v4-pro gpt-5.5 gpt-5-mini \
+  --baseline naive \
+  --baseline guarded \
+  --tag v0_2 \
+  --continue-on-error
+```
+
+如果不同模型不共享 provider，使用 `--matrix`；matrix 里每个模型可以指定自己的 `OPENAI_BASE_URL`、`OPENAI_API_KEY`、`OPENAI_MODEL`。真实 key 建议通过 `${ENV_NAME}` 引用，不要写进 repo。
+
+### 4.3 跑一个模型的 naive 主结果
 
 ```bash
 uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
@@ -567,7 +804,7 @@ uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
 
 这是主 leaderboard 的最低必需项。
 
-### 4.3 跑同一模型的 guarded 对照
+### 4.4 跑同一模型的 guarded 对照
 
 ```bash
 uv run python scripts/experiments/mvp/run_mvp_outcome_benchmark.py \
@@ -625,33 +862,52 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 
 - `artifacts/analysis/mvp/visualizations/index.html`
 
-### 5.3 自动归因分析
+### 5.3 Evidence-grounded attribution 分析
 
-先跑 rule baseline，确认链路通：
+先跑 deterministic evidence baseline，确认链路通：
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
-  --mode rule \
+  --mode evidence_rule \
+  --filter failed_or_latent \
   --splits v0_2_test \
-  --output artifacts/analysis/mvp/attribution_rule_v0_2_summary.csv
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --output artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv
 ```
 
-再跑 LLM judge：
+如果要研究 LLM 能否辅助 attribution，不要直接用 raw trace LLM judge 作为主结果。跑 evidence-grounded LLM baseline：
+
+```bash
+uv run python scripts/analysis/run_mvp_attribution_analysis.py \
+  --mode evidence_llm \
+  --filter failed_or_latent \
+  --splits v0_2_test \
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --judge-model <JUDGE_MODEL> \
+  --output artifacts/analysis/mvp/attribution_evidence_llm_v0_2_summary.csv
+```
+
+这一步回答：
+
+1. 结构化 execution evidence 能否恢复 benchmark attribution 真值。
+2. 哪些归因字段容易恢复，哪些字段容易混淆。
+3. 预测是否真的引用了存在且兼容的 evidence event。
+4. evidence-grounded LLM 是否优于 raw-trace LLM weak baseline。
+
+保留下面命令只作为 weak baseline / ablation，不作为主 attribution 方法：
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
   --mode llm \
   --filter failed_or_latent \
   --splits v0_2_test \
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
   --judge-model <JUDGE_MODEL> \
-  --output artifacts/analysis/mvp/attribution_llm_v0_2_summary.csv
+  --output artifacts/analysis/mvp/attribution_raw_llm_v0_2_summary.csv
 ```
-
-这一步回答：
-
-1. 自动 judge 能否从 trace 恢复 benchmark 真值。
-2. 哪些归因字段容易恢复，哪些字段容易混淆。
-3. 归因是否能替代人工肉眼读 trace 的初筛工作。
 
 ### 5.4 Case study 顺序
 
@@ -659,14 +915,16 @@ uv run python scripts/analysis/run_mvp_attribution_analysis.py \
 
 1. 看 `all_naive_summary.csv` 找异常模型。
 2. 看 `all_naive_family_breakdown.csv` 找高风险 family。
-3. 看 `attribution_llm_v0_2_summary.csv` 和 `attribution_llm.rows.csv` 找归因失败/成功样本。
+3. 看 `attribution_evidence_rule_v0_2_summary.csv` / `attribution_evidence_llm_v0_2_summary.csv` 找归因失败/成功样本。
 4. 最后只挑 2-3 个代表性 trace 写 qualitative case study。
 
 重点文件：
 
 - `<RUN_DIR>/exports/scenario_runs.export.jsonl`
 - `<RUN_DIR>/scores/outcome.rows.csv`
-- `<RUN_DIR>/scores/attribution_llm.rows.csv`
+- `<RUN_DIR>/analysis/attribution_evidence.jsonl`
+- `<RUN_DIR>/scores/attribution_evidence_rule.rows.csv`
+- `<RUN_DIR>/scores/attribution_evidence_rule.evidence_rows.csv`
 
 ---
 
@@ -712,11 +970,12 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
-  --mode llm \
+  --mode evidence_rule \
   --filter failed_or_latent \
   --splits v0_2_test \
-  --judge-model <JUDGE_MODEL> \
-  --output artifacts/analysis/mvp/attribution_llm_v0_2_summary.csv
+  --models <MODEL_1> <MODEL_2> <MODEL_3> \
+  --baselines naive guarded \
+  --output artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv
 ```
 
 ---
