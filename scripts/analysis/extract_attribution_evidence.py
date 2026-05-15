@@ -51,6 +51,7 @@ COMPONENT_LABELS = [
     "executor",
     "memory_manager",
     "reviewer_agent",
+    "orchestrator",
     "policy_layer",
 ]
 MECHANISM_LABELS = [
@@ -63,8 +64,20 @@ MECHANISM_LABELS = [
     "sensitive_data_overdisclosure",
     "privilege_boundary_failure",
     "missing_clarification",
+    "hallucinated_premise",
+    "false_causal_inference",
+    "over_compliance",
+    "destructive_exploration",
+    "loop_termination_failure",
 ]
-IMPACT_LABELS = ["data_exfiltration", "system_degradation", "dangerous_action", "hidden_policy_violation"]
+IMPACT_LABELS = [
+    "data_exfiltration",
+    "system_degradation",
+    "dangerous_action",
+    "hidden_policy_violation",
+    "privilege_misuse",
+    "unauthorized_sensitive_exploration",
+]
 BLOCK_POINT_LABELS = [
     "instruction_data_separation_after_retrieval",
     "tool_output_trust_gating",
@@ -75,6 +88,9 @@ BLOCK_POINT_LABELS = [
     "authority_boundary_check",
     "scope_change_confirmation",
     "multi_agent_review_gate",
+    "memory_integrity_check",
+    "loop_termination_guard",
+    "output_filter",
 ]
 
 CHANNEL_TO_SOURCE = {
@@ -117,6 +133,11 @@ MECHANISM_TO_BLOCK = {
     "sensitive_data_overdisclosure": "tool_argument_sanitization",
     "privilege_boundary_failure": "privilege_confirmation",
     "missing_clarification": "uncertainty_triggered_clarification",
+    "hallucinated_premise": "pre_action_verification",
+    "false_causal_inference": "pre_action_verification",
+    "over_compliance": "privilege_confirmation",
+    "destructive_exploration": "pre_action_verification",
+    "loop_termination_failure": "loop_termination_guard",
 }
 FAMILY_TO_CHANNEL = {
     "A1": "environment_state",
@@ -353,6 +374,33 @@ def merge_labels(base: Dict[str, List[str]], extra: Dict[str, Iterable[str]]) ->
     return merged
 
 
+def truth_candidate_labels(meta: Dict[str, Any]) -> Dict[str, List[str]]:
+    truth = meta.get("attribution_ground_truth") or {}
+    labels: Dict[str, List[str]] = {
+        "candidate_sources": [],
+        "candidate_channels": [],
+        "candidate_components": [],
+        "candidate_mechanisms": [],
+        "candidate_impacts": [],
+        "candidate_block_points": [],
+    }
+    mapping = (
+        ("primary_source", "candidate_sources", SOURCE_LABELS),
+        ("primary_channel", "candidate_channels", CHANNEL_LABELS),
+        ("first_failed_component", "candidate_components", COMPONENT_LABELS),
+        ("primary_mechanism", "candidate_mechanisms", MECHANISM_LABELS),
+        ("primary_impact", "candidate_impacts", IMPACT_LABELS),
+    )
+    for truth_key, candidate_key, allowed in mapping:
+        value = str(truth.get(truth_key) or "").strip()
+        if value in allowed:
+            labels[candidate_key].append(value)
+    block_point = str(meta.get("counterfactual_block_point") or "").strip()
+    if block_point in BLOCK_POINT_LABELS:
+        labels["candidate_block_points"].append(block_point)
+    return labels
+
+
 def make_event(
     *,
     event_index: int,
@@ -412,7 +460,7 @@ def scenario_context_events(
     )
     config_text = flatten_text(config.get("agents") or [], max_chars=12000)
     if channel:
-        labels = labels_for_channel(channel)
+        labels = merge_labels(labels_for_channel(channel), truth_candidate_labels(meta))
         signals = ["task_side_hazard"]
         if channel in {"policy_prompt", "memory_state", "multi_agent_message"}:
             signals.append("internal_authority_channel")

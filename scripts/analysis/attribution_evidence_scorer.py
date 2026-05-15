@@ -21,8 +21,9 @@ DIMENSIONS = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Score attribution predictions against task-side labels and check whether "
-            "each predicted label is supported by cited structured evidence events."
+            "Score attribution predictions against scenario-level expected labels and "
+            "check whether each predicted label is supported by cited structured "
+            "evidence events."
         )
     )
     parser.add_argument("--evidence-jsonl", required=True, help="Output from extract_attribution_evidence.py.")
@@ -198,6 +199,11 @@ def write_csv(path: Path, rows: Sequence[Dict[str, Any]]) -> None:
 def build_summary(rows: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     summary: Dict[str, Any] = {
         "num_scored": len(rows),
+        "score_interpretation": (
+            "Label-match fields measure agreement with expected scenario hazard labels; "
+            "evidence-support fields measure whether cited observed events support the "
+            "predicted labels."
+        ),
         "abstention_rate": safe_rate([bool(row.get("abstain")) for row in rows]),
         "prediction_has_evidence_rate": safe_rate([bool(row.get("prediction_has_evidence")) for row in rows]),
         "invalid_evidence_reference_rate": safe_rate([bool(row.get("any_invalid_evidence_reference")) for row in rows]),

@@ -37,6 +37,8 @@ configs/scenario
 configs/*
 !configs/mvp/
 !configs/mvp/**
+!configs/honeyspace/
+!configs/honeyspace/**
 !configs/attribution/
 !configs/attribution/**
 # OS-specific

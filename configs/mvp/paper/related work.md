@@ -1,6 +1,6 @@
 # TraceProbe Related Work Notes
 
-Last updated: 2026-05-08
+Last updated: 2026-05-15
 
 This note is meant to support the EMNLP paper writing process. It is not the final
 Related Work section. The goal is to map nearby work, decide how to frame
@@ -16,11 +16,15 @@ Avoid presenting TraceProbe as merely "another agent safety benchmark." The clos
 neighbors already cover broad agent safety and prompt-injection settings. The paper
 should instead emphasize four differentiators:
 
-1. **Attribution as first-class ground truth.** TraceProbe labels not only whether a
-   run fails, but also source, channel, mechanism, first failed component, impact,
-   block point, and failure chain.
-2. **Unified risk-source taxonomy.** TraceProbe compares non-adversarial failures,
-   internal authority contamination, and external attacks in one schema.
+1. **Expected hazard paths as first-class benchmark structure.** TraceProbe labels
+   not only whether a scenario can fail, but also the intended source, channel,
+   mechanism, first failed component, impact, block point, and expected failure
+   chain. Run-level diagnosis is then derived from observed traces and replay.
+2. **First-class internal-authority risk axis.** TraceProbe compares
+   non-adversarial failures, internal authority compromise, and external attacks in
+   one schema, while isolating policy-like context, memory state, and multi-agent
+   messages instead of folding them into generic prompt injection, tool/API risk, or
+   inherent model failure.
 3. **Trajectory-level latent violations.** TraceProbe scores process failures even
    when the final endpoint appears safe.
 4. **Compositional stress controls.** The playground creates clean / single / combo /
@@ -29,7 +33,8 @@ should instead emphasize four differentiators:
 
 The related-work section should be written so that OpenAgentSafety and AgentDojo look
 like important inspirations and baselines, not like papers we are trying to outsize.
-TraceProbe's novelty is narrower but sharper: diagnosable failure attribution.
+TraceProbe's novelty is narrower but sharper: diagnosable safety failures in live
+agent execution.
 
 After TRAJECT-Bench, FAMAS, and ATBench-CodeX, avoid using broad headlines such as
 "trajectory-aware benchmark", "failure attribution benchmark", or "trajectory
@@ -91,8 +96,8 @@ How to write this paragraph:
 
 > Existing agent benchmarks emphasize task completion in realistic or simulated
 > environments. TraceProbe is complementary: its scenarios are controlled rather than
-> maximally open-ended, because the goal is to isolate safety mechanisms and provide
-> attribution ground truth.
+> maximally open-ended, because the goal is to isolate expected safety mechanisms and
+> compare them with observed live-execution paths.
 
 Specific TRAJECT-Bench distinction:
 
@@ -120,11 +125,18 @@ Representative works:
 - **Agent Security Bench (ASB)**: formalizes and benchmarks attacks and defenses in
   LLM-based agents. It is a strong security-oriented benchmark. TraceProbe should be
   framed as complementary: less focused on attack/defense breadth, more focused on
-  trajectory-level causal labels.
+  trajectory-level diagnostic labels.
 - **OpenAgentSafety**: the closest broad benchmark. It evaluates LLM-agent safety
   across realistic tool-based tasks and multiple risk categories. TraceProbe must not
   claim novelty simply from being "agent safety." The differentiator is the structured
   attribution layer and compositional controls.
+- **Agent-risk taxonomy papers with user / environment / tool / inherent buckets**:
+  useful for positioning because they usually distinguish malicious user input,
+  environmental observations, tool/API risks, and internal agent failures. TraceProbe
+  should be framed as complementary: B-class internal authority compromise cuts across
+  those buckets and deserves a first-class source class because policy-like context,
+  memory state, and multi-agent messages are neither ordinary external observations
+  nor unobservable generic reasoning failures.
 
 How to write this paragraph:
 
@@ -157,9 +169,20 @@ How to write this paragraph:
 
 > Prompt-injection work demonstrates that agents can confuse instructions with
 > untrusted data. TraceProbe includes these external attacks, but also evaluates
-> internal authority contamination and non-adversarial failures. This allows the paper
+> internal authority compromise and non-adversarial failures. This allows the paper
 > to ask whether failures caused by retrieved content, tool output, memory state,
 > policy prompts, and multi-agent messages have distinguishable attribution patterns.
+
+Taxonomy comparison wording to reuse:
+
+> Many agent-risk taxonomies separate malicious user instructions, environmental
+> observations, tool/API risks, and inherent agent failures. TraceProbe complements
+> this view by isolating internal authority compromise as a first-class source class.
+> In B-class scenarios, the risky signal comes from policy-like context, persistent
+> memory, or another agent's message: content that appears internal or authoritative
+> to the agent but should not itself authorize privileged actions. This distinction
+> is important because the relevant failure is authority provenance, not only
+> external prompt injection or generic reasoning error.
 
 ### 1.5 Trajectory-Level Safety, Diagnosis, and Failure Attribution
 
@@ -200,8 +223,8 @@ Closest-neighbor distinction:
 > under a risk taxonomy. TraceProbe evaluates a different object. The evaluated
 > model is not given a completed trajectory to audit; it must act in an executable
 > sandboxed scenario, produce tool calls and state changes, and is then scored using
-> outcome criteria, latent trace events, structured attribution labels, and exact
-> replay in a fresh environment.
+> outcome criteria, latent trace events, expected hazard labels, observed trace
+> evidence, and exact replay in a fresh environment.
 
 Failure-attribution method distinction:
 
@@ -209,7 +232,7 @@ Failure-attribution method distinction:
 > using repeated executions and spectrum-style suspiciousness scoring to identify
 > responsible agents and actions. TraceProbe is complementary: it is not primarily an
 > attribution algorithm, but a safety benchmark with executable scenarios,
-> safety-specific attribution ground truth, outcome and latent-violation metrics, and
+> safety-specific expected hazard labels, outcome and latent-violation metrics, and
 > replay-grounded localization.
 
 Important distinction:
@@ -218,7 +241,8 @@ Important distinction:
 > given an existing trajectory and must decide whether it is safe, localize a risky
 > step, or assign a failure category. TraceProbe evaluates **scenario-grounded agent
 > behavior**: the model is placed in an executable scenario, produces its own actions,
-> and is then scored against outcome criteria and attribution ground truth.
+> and is then scored against outcome criteria, evidence-grounded observed diagnosis,
+> and expected-vs-observed path alignment.
 
 This distinction should be used carefully. Do not claim that prior trajectories are
 "fake" or useless. The stronger point is that static trajectory auditing has a
@@ -359,24 +383,24 @@ Legend:
 - TraceProbe claims should be phrased as design differences, not as universal
   superiority.
 
-| Work | Main Scope | Agent / Tool Execution | Safety Focus | Trajectory Evidence | Attribution Ground Truth | Internal Authority Risks | Non-Adversarial Failures | Compositional Controls | TraceProbe Positioning |
+| Work | Main Scope | Agent / Tool Execution | Safety Focus | Trajectory Evidence | Expected Hazard / Attribution Labels | Internal Authority Risks | Non-Adversarial Failures | Compositional Controls | TraceProbe Positioning |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | SafetyBench / SALAD-Bench | General LLM safety taxonomy | Limited | Harmful content / safety categories | Limited | No | No | Partial | No | Background only; not agent-trajectory focused. |
 | HarmBench / JailbreakBench | Red teaming and jailbreak robustness | Limited | Harmful response / refusal robustness | Limited | No | No | No | No | Useful for endpoint safety framing; TraceProbe targets agent actions and traces. |
 | AgentBench | General agent capability | Strong | Mostly task success | Partial | No | No | Partial | No | Establishes agent evaluation; TraceProbe focuses on safety diagnosis. |
 | WebArena / OSWorld | Realistic web or computer-use tasks | Strong | Mostly capability / task completion | Partial | No | No | Partial | No | More realistic environments; TraceProbe uses controlled scenarios for attribution. |
 | tau-bench | Tool-agent-user interaction | Strong | Reliability / task success | Partial | No | No | Partial | No | Useful context for tool-agent evaluation; not primarily safety attribution. |
-| TRAJECT-Bench | Agentic tool-use capability | Strong | Mostly tool-use correctness / task completion | Strong | No | No | Partial | No | Closest terminology overlap. It evaluates gold tool trajectory selection/order/arguments; TraceProbe uses traces for safety-failure attribution and replay localization. |
+| TRAJECT-Bench | Agentic tool-use capability | Strong | Mostly tool-use correctness / task completion | Strong | No | No | Partial | No | Closest terminology overlap. It evaluates gold tool trajectory selection/order/arguments; TraceProbe uses traces for safety-failure diagnosis and replay localization. |
 | ToolEmu | Tool-use risk discovery with simulated tools | Strong / simulated | Tool-use risks | Partial | Limited | Limited | Partial | Limited | Similar concern with tool risk; TraceProbe adds executable scenario labels and attribution scoring. |
 | InjecAgent | Indirect prompt injection in tool-integrated agents | Strong | External injection | Partial | Limited | No | No | Limited | Close for C2-style attacks; TraceProbe covers broader source taxonomy and failure attribution. |
 | AgentDojo | Attacks and defenses for LLM agents | Strong | Prompt injection / security under utility tasks | Strong | Limited | Limited | No / Partial | Partial | Strong close work; TraceProbe should emphasize attribution labels and internal/non-adversarial sources. |
 | ASB | Agent security benchmark | Strong | Attacks and defenses | Strong | Partial | Partial | Limited | Partial | Security benchmark neighbor; TraceProbe is more attribution-diagnostic than attack/defense-centric. |
 | AgentHarm | Harmfulness of LLM agents | Strong | Harmful agent behavior | Partial | Limited | Limited | Limited | No | Strong harmfulness benchmark; TraceProbe diagnoses how failures arise and propagate. |
-| OpenAgentSafety | Broad LLM-agent safety framework | Strong | Multi-risk agent safety | Strong | Partial / judge-based | Partial | Partial | Limited | Closest broad benchmark. TraceProbe must differentiate via structured attribution ground truth and compositional controls. |
+| OpenAgentSafety | Broad LLM-agent safety framework | Strong | Multi-risk agent safety | Strong | Partial / judge-based | Partial | Partial | Limited | Closest broad benchmark. TraceProbe must differentiate via expected hazard labels, observed path alignment, replay evidence, and compositional controls. |
 | ATBench / trajectory-safety line | Trajectory safety auditing | Strong for constructed traces | Unsafe trajectories | Strong | Partial | Partial | Partial | Limited | Very close conceptually; TraceProbe differs by evaluating live agents that generate traces in executable scenarios. |
 | ATBench-Claw / ATBench-CodeX | Domain-customized trajectory safety benchmarks | Strong for constructed traces | OpenClaw / CodeX trajectory safety | Strong | Partial | Partial | Partial | Limited | Closest benchmark neighbor for coding/tool settings; TraceProbe emphasizes live execution, outcome+safety co-scoring, exact replay, and scenario-level attribution labels. |
 | HINTBench / intrinsic-risk line | Non-attack intrinsic trajectory risk | Strong | Latent / intrinsic unsafe behavior | Strong | Partial | Partial | Strong | Limited | Close on benign-condition trajectory risk; TraceProbe additionally compares internal compromise and external attacks under one attribution schema. |
-| AgentRx | Failure localization and diagnosis from trajectories | Strong | General agent failure diagnosis | Strong | Strong for critical-step/category labels | Partial | Partial | No | Very close on trajectory diagnosis; TraceProbe focuses specifically on safety hazards with controlled source/channel/mechanism/block-point ground truth. |
+| AgentRx | Failure localization and diagnosis from trajectories | Strong | General agent failure diagnosis | Strong | Strong for critical-step/category labels | Partial | Partial | No | Very close on trajectory diagnosis; TraceProbe focuses specifically on safety hazards with expected source/channel/mechanism/block-point labels and live execution. |
 | FAMAS / MAS spectrum attribution | Multi-agent failure attribution method | Strong | General MAS failure debugging | Strong | Responsible agent/action labels | Partial | Partial | No | Close on "who/action caused failure"; TraceProbe is a benchmark for safety-specific live execution, not a spectrum-based attribution algorithm. |
 | TraceProbe | Attribution-level agent safety benchmark | Strong | Non-adversarial + internal compromise + external attack | Strong | Strong | Strong | Strong | Strong | Core claim: diagnosable, trace-grounded safety failures with optional multi-risk stress testing. |
 
@@ -400,7 +424,7 @@ Key transition:
 Mention AgentBench, WebArena, OSWorld, tau-bench, TRAJECT-Bench, ToolBench /
 API-Bank-style work.
 The purpose is to position TraceProbe as a benchmark that sacrifices some
-open-ended realism to gain controlled causal attribution.
+open-ended realism to gain controlled diagnostic attribution.
 
 Key transition:
 
@@ -477,17 +501,22 @@ This is a rough draft that can be converted into paper prose.
 > tool selection, order, and argument correctness. TraceProbe is complementary:
 > instead of matching gold tool trajectories, it uses controlled workflow-inspired
 > scenarios and live execution traces to isolate hazard sources and provide
-> ground-truth attribution for safety failures.
+> scenario-level expected hazard labels and observed-path diagnosis for safety
+> failures.
 >
 > Recent agent-safety and agent-security benchmarks are closer to our setting.
 > ToolEmu studies risks from tool use in an emulated sandbox; InjecAgent and AgentDojo
 > evaluate indirect prompt injection and attacks/defenses for tool-using agents; ASB
 > formalizes agent security attacks and defenses; AgentHarm measures harmfulness in
 > agentic tasks; and OpenAgentSafety provides a broad framework for evaluating LLM
-> agent safety across realistic tool-based tasks. TraceProbe builds on this trend but
-> targets a different question: not only whether an agent fails, but where the risk
-> entered, which component first accepted it, how it propagated, and where it could
-> have been blocked.
+> agent safety across realistic tool-based tasks. Existing taxonomies in this area
+> often separate malicious user input, environmental observations, tool/API risks,
+> and inherent agent failures. TraceProbe builds on this trend but targets a
+> different question: not only whether an agent fails, but where the risk entered,
+> which component first accepted it, how it propagated, and where it could have been
+> blocked. It also isolates internal authority compromise as a first-class source
+> class, covering policy-like context, memory state, and multi-agent messages rather
+> than folding them into generic prompt injection or inherent reasoning failure.
 >
 > Finally, trajectory-level diagnosis has become increasingly important for agentic
 > evaluation, as unsafe behavior may be latent in intermediate steps even when the
@@ -530,35 +559,42 @@ Likely reviewer questions:
 
 1. **How is this different from OpenAgentSafety?**
    - Answer: OpenAgentSafety is broad and realistic; TraceProbe is narrower but adds
-     structured attribution ground truth, first failed component, block point, and
-     compositional controls.
+     scenario-level expected hazard labels, observed path alignment, first failed
+     component, block point, replay evidence, and compositional controls.
 2. **How is this different from AgentDojo / InjecAgent?**
    - Answer: Those focus on prompt injection / attack-defense settings; TraceProbe
-     includes external injection but also internal authority contamination and
+     includes external injection but also internal authority compromise and
      non-adversarial failures.
-3. **Are the scenarios realistic?**
+3. **Why is B-class internal authority not just prompt injection or inherent
+   failure?**
+   - Answer: The failure signal is authority provenance. The content appears to come
+     from policy-like context, persistent memory, or another agent, so a model may
+     treat it as authorization even when it should be only untrusted evidence. This
+     calls for memory integrity, role provenance, and internal-message boundaries,
+     not only external-content filtering.
+4. **Are the scenarios realistic?**
    - Answer: They are controlled workflow-inspired scenarios. The purpose is
      diagnostic isolation, not full production realism.
-4. **Who annotated the failure chains?**
+5. **Who annotated the failure chains?**
    - Answer in final paper with an annotation protocol, schema, examples, and
      consistency checks.
-5. **Does attribution ground truth overclaim causality?**
+6. **Do expected hazard labels overclaim causality?**
    - Answer carefully: labels encode intended controlled hazard and expected failure
-     path; trace-based attribution evaluates whether observed behavior matches that
-     controlled design.
-6. **Why include compositional playground if it is not the main benchmark?**
+     path; trace-based observed diagnosis evaluates whether behavior matches,
+     partially matches, resists, or deviates from that controlled design.
+7. **Why include compositional playground if it is not the main benchmark?**
    - Answer: It tests robustness of conclusions under multi-risk stress and enables
      dominance / masking / order-effect analysis.
-7. **How is this different from TRAJECT-Bench?**
+8. **How is this different from TRAJECT-Bench?**
    - Answer: TRAJECT-Bench is a trajectory-aware tool-use capability benchmark. It
      evaluates tool selection, ordering, dependencies, and argument correctness.
      TraceProbe uses traces as safety evidence for risk entry, propagation, latent
      violations, replay localization, and attribution.
-8. **How is this different from ATBench / ATBench-CodeX?**
+9. **How is this different from ATBench / ATBench-CodeX?**
    - Answer: ATBench evaluates safety of constructed trajectories; TraceProbe
      evaluates safety of live agents producing trajectories in executable scenarios,
      with task-success/safety co-scoring and exact replay in fresh sandboxes.
-9. **How is this different from FAMAS / spectrum-based MAS failure attribution?**
+10. **How is this different from FAMAS / spectrum-based MAS failure attribution?**
    - Answer: FAMAS is an attribution method for ranking responsible agents/actions
      in failed multi-agent executions. TraceProbe is a safety benchmark with
      executable scenarios, safety-specific attribution labels, latent-violation

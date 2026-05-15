@@ -73,7 +73,44 @@ local backend 的语义：
 - `configs/mvp/_archive/v0_1_splits/`：归档的 v0.1 `bootstrap` / `dev` / `formal` / `pilot_b` YAML。
 - `configs/mvp/docs/_archive/`：旧规划文档、旧 task runbook、旧审计记录。
 
-### 2.1 正式 split
+### 2.1 数据构建方式
+
+v0.2 数据集使用 **LLM-assisted、human-curated、executable-validated** 的构建流程。
+准确说，Codex-based coding agent 被用作 scenario authoring assistant，而不是
+benchmark judge、不是最终 run-level safety label 来源，也不是自动验收器。
+
+构建流程按下面几层理解：
+
+1. **Taxonomy-first design**：先固定风险源 family、channel、expected hazard label
+   维度、YAML schema、tool interface、acceptance criteria 格式和主 split 覆盖目标。
+2. **LLM-assisted candidate authoring**：给 Codex-based coding agent family-specific
+   指令，让它起草候选 YAML、初始 workspace 文件、mock tool output、utility
+   acceptance criteria、safety constraints 和 expected hazard labels。
+3. **Author curation**：人工迭代检查和修改候选样本，重点看 task 是否清楚、utility
+   是否可完成、safety constraints 是否具体、expected labels 是否和 intended hazard
+   一致、是否有重复样本、隐藏假设、trivial unsafe 或 impossible safe 的情况。
+4. **Executable validation**：检查 YAML 能否解析、workspace 能否初始化、允许工具是否
+   正确、acceptance criteria 是否可运行、scorer 能否区分 utility success 和 safety
+   violation。
+5. **Pilot filtering / calibration**：通过试运行和 scorer 检查移除或重写 broken、
+   unstable、ambiguous、过于简单或过于不可解的场景。
+
+写论文时不要说“数据集由 Codex 自动生成”。推荐说：
+
+> TraceProbe was constructed using an LLM-assisted, human-curated scenario authoring
+> workflow. The coding agent drafted candidate executable scenarios under a fixed
+> ontology and schema; the authors curated and executable-validated the final
+> benchmark artifacts.
+
+标签口径也要保持一致：
+
+- YAML 里的 attribution 字段是 **scenario-level expected hazard labels**。
+- 它们描述场景设计时预期测试的风险路径，不是每次 model run 的因果真值。
+- 真实运行可能 follow / partially follow / resist / deviate from expected path。
+- 因此 RQ4 主分析用 expected-vs-observed alignment，而不是把 expected labels 当作
+  per-run causal ground truth 来算准确率。
+
+### 2.2 正式 split
 
 - `v0_2_test`：当前主 benchmark，155 条。
   - A1：20，非对抗操作风险 / over-delegation。
@@ -88,7 +125,7 @@ local backend 的语义：
   - C2.2：20，tool-output prompt injection。
 - 注意：`v0_2_test` 不再是完全均衡 family split。A1/A4/B1/B2/B3/C2.1/C2.2 仍各 20 条；A2/A3/C1 是每类 5 条的 promoted gap families，论文里应优先看 family-level breakdown。
 
-### 2.2 可选 pilot split
+### 2.3 可选 pilot split
 
 - `v0_2_transient`：trajectory-safety pilot，当前 8 条，源 YAML 在 `configs/mvp/v0_2/transient/`。
   - 目标不是扩充主 leaderboard，而是专门观察 endpoint-safe 不等于 trajectory-safe。
@@ -97,7 +134,7 @@ local backend 的语义：
   - 当前样本用 stdout-capturing unit tests 制造恢复机会：如果模型先加入 `print(marker)`，测试会失败，模型有机会删除 marker 后再通过测试。
   - 这类样本适合做 case study 和论文叙事，不建议直接和 `v0_2_test` headline 指标混算。
 
-### 2.3 推荐保留的派生 suite 名称
+### 2.4 推荐保留的派生 suite 名称
 
 以下名字目前主要用于论文设计和后续实现规划，是否 materialize 成独立 preset 取决于具体实验需要：
 
@@ -111,7 +148,7 @@ local backend 的语义：
 - 不要把这些 planned/derived suite 名称和 `v0_2_test` 混成一个主 leaderboard。
 - 真的要报告数值时，先固定样本列表或把它们实现成独立 preset。
 
-### 2.4 历史 split
+### 2.5 历史 split
 
 - `test`：兼容旧 v0.1 formal set，源 YAML 在 `configs/mvp/_archive/v0_1_splits/formal/`。
 - `dev` / `full`：兼容旧 v0.1 调试 split，源 YAML 在 `configs/mvp/_archive/v0_1_splits/`。
@@ -315,7 +352,7 @@ uv run python test/run_scenarios.py \
 
 #### `scripts/export_run_to_json.py`
 
-用途：把 raw scenario run JSONL 转成统一 export JSONL。export 会包含 task metadata、attribution ground truth、trace、final output、final state 和 safety events。
+用途：把 raw scenario run JSONL 转成统一 export JSONL。export 会包含 task metadata、scenario-level expected hazard labels、trace、final output、final state 和 safety events。
 
 常用命令：
 
@@ -402,7 +439,7 @@ uv run python scripts/analysis/replay_run_trace.py \
 - observed events：tool call、sensitive read/access、untrusted sink、instruction-like tool output、destructive action、final response leakage。
 - optional replay evidence：first sensitive read / first untrusted sink / first safety failure 等 replay 定位信号。
 - label candidates：每个 evidence event 可支持哪些 source / channel / component / mechanism / impact / block point。
-- truth：YAML attribution ground truth，只用于 scorer；`evidence_llm` prompt 不会把 truth 发给 LLM。
+- truth：YAML 里的 scenario-level expected hazard labels，只用于 expected-label agreement / alignment 分析；`evidence_llm` prompt 不会把 truth 发给 LLM。注意它不是每次 run 的因果真值。
 
 常用命令：
 
@@ -416,18 +453,18 @@ uv run python scripts/analysis/extract_attribution_evidence.py \
   --output-csv <RUN_DIR>/analysis/attribution_evidence.csv
 ```
 
-`--replay-rows` / `--replay-steps` 是可选的；如果还没跑 replay，仍然可以做 trace-only evidence attribution。
+`--replay-rows` / `--replay-steps` 是可选的；如果还没跑 replay，仍然可以做 trace-only observed attribution。
 
 #### `scripts/analysis/trace_attribution_judge.py`
 
-用途：生成归因预测。现在分成 raw-trace baseline 和 evidence-grounded baseline。
+用途：生成 observed attribution 预测。现在分成 raw-trace baseline 和 evidence-grounded baseline。
 
 模式：
 
-- `oracle`：复制 YAML 真值，只用于 sanity check。
+- `oracle`：复制 YAML expected hazard labels，只用于 sanity check。
 - `rule`：旧的 raw trace 规则 baseline。
 - `llm`：旧的 raw-trace LLM judge baseline；不作为推荐主方法。
-- `evidence_rule`：从 structured evidence packet 做 deterministic attribution recovery。
+- `evidence_rule`：从 structured evidence packet 做 deterministic observed attribution。
 - `evidence_llm`：只给 LLM structured evidence packet，要求闭集标签、JSON 输出、引用 evidence event id，并允许 abstain。
 
 推荐命令：
@@ -465,15 +502,21 @@ uv run python scripts/analysis/trace_attribution_judge.py \
 
 #### `eval/attribution_scorer.py`
 
-用途：把归因预测和 YAML 里的归因真值做对齐评分。
+用途：把 observed attribution 预测和 YAML 里的 expected hazard labels 做 agreement 评分。
+
+重要解释：
+
+- `source_accuracy` / `mechanism_accuracy` 等历史字段名为了兼容旧 artifact 保留。
+- 论文里不要把它们写成 run-level causal accuracy；它们只是“和场景预期标签是否一致”。
+- 对 live agent run 来说，特别是 mechanism、component、impact、block point，agent 可能走出和剧本不同的失败路径，因此更推荐结合下面的 expected-vs-observed alignment 分析解释。
 
 核心指标：
 
-- `source_accuracy`
-- `channel_accuracy`
-- `mechanism_accuracy`
-- `component_accuracy`
-- `impact_accuracy`
+- `source_accuracy`：expected source agreement
+- `channel_accuracy`：expected channel agreement
+- `mechanism_accuracy`：expected mechanism agreement
+- `component_accuracy`：expected component agreement
+- `impact_accuracy`：expected impact agreement
 - `block_point_match_rate`
 - `mean_failure_chain_overlap`
 
@@ -489,7 +532,7 @@ uv run python eval/attribution_scorer.py \
 
 #### `scripts/analysis/attribution_evidence_scorer.py`
 
-用途：检查预测不仅标签是否正确，还检查每个预测是否引用了存在的 evidence event，以及引用的 event 是否真的支持该标签。它用于避免“LLM 猜中但没有证据”或“引用不存在证据”的情况。
+用途：检查预测是否引用了存在的 evidence event，以及引用的 event 是否真的支持该标签。它用于避免“LLM 猜标签但没有证据”或“引用不存在证据”的情况。标签 match 仍然只是和 expected hazard labels 的 agreement；evidence support 才是 observed diagnosis 的可审计性指标。
 
 核心指标：
 
@@ -509,13 +552,45 @@ uv run python scripts/analysis/attribution_evidence_scorer.py \
   --output-csv <RUN_DIR>/scores/attribution_evidence_rule.evidence_rows.csv
 ```
 
+#### `scripts/analysis/analyze_expected_vs_observed_attribution.py`
+
+用途：这是 RQ4 推荐主分析。它不问“预测是否命中每条 run 的因果真值”，而是问“live run 的 observed evidence 是否和 YAML 里的 expected hazard path 对齐”。
+
+它会输出每条 run 的：
+
+- expected source/channel 是否真的在 runtime evidence 中出现。
+- expected hazard 是否被 activated。
+- safety-relevant event 是否发生在 expected hazard 之后。
+- observed path class：
+  - `expected_path_failure`
+  - `partial_expected_path`
+  - `off_script_failure`
+  - `hazard_resisted`
+  - `no_hazard_activation`
+  - `ambiguous`
+- replay 的 first sensitive read / first sink / first safety failure / watched-state change 等 step-level 字段，如果提供了 replay。
+
+常用命令：
+
+```bash
+uv run python scripts/analysis/analyze_expected_vs_observed_attribution.py \
+  --evidence-jsonl <RUN_DIR>/analysis/attribution_evidence.jsonl \
+  --predictions <RUN_DIR>/scores/attribution_evidence_rule.predictions.jsonl \
+  --replay-rows <RUN_DIR>/analysis/replay.rows.jsonl \
+  --replay-steps <RUN_DIR>/analysis/replay.steps.jsonl \
+  --filter failed_or_latent \
+  --output-json <RUN_DIR>/scores/attribution_evidence_rule.alignment_summary.json \
+  --output-csv <RUN_DIR>/scores/attribution_evidence_rule.alignment_rows.csv \
+  --output-jsonl <RUN_DIR>/scores/attribution_evidence_rule.alignment_rows.jsonl
+```
+
 ---
 
 ### 3.3 批量分析脚本
 
 #### `scripts/analysis/analyze_mvp_results.py`
 
-用途：汇总 outcome 结果，生成横向比较、family breakdown、归因真值分布和完整性检查。
+用途：汇总 outcome 结果，生成横向比较、family breakdown、expected hazard label 分布和完整性检查。
 
 它默认读取 active experiment 根目录里的：
 
@@ -572,6 +647,7 @@ uv run python scripts/analysis/build_mvp_guard_deltas.py \
 2. `trace_attribution_judge.py`
 3. `eval/attribution_scorer.py`
 4. `attribution_evidence_scorer.py`
+5. `analyze_expected_vs_observed_attribution.py`
 
 默认读取新旧 outcome artifact 目录，并默认关注 `v0_2_test` 和历史 `test` split。正式 v0.2 建议显式传 `--splits v0_2_test`。
 
@@ -601,6 +677,14 @@ uv run python scripts/analysis/run_mvp_attribution_analysis.py \
 ```
 
 保留 `--mode llm` 作为 raw-trace LLM judge 弱 baseline。论文里不应把它作为主 attribution 方法。
+
+`run_mvp_attribution_analysis.py` 会额外写出：
+
+- `<RUN_DIR>/scores/attribution_<mode>.alignment_summary.json`
+- `<RUN_DIR>/scores/attribution_<mode>.alignment_rows.csv`
+- `<RUN_DIR>/scores/attribution_<mode>.alignment_rows.jsonl`
+
+总表中会包含 `expected_channel_observed_rate`、`expected_hazard_activated_rate`、`expected_path_failure_rate`、`partial_expected_path_rate`、`off_script_failure_rate` 等列。
 
 #### `scripts/analysis/visualize_mvp_results.py`
 
@@ -847,7 +931,7 @@ uv run python scripts/analysis/analyze_mvp_results.py \
 1. 不同模型在 naive 下谁更容易出问题。
 2. `guarded` 相比 `naive` 是否真正降低风险。
 3. 哪些 family 是主要失败来源。
-4. 失败样本的归因真值主要集中在哪些 source/channel/mechanism。
+4. 失败样本的 expected hazard labels 主要集中在哪些 source/channel/mechanism。
 
 ### 5.2 可视化
 
@@ -862,7 +946,7 @@ uv run python scripts/analysis/visualize_mvp_results.py \
 
 - `artifacts/analysis/mvp/visualizations/index.html`
 
-### 5.3 Evidence-grounded attribution 分析
+### 5.3 Evidence-grounded observed attribution 与 alignment 分析
 
 先跑 deterministic evidence baseline，确认链路通：
 
@@ -876,7 +960,7 @@ uv run python scripts/analysis/run_mvp_attribution_analysis.py \
   --output artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv
 ```
 
-如果要研究 LLM 能否辅助 attribution，不要直接用 raw trace LLM judge 作为主结果。跑 evidence-grounded LLM baseline：
+如果要研究 LLM 能否辅助 observed attribution，不要直接用 raw trace LLM judge 作为主结果。跑 evidence-grounded LLM baseline：
 
 ```bash
 uv run python scripts/analysis/run_mvp_attribution_analysis.py \
@@ -891,10 +975,11 @@ uv run python scripts/analysis/run_mvp_attribution_analysis.py \
 
 这一步回答：
 
-1. 结构化 execution evidence 能否恢复 benchmark attribution 真值。
-2. 哪些归因字段容易恢复，哪些字段容易混淆。
-3. 预测是否真的引用了存在且兼容的 evidence event。
-4. evidence-grounded LLM 是否优于 raw-trace LLM weak baseline。
+1. live run 的 observed evidence 是否和场景 expected hazard path 对齐。
+2. 失败是 `expected_path_failure`、`partial_expected_path`，还是 `off_script_failure`。
+3. source/channel 等粗粒度标签是否能从 structured execution evidence 中稳定定位。
+4. 预测是否真的引用了存在且兼容的 evidence event。
+5. evidence-grounded LLM 是否优于 raw-trace LLM weak baseline。
 
 保留下面命令只作为 weak baseline / ablation，不作为主 attribution 方法：
 

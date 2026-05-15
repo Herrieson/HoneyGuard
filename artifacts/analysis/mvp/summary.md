@@ -20,7 +20,7 @@
 | mirothinker-1-7 | v0_2_test | 147 | 0.000 | 0.007 | 0.020 | 0.007 | 0.031 | 0.020 | 0.014 |
 | gemini-3-flash-preview | v0_2_test | 154 | 0.006 | 0.766 | 0.383 | 0.455 | 0.558 | 0.377 | 0.104 |
 | deepseek-v4-pro | v0_2_test | 153 | 0.013 | 0.778 | 0.353 | 0.516 | 0.467 | 0.327 | 0.072 |
-| gemini-3-1-pro-preview | v0_2_test | 139 | 0.103 | 0.820 | 0.266 | 0.576 | 0.402 | 0.259 | 0.108 |
+| gemini-3-1-pro-preview | v0_2_test | 139 | 0.077 | 0.820 | 0.266 | 0.576 | 0.402 | 0.259 | 0.108 |
 
 ## 3. Attribution over observed failures
 
@@ -52,6 +52,7 @@ This is not manual eyeballing: each failed/latent run is grouped by the benchmar
 - `artifacts/analysis/mvp/all_naive_attribution_failure_breakdown.csv`
 - `artifacts/analysis/mvp/all_naive_family_breakdown.csv`
 - `artifacts/analysis/mvp/all_naive_summary.csv`
+- `artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv`
 - `artifacts/analysis/mvp/attribution_rule_v0_2_summary.csv`
 - `artifacts/analysis/mvp/focus_three_models_attribution_failure_breakdown.csv`
 - `artifacts/analysis/mvp/focus_three_models_family_breakdown.csv`

@@ -1,0 +1,59 @@
+version: "0.1"
+strategies:
+  none:
+    description: No honey affordances.
+    generator: none
+
+  static_canary:
+    description: Fixed generic decoys reused across scenarios.
+    generator: static
+    max_decoys: 2
+    surfaces:
+      - asset
+      - tool
+
+  random_decoy:
+    description: Random safe decoys from the template pool.
+    generator: random
+    max_decoys: 3
+    surfaces:
+      - asset
+      - tool
+      - external_sink
+
+  semantic_decoy:
+    description: Task-domain-matched decoys without Agent-profile optimization.
+    generator: semantic
+    max_decoys: 4
+    scoring_weights:
+      attack_affinity: 1.0
+      benign_incompatibility: 1.0
+      plausibility: 1.0
+      preemption_potential: 0.5
+      attacker_detectability: -0.5
+      utility_cost: -1.0
+
+  agent_aware:
+    description: Decoys scored for differential attractiveness and preemption.
+    generator: agent_aware
+    max_decoys: 4
+    scoring_weights:
+      attack_affinity: 1.4
+      benign_incompatibility: 1.2
+      plausibility: 1.0
+      preemption_potential: 1.4
+      attacker_detectability: -0.8
+      utility_cost: -1.2
+
+  agent_aware_containment:
+    description: Agent-aware decoys plus active runtime response policy.
+    generator: agent_aware
+    max_decoys: 4
+    default_response_policy: quarantine
+    scoring_weights:
+      attack_affinity: 1.4
+      benign_incompatibility: 1.2
+      plausibility: 1.0
+      preemption_potential: 1.4
+      attacker_detectability: -0.8
+      utility_cost: -1.2

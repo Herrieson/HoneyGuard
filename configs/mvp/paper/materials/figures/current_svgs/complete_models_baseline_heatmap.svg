@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="686" height="692" viewBox="0 0 686 692">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#222}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:12px;fill:#555}
+.axis{font-size:11px;fill:#555}
+.label{font-size:12px}
+.small{font-size:10px;fill:#444}
+.grid{stroke:#ddd;stroke-width:1}
+</style>
+<text x="28" y="32" class="title">Complete Models: Baseline Comparison</text>
+<text x="28" y="52" class="subtitle">Models with naive, guarded, and attribution-aware runs.</text>
+<text x="40" y="74" class="axis">label</text>
+<text x="342.0" y="74" text-anchor="middle" class="axis">TSR</text>
+<text x="426.0" y="74" text-anchor="middle" class="axis">SVR</text>
+<text x="510.0" y="74" text-anchor="middle" class="axis">STCR</text>
+<text x="594.0" y="74" text-anchor="middle" class="axis">ASR</text>
+<text x="40" y="106" class="label">claude-opus-4.6 / naive</text>
+<rect x="300" y="86" width="82" height="28" fill="#3ca262" rx="3"/>
+<text x="342.0" y="105" text-anchor="middle" class="small">85%</text>
+<rect x="384" y="86" width="82" height="28" fill="#d9db81" rx="3"/>
+<text x="426.0" y="105" text-anchor="middle" class="small">10%</text>
+<rect x="468" y="86" width="82" height="28" fill="#52a86d" rx="3"/>
+<text x="510.0" y="105" text-anchor="middle" class="small">75%</text>
+<rect x="552" y="86" width="82" height="28" fill="#d9dd81" rx="3"/>
+<text x="594.0" y="105" text-anchor="middle" class="small">10%</text>
+<text x="40" y="136" class="label">claude-opus-4.6 / guarded</text>
+<rect x="300" y="116" width="82" height="28" fill="#3fa363" rx="3"/>
+<text x="342.0" y="135" text-anchor="middle" class="small">84%</text>
+<rect x="384" y="116" width="82" height="28" fill="#d9df83" rx="3"/>
+<text x="426.0" y="135" text-anchor="middle" class="small">8%</text>
+<rect x="468" y="116" width="82" height="28" fill="#53a96e" rx="3"/>
+<text x="510.0" y="135" text-anchor="middle" class="small">75%</text>
+<rect x="552" y="116" width="82" height="28" fill="#d9e083" rx="3"/>
+<text x="594.0" y="135" text-anchor="middle" class="small">8%</text>
+<text x="40" y="166" class="label">claude-sonnet-4-6 / naive</text>
+<rect x="300" y="146" width="82" height="28" fill="#43a465" rx="3"/>
+<text x="342.0" y="165" text-anchor="middle" class="small">82%</text>
+<rect x="384" y="146" width="82" height="28" fill="#d9c575" rx="3"/>
+<text x="426.0" y="165" text-anchor="middle" class="small">22%</text>
+<rect x="468" y="146" width="82" height="28" fill="#6cb07b" rx="3"/>
+<text x="510.0" y="165" text-anchor="middle" class="small">64%</text>
+<rect x="552" y="146" width="82" height="28" fill="#d9c273" rx="3"/>
+<text x="594.0" y="165" text-anchor="middle" class="small">24%</text>
+<text x="40" y="196" class="label">claude-sonnet-4-6 / guarded</text>
+<rect x="300" y="176" width="82" height="28" fill="#3fa363" rx="3"/>
+<text x="342.0" y="195" text-anchor="middle" class="small">84%</text>
+<rect x="384" y="176" width="82" height="28" fill="#d9ca78" rx="3"/>
+<text x="426.0" y="195" text-anchor="middle" class="small">19%</text>
+<rect x="468" y="176" width="82" height="28" fill="#67af78" rx="3"/>
+<text x="510.0" y="195" text-anchor="middle" class="small">66%</text>
+<rect x="552" y="176" width="82" height="28" fill="#d9c575" rx="3"/>
+<text x="594.0" y="195" text-anchor="middle" class="small">22%</text>
+<text x="40" y="226" class="label">ds-v4-flash / naive</text>
+<rect x="300" y="206" width="82" height="28" fill="#3ca262" rx="3"/>
+<text x="342.0" y="225" text-anchor="middle" class="small">85%</text>
+<rect x="384" y="206" width="82" height="28" fill="#d8a363" rx="3"/>
+<text x="426.0" y="225" text-anchor="middle" class="small">40%</text>
+<rect x="468" y="206" width="82" height="28" fill="#94bc90" rx="3"/>
+<text x="510.0" y="225" text-anchor="middle" class="small">46%</text>
+<rect x="552" y="206" width="82" height="28" fill="#d88956" rx="3"/>
+<text x="594.0" y="225" text-anchor="middle" class="small">53%</text>
+<text x="40" y="256" class="label">ds-v4-flash / guarded</text>
+<rect x="300" y="236" width="82" height="28" fill="#309e5c" rx="3"/>
+<text x="342.0" y="255" text-anchor="middle" class="small">90%</text>
+<rect x="384" y="236" width="82" height="28" fill="#d8bc71" rx="3"/>
+<text x="426.0" y="255" text-anchor="middle" class="small">26%</text>
+<rect x="468" y="236" width="82" height="28" fill="#6cb07b" rx="3"/>
+<text x="510.0" y="255" text-anchor="middle" class="small">64%</text>
+<rect x="552" y="236" width="82" height="28" fill="#d8af6a" rx="3"/>
+<text x="594.0" y="255" text-anchor="middle" class="small">33%</text>
+<text x="40" y="286" class="label">ds-v4-pro / naive</text>
+<rect x="300" y="266" width="82" height="28" fill="#4ca76a" rx="3"/>
+<text x="342.0" y="285" text-anchor="middle" class="small">78%</text>
+<rect x="384" y="266" width="82" height="28" fill="#d8ac68" rx="3"/>
+<text x="426.0" y="285" text-anchor="middle" class="small">35%</text>
+<rect x="468" y="266" width="82" height="28" fill="#88b88a" rx="3"/>
+<text x="510.0" y="285" text-anchor="middle" class="small">52%</text>
+<rect x="552" y="266" width="82" height="28" fill="#d8965c" rx="3"/>
+<text x="594.0" y="285" text-anchor="middle" class="small">47%</text>
+<text x="40" y="316" class="label">ds-v4-pro / guarded</text>
+<rect x="300" y="296" width="82" height="28" fill="#3aa261" rx="3"/>
+<text x="342.0" y="315" text-anchor="middle" class="small">86%</text>
+<rect x="384" y="296" width="82" height="28" fill="#d8bd71" rx="3"/>
+<text x="426.0" y="315" text-anchor="middle" class="small">26%</text>
+<rect x="468" y="296" width="82" height="28" fill="#6db07b" rx="3"/>
+<text x="510.0" y="315" text-anchor="middle" class="small">64%</text>
+<rect x="552" y="296" width="82" height="28" fill="#d8ad68" rx="3"/>
+<text x="594.0" y="315" text-anchor="middle" class="small">35%</text>
+<text x="40" y="346" class="label">gemini-3-1-flash-lite-preview…</text>
+<rect x="300" y="326" width="82" height="28" fill="#6fb17d" rx="3"/>
+<text x="342.0" y="345" text-anchor="middle" class="small">63%</text>
+<rect x="384" y="326" width="82" height="28" fill="#d8965d" rx="3"/>
+<text x="426.0" y="345" text-anchor="middle" class="small">46%</text>
+<rect x="468" y="326" width="82" height="28" fill="#b7c6a2" rx="3"/>
+<text x="510.0" y="345" text-anchor="middle" class="small">31%</text>
+<rect x="552" y="326" width="82" height="28" fill="#d87048" rx="3"/>
+<text x="594.0" y="345" text-anchor="middle" class="small">67%</text>
+<text x="40" y="376" class="label">gemini-3-1-flash-lite-preview…</text>
+<rect x="300" y="356" width="82" height="28" fill="#6bb07a" rx="3"/>
+<text x="342.0" y="375" text-anchor="middle" class="small">65%</text>
+<rect x="384" y="356" width="82" height="28" fill="#d89e60" rx="3"/>
+<text x="426.0" y="375" text-anchor="middle" class="small">43%</text>
+<rect x="468" y="356" width="82" height="28" fill="#aac29b" rx="3"/>
+<text x="510.0" y="375" text-anchor="middle" class="small">37%</text>
+<rect x="552" y="356" width="82" height="28" fill="#d87c4f" rx="3"/>
+<text x="594.0" y="375" text-anchor="middle" class="small">60%</text>
+<text x="40" y="406" class="label">gemini-3-flash-preview / naive</text>
+<rect x="300" y="386" width="82" height="28" fill="#4fa86c" rx="3"/>
+<text x="342.0" y="405" text-anchor="middle" class="small">77%</text>
+<rect x="384" y="386" width="82" height="28" fill="#d8a665" rx="3"/>
+<text x="426.0" y="405" text-anchor="middle" class="small">38%</text>
+<rect x="468" y="386" width="82" height="28" fill="#96bd91" rx="3"/>
+<text x="510.0" y="405" text-anchor="middle" class="small">45%</text>
+<rect x="552" y="386" width="82" height="28" fill="#d88453" rx="3"/>
+<text x="594.0" y="405" text-anchor="middle" class="small">56%</text>
+<text x="40" y="436" class="label">gemini-3-flash-preview / guar…</text>
+<rect x="300" y="416" width="82" height="28" fill="#4da76b" rx="3"/>
+<text x="342.0" y="435" text-anchor="middle" class="small">77%</text>
+<rect x="384" y="416" width="82" height="28" fill="#d9ca78" rx="3"/>
+<text x="426.0" y="435" text-anchor="middle" class="small">19%</text>
+<rect x="468" y="416" width="82" height="28" fill="#68af79" rx="3"/>
+<text x="510.0" y="435" text-anchor="middle" class="small">66%</text>
+<rect x="552" y="416" width="82" height="28" fill="#d8ba6f" rx="3"/>
+<text x="594.0" y="435" text-anchor="middle" class="small">28%</text>
+<text x="40" y="466" class="label">gpt-5-2 / naive</text>
+<rect x="300" y="446" width="82" height="28" fill="#50a86c" rx="3"/>
+<text x="342.0" y="465" text-anchor="middle" class="small">76%</text>
+<rect x="384" y="446" width="82" height="28" fill="#d9dd81" rx="3"/>
+<text x="426.0" y="465" text-anchor="middle" class="small">10%</text>
+<rect x="468" y="446" width="82" height="28" fill="#63ae76" rx="3"/>
+<text x="510.0" y="465" text-anchor="middle" class="small">68%</text>
+<rect x="552" y="446" width="82" height="28" fill="#d9d47d" rx="3"/>
+<text x="594.0" y="465" text-anchor="middle" class="small">14%</text>
+<text x="40" y="496" class="label">gpt-5-2 / guarded</text>
+<rect x="300" y="476" width="82" height="28" fill="#4fa86c" rx="3"/>
+<text x="342.0" y="495" text-anchor="middle" class="small">77%</text>
+<rect x="384" y="476" width="82" height="28" fill="#d9da80" rx="3"/>
+<text x="426.0" y="495" text-anchor="middle" class="small">11%</text>
+<rect x="468" y="476" width="82" height="28" fill="#65ae77" rx="3"/>
+<text x="510.0" y="495" text-anchor="middle" class="small">67%</text>
+<rect x="552" y="476" width="82" height="28" fill="#d9d47d" rx="3"/>
+<text x="594.0" y="495" text-anchor="middle" class="small">14%</text>
+<text x="40" y="526" class="label">gpt-5-5 / naive</text>
+<rect x="300" y="506" width="82" height="28" fill="#40a364" rx="3"/>
+<text x="342.0" y="525" text-anchor="middle" class="small">83%</text>
+<rect x="384" y="506" width="82" height="28" fill="#d9e485" rx="3"/>
+<text x="426.0" y="525" text-anchor="middle" class="small">6%</text>
+<rect x="468" y="506" width="82" height="28" fill="#5aab72" rx="3"/>
+<text x="510.0" y="525" text-anchor="middle" class="small">72%</text>
+<rect x="552" y="506" width="82" height="28" fill="#d9e083" rx="3"/>
+<text x="594.0" y="525" text-anchor="middle" class="small">8%</text>
+<text x="40" y="556" class="label">gpt-5-5 / guarded</text>
+<rect x="300" y="536" width="82" height="28" fill="#36a05f" rx="3"/>
+<text x="342.0" y="555" text-anchor="middle" class="small">88%</text>
+<rect x="384" y="536" width="82" height="28" fill="#d9e686" rx="3"/>
+<text x="426.0" y="555" text-anchor="middle" class="small">5%</text>
+<rect x="468" y="536" width="82" height="28" fill="#4da76b" rx="3"/>
+<text x="510.0" y="555" text-anchor="middle" class="small">77%</text>
+<rect x="552" y="536" width="82" height="28" fill="#d9e485" rx="3"/>
+<text x="594.0" y="555" text-anchor="middle" class="small">6%</text>
+<text x="40" y="586" class="label">gpt-5-mini / naive</text>
+<rect x="300" y="566" width="82" height="28" fill="#62ad76" rx="3"/>
+<text x="342.0" y="585" text-anchor="middle" class="small">68%</text>
+<rect x="384" y="566" width="82" height="28" fill="#d8b86e" rx="3"/>
+<text x="426.0" y="585" text-anchor="middle" class="small">29%</text>
+<rect x="468" y="566" width="82" height="28" fill="#8bb98b" rx="3"/>
+<text x="510.0" y="585" text-anchor="middle" class="small">50%</text>
+<rect x="552" y="566" width="82" height="28" fill="#d8a665" rx="3"/>
+<text x="594.0" y="585" text-anchor="middle" class="small">38%</text>
+<text x="40" y="616" class="label">gpt-5-mini / guarded</text>
+<rect x="300" y="596" width="82" height="28" fill="#65ae77" rx="3"/>
+<text x="342.0" y="615" text-anchor="middle" class="small">67%</text>
+<rect x="384" y="596" width="82" height="28" fill="#d9d67e" rx="3"/>
+<text x="426.0" y="615" text-anchor="middle" class="small">13%</text>
+<rect x="468" y="596" width="82" height="28" fill="#78b481" rx="3"/>
+<text x="510.0" y="615" text-anchor="middle" class="small">59%</text>
+<rect x="552" y="596" width="82" height="28" fill="#d9d47d" rx="3"/>
+<text x="594.0" y="615" text-anchor="middle" class="small">14%</text>
+</svg>

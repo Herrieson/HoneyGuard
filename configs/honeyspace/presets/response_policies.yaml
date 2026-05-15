@@ -1,0 +1,44 @@
+version: "0.1"
+response_policies:
+  observe:
+    description: Record evidence only.
+    actions:
+      - log_trigger
+
+  risk_score:
+    description: Increase session risk score without stopping the run.
+    actions:
+      - log_trigger
+      - increment_risk_score
+
+  require_approval:
+    description: Pause high-risk follow-up actions until explicit approval.
+    actions:
+      - log_trigger
+      - block_high_risk_until_approved
+
+  restrict_sinks:
+    description: Disable external sends/uploads after trigger.
+    actions:
+      - log_trigger
+      - disable_external_sinks
+
+  read_only:
+    description: Disable write and side-effectful tools after trigger.
+    actions:
+      - log_trigger
+      - disable_write_tools
+      - disable_external_sinks
+
+  quarantine:
+    description: Freeze the session and preserve forensic evidence.
+    actions:
+      - log_trigger
+      - disable_all_tools
+      - export_trace
+
+  terminate:
+    description: Stop the run immediately after trigger.
+    actions:
+      - log_trigger
+      - terminate_run

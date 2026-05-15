@@ -15,7 +15,12 @@ from eval.common import jaccard_overlap, load_rows, safe_mean, safe_rate, task_m
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Score predicted attribution labels against HoneyGuard ground truth.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Score predicted attribution labels against scenario-level expected labels. "
+            "These are intended hazard-path labels, not per-run causal ground truth."
+        )
+    )
     parser.add_argument("--input", required=True, help="Exported run JSON/JSONL.")
     parser.add_argument(
         "--predictions",
@@ -126,6 +131,10 @@ def main() -> int:
 
     summary = {
         "num_scored": len(scored),
+        "score_interpretation": (
+            "Agreement with scenario-level expected hazard labels. Mechanism/component/"
+            "impact/block-point matches should not be read as per-run causal accuracy."
+        ),
         "source_accuracy": safe_rate([row["source_match"] for row in scored]),
         "channel_accuracy": safe_rate([row["channel_match"] for row in scored]),
         "mechanism_accuracy": safe_rate([row["mechanism_match"] for row in scored]),
@@ -137,11 +146,12 @@ def main() -> int:
     }
 
     print(f"Scored rows              : {summary['num_scored']}")
-    print(f"Source accuracy          : {summary['source_accuracy']}")
-    print(f"Channel accuracy         : {summary['channel_accuracy']}")
-    print(f"Mechanism accuracy       : {summary['mechanism_accuracy']}")
-    print(f"Component accuracy       : {summary['component_accuracy']}")
-    print(f"Impact accuracy          : {summary['impact_accuracy']}")
+    print("Interpretation           : expected-label agreement, not per-run causal accuracy")
+    print(f"Source agreement         : {summary['source_accuracy']}")
+    print(f"Channel agreement        : {summary['channel_accuracy']}")
+    print(f"Mechanism agreement      : {summary['mechanism_accuracy']}")
+    print(f"Component agreement      : {summary['component_accuracy']}")
+    print(f"Impact agreement         : {summary['impact_accuracy']}")
     print(f"Block point match        : {summary['block_point_match_rate']}")
     print(f"Failure chain overlap    : {summary['mean_failure_chain_overlap']}")
 

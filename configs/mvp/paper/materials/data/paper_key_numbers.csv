@@ -1,0 +1,52 @@
+section,metric,value,source,note
+main_outcome,naive_models_reported_without_mirothinker,12,artifacts/analysis/mvp/all_main_summary.csv,
+main_outcome,guarded_paired_models,9,artifacts/analysis/mvp/guard_delta_summary.csv,
+main_outcome,mean_naive_TSR_without_mirothinker,0.784,artifacts/analysis/mvp/all_main_summary.csv,
+main_outcome,mean_naive_ASR_without_mirothinker,0.347,artifacts/analysis/mvp/all_main_summary.csv,
+main_outcome,lowest_naive_ASR_model,gpt-5-5 (0.076),artifacts/analysis/mvp/all_main_summary.csv,
+main_outcome,highest_naive_ASR_model,gemini-3-1-flash-lite-preview (0.667),artifacts/analysis/mvp/all_main_summary.csv,
+guarded_control,paired_model_count,9,artifacts/analysis/mvp/guard_delta_summary.csv,
+guarded_control,mean_delta_ASR_guarded_minus_naive,-0.107,artifacts/analysis/mvp/guard_delta_summary.csv,
+guarded_control,mean_delta_SVR_guarded_minus_naive,-0.074,artifacts/analysis/mvp/guard_delta_summary.csv,
+guarded_control,mean_delta_latent_guarded_minus_naive,-0.073,artifacts/analysis/mvp/guard_delta_summary.csv,
+attribution_alignment,failed_or_latent_scored_runs,747,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,
+attribution_alignment,all_cited_labels_supported_rate,1.000,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,invalid_evidence_reference_rate,0.000,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,source_accuracy,0.979,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,channel_accuracy,0.953,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,expected_hazard_activated_rate,0.941,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,expected_path_failure_rate,0.899,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,partial_expected_path_rate,0.062,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+attribution_alignment,off_script_failure_rate,0.039,artifacts/analysis/mvp/attribution_evidence_rule_v0_2_summary.csv,weighted by num_scored
+transient_pilot,models,9,artifacts/analysis/mvp/transient/all_main_summary.csv,
+transient_pilot,scenario_count_per_model,8,artifacts/analysis/mvp/transient/all_main_summary.csv,
+transient_pilot,mean_latent_violation_rate,0.181,artifacts/analysis/mvp/transient/all_main_summary.csv,
+compositional_outcome,clean_n,72,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,clean_SVR,0.042,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,clean_latent,0.042,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,single_n,144,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,single_SVR,0.521,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,single_latent,0.306,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_n,72,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_SVR,0.806,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_latent,0.486,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_reverse_n,72,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_reverse_SVR,0.847,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_outcome,combo_reverse_latent,0.528,artifacts/analysis/mvp/compositional_playground/scenario_summary.csv,
+compositional_replay,total_replayed_runs,360,configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,replay_exact,298/360 (0.828),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,safety_equivalent_output_diverged,62/360 (0.172),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,acceptance_diverged,0,configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,safety_diverged,0,configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,unsupported_tool,0,configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,sensitive_read,94/360 (0.261),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,untrusted_sink,154/360 (0.428),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,stepwise_risk_positive,181/360 (0.503),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_replay,watched_state_change,78/360 (0.217),configs/mvp/paper/materials/data/compositional_replay_summary.csv,
+compositional_dominance,dominant_supported,32/72 (0.444),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,dominant_contradicted,36/72 (0.500),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,dominant_indeterminate,4/72 (0.056),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,order_effect,11/72 (0.153),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,masking,4/72 (0.056),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,amplification,32/72 (0.444),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,
+compositional_dominance,configured_but_unactivated,43/72 (0.597),configs/mvp/paper/materials/data/compositional_replay_dominance_summary.csv,

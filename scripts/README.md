@@ -3,6 +3,12 @@
 This directory contains active workflows only.
 
 ## 1) Scenario Build (Active)
+- `honeyspace/validate_honeyspace_dataset.py`
+  - Validates HoneySpace clean base tasks, attack overlays, taxonomy fields, and
+    Phase-1 coverage targets.
+- `honeyspace/materialize_honeyspace.py`
+  - Materializes `base task + attack overlay + defense condition` into runnable
+    HoneyGuard scenario YAMLs for HoneySpace dev experiments.
 - `scenario/generate_from_seed.py`
   - Seed-driven multi-stage LLM pipeline.
   - Stages:
