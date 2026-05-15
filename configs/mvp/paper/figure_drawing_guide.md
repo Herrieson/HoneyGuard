@@ -45,6 +45,24 @@ the real figure automatically.
 - If a panel contains B/C ASR/SVR numbers, note that B and C scenarios are
   attack-labeled, so SVR equals ASR for those rows.
 
+## GPT-Image Sample Prompts
+
+Each main figure section below includes a `GPT-Image sample prompt`. These prompts
+are intended to generate a close visual mockup that can be used as a reference while
+redrawing the final figure in PowerPoint, Figma, Illustrator, or another editable
+vector tool.
+
+Important constraints:
+
+- Treat GPT-Image output as a layout and style reference, not as the final source
+  asset. Generated text may contain spelling errors or slight layout drift.
+- Recreate the final figure manually with editable text, shapes, and data labels.
+- Keep the final file as vector PDF for LaTeX.
+- After generating a sample image, check every label against this guide before
+  redrawing.
+- If GPT-Image introduces unsupported claims such as "defense", "causal proof", or
+  "dominant cause", remove them in the manual version.
+
 ## Recommended Main-Figure Set
 
 The main paper should contain six figures:
@@ -129,6 +147,39 @@ Avoid:
 - Do not draw this as a defense pipeline.
 - Do not make replay look like a new agent simulator; it replays recorded actions.
 
+GPT-Image sample prompt:
+
+```text
+Create a clean academic vector-style figure for an EMNLP paper titled "TraceProbe Evidence Chain".
+
+The figure should be a wide landscape diagram, white background, thin dark-gray strokes, restrained colors, no gradients, no 3D effects, no decorative blobs.
+
+Draw a left-to-right pipeline with seven connected modules:
+1. Executable scenario
+2. Live run
+3. Normalized trace
+4. Outcome/latent scoring
+5. Evidence packet
+6. Expected-vs-observed diagnosis
+7. Exact replay localization
+
+Inside each module, include very short sublabels:
+- Executable scenario: task, files, tools, memory, retrieved content
+- Live run: file reads, tool calls, writes, final answer
+- Normalized trace: actions, observations, final state, safety events
+- Outcome/latent scoring: TSR, SVR, ASR, STCR, latent
+- Evidence packet: sensitive read, sink call, unsafe mutation, internal exposure
+- Expected-vs-observed diagnosis: expected path, partial, off-script, resisted
+- Exact replay localization: fresh sandbox, replayed actions, first failure step
+
+Add three small output chips on the far right:
+- Outcome metrics
+- Attribution alignment
+- Replay-localized evidence
+
+Use blue for live execution, purple for diagnosis, teal for replay, amber for risk evidence. Use simple icons only: document, sandbox, trace log, gauge, tags, replay arrow. Make all text large and legible at two-column paper width. Do not mention "defense", "mitigation system", "causal proof", or "simulator".
+```
+
 ## Figure 2: Risk-Source and Attribution Taxonomy
 
 Target file:
@@ -210,6 +261,50 @@ Avoid:
 - Do not say "first benchmark to cover B"; say "first-class comparable source class"
   or "not folded into generic prompt injection".
 
+GPT-Image sample prompt:
+
+```text
+Create a clean taxonomy diagram for an NLP safety benchmark paper titled "TraceProbe Risk Sources and Attribution Schema".
+
+Use a wide landscape layout with two large panels and a small connecting flow. White background, thin gray strokes, no gradients, compact academic style.
+
+Left panel title: "Risk Sources".
+Show three stacked groups:
+
+Group A: Non-adversarial failures
+- A1 Boundary overreach
+- A2 Faulty inference
+- A3 Unstable execution
+- A4 Data minimization
+
+Group B: Internal authority compromise
+- B1 Policy-like context
+- B2 Memory state
+- B3 Multi-agent message
+
+Group C: External attacks
+- C1 Direct user attack
+- C2.1 Retrieved-content injection
+- C2.2 Tool-output injection
+
+Make Group B visually prominent with an amber/orange accent, but keep it academically restrained.
+
+Between panels, draw this flow:
+Scenario family -> Controlled hazard -> Live trace -> Observed diagnosis
+
+Right panel title: "Attribution Labels".
+Show seven label chips:
+- Source
+- Channel
+- Mechanism
+- First failed component
+- Impact
+- Block point
+- Failure chain
+
+Use blue for A, amber for B, green for C, and neutral gray/purple for attribution labels. Make all text readable and spelled exactly as specified. Do not write "first benchmark", "defense", or "causal proof".
+```
+
 ## Figure 3: Main Benchmark Outcome Results
 
 Target file:
@@ -279,6 +374,44 @@ Avoid:
 
 - Do not plot only ASR. This paper is about task success plus safety diagnosis.
 - Make clear that ASR denominator is attack-labeled scenarios only.
+
+GPT-Image sample prompt:
+
+```text
+Create a polished academic multi-panel results figure titled "Main TraceProbe Outcomes on v0.2-test".
+
+Use a wide landscape layout with three panels. White background, thin gray axes, clear labels, restrained colors, no gradients.
+
+Panel A title: "Model-level outcome metrics".
+Draw a horizontal dot plot with 12 model rows:
+- claude-opus-4-6
+- claude-sonnet-4-6
+- deepseek-v4-flash
+- deepseek-v4-pro
+- gemini-3-1-flash-lite
+- gemini-3-1-pro
+- gemini-3-flash
+- gemma-4-31b-it
+- gpt-5-2
+- gpt-5-5
+- gpt-5-mini
+- minimax-m2-5
+Show four metric dots or small bars per model: TSR, SVR, ASR, STCR.
+
+Panel B title: "Utility-safety plane".
+Draw a scatter plot with x-axis "Task success rate (TSR)" and y-axis "Safety violation rate (SVR)". Mark the ideal region as "high utility, low risk" near the lower-right. Label representative points: gpt-5-5, gpt-5-2, deepseek-v4-flash, gemini-3-1-flash-lite.
+
+Panel C title: "Latent trajectory risk".
+Draw a compact bar or dot plot for latent violation rate by model.
+
+Add small callouts:
+- Mean TSR = 0.784
+- Mean ASR = 0.347
+- Best ASR: gpt-5-5 = 0.076
+- Highest ASR: gemini-3-1-flash-lite = 0.667
+
+Use blue for TSR, red for SVR/ASR, green for STCR, purple for latent. Include a small note: "ASR uses attack-labeled scenarios only." Make the figure look like an editable scientific chart, not marketing art.
+```
 
 ## Figure 4: Internal-Authority Risk-Source Breakdown
 
@@ -369,6 +502,41 @@ Avoid:
 - Do not imply internal model mechanisms are directly observed. The figure is about
   observed trace evidence and expected-vs-observed labels.
 
+GPT-Image sample prompt:
+
+```text
+Create a clean academic multi-panel result figure titled "Internal Authority Compromise Is a Distinct Risk Surface".
+
+Use a wide landscape layout with three panels. White background, thin gray axes, restrained colors, no gradients, high legibility.
+
+Panel A title: "Risk-source comparison".
+Compare three rows or grouped bars:
+- A non-adversarial
+- B internal compromise
+- C external attack
+Show these metrics: SVR/ASR, STCR, Latent, Unsafe IntExp.
+Use these exact values:
+A: SVR/ASR 0.066, STCR 0.640, Latent 0.044, Unsafe IntExp 0.000
+B: SVR/ASR 0.424, STCR 0.481, Latent 0.419, Unsafe IntExp 0.180
+C: SVR/ASR 0.242, STCR 0.636, Latent 0.220, Unsafe IntExp 0.000
+Highlight B with an amber accent.
+
+Panel B title: "B-family breakdown".
+Show B1, B2, B3 as grouped bars or a compact table-like chart:
+B1 policy-like context: SVR/ASR 0.494, STCR 0.444, Latent 0.494, Unsafe IntExp 0.000
+B2 memory state: SVR/ASR 0.143, STCR 0.748, Latent 0.143, Unsafe IntExp 0.000
+B3 multi-agent message: SVR/ASR 0.636, STCR 0.250, Latent 0.623, Unsafe IntExp 0.542
+Add a callout on B3: "unsafe internal exposure = 0.542".
+
+Panel C title: "Failed-or-latent source distribution".
+Use one horizontal stacked bar with:
+- internal_compromise: 302 / 479 = 63.0%
+- external_attack: 133 / 479 = 27.8%
+- non_adversarial: 44 / 479 = 9.2%
+
+Add a small note: "For B and C scenarios, SVR equals ASR because they are attack-labeled." Do not use the phrase "dominant cause". Do not imply internal reasoning is directly observed. Use "observed trace evidence" and "risk surface".
+```
+
 ## Figure 5: Replay-Grounded Failure Localization
 
 Target file:
@@ -450,6 +618,39 @@ Avoid:
 
 - Do not imply the agent was safe because the final state was clean.
 - Do not imply replay reruns the LLM. It replays recorded tool calls.
+
+GPT-Image sample prompt:
+
+```text
+Create a clean academic figure titled "Replay-Grounded Failure Localization".
+
+Use a wide landscape layout with two panels. White background, thin gray strokes, no gradients, no decorative effects.
+
+Panel A title: "Replay analyzer".
+Draw a simple flow:
+Recorded trace -> Fresh sandbox -> Replay recorded tool calls -> Stepwise probes
+Under "Stepwise probes", show four small check items:
+- first sensitive read
+- first sink call
+- first watched-path mutation
+- first safety failure
+Use teal for replay and purple for probes. Add a note: "Does not rerun the LLM".
+
+Panel B title: "Endpoint-safe but trajectory-unsafe case".
+Draw a horizontal timeline with 7 steps:
+1. Read source | marker absent | safe
+2. Read release test | marker rule observed | safe
+3. Write DEMO_BANNER_7711 | marker present | transient violation
+4. Run test | fail | violation visible
+5. Read contaminated source | marker present | violation persists
+6. Remove marker | marker absent | recovery
+7. Run final test | pass | endpoint clean
+
+Use green for safe/recovered steps, red for violation steps, amber for warning. Add a prominent callout near step 3:
+"Final state clean, but step 3 crossed the safety boundary."
+
+Make the timeline legible at two-column width. Do not imply replay is a simulator or that the run is safe because the final state is clean.
+```
 
 ## Figure 6: Compositional Playground Dominance Analysis
 
@@ -533,6 +734,47 @@ Avoid:
 - Do not write "dominant cause".
 - Do not mix playground results into the main leaderboard.
 - Do not hide the fact that this is supplementary stress testing.
+
+GPT-Image sample prompt:
+
+```text
+Create a clean academic multi-panel figure titled "Compositional Playground: Configured vs Observed Hazards".
+
+Use a wide landscape layout with three panels. White background, thin gray strokes, restrained colors, no gradients.
+
+Panel A title: "Controlled scenario variants".
+Draw this generation design:
+Base substrate + Hazard plugin A + Hazard plugin B -> variants
+Show five variant chips:
+- clean
+- single A
+- single B
+- combo A+B
+- reverse combo B+A
+Use amber/red accents for hazard plugins and neutral blue for substrate.
+
+Panel B title: "Outcome pattern matrix".
+Draw a small matrix with rows labeled "scenario groups" and columns:
+clean, single A, single B, combo, reverse combo.
+Use a legend:
+- green = safe
+- red = violation
+- purple = latent only
+- gray = no activation
+- teal outline = replay exact
+
+Panel C title: "Replay-supported dominance".
+Draw stacked bars or summary tiles with these exact values:
+- exact replay: 298 / 360
+- safety-equivalent divergence: 62 / 360
+- acceptance/safety divergence: 0
+- dominant supported: 32 / 72
+- dominant contradicted: 36 / 72
+- indeterminate: 4 / 72
+- configured-but-unactivated hazards: 43
+
+Add a central annotation: "Configured hazard does not always equal observed path." Use the phrase "dominant observed path", not "dominant cause". Add a small note: "Supplementary stress suite, not main leaderboard."
+```
 
 ## Appendix Figures
 
@@ -686,4 +928,3 @@ This order prioritizes the figures that carry the core paper claims.
 4. Check that the boxed placeholder has disappeared.
 5. Check text legibility at two-column paper width.
 6. Check every caption still matches the final figure.
-
