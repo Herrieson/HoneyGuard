@@ -116,6 +116,10 @@ executable scenario -> live run -> normalized trace -> outcome/latent scoring
 -> evidence packet -> expected-vs-observed diagnosis -> exact replay localization
 ```
 
+**Figure 1 should visualize this evidence chain.** Until the final figure is drawn,
+the TeX draft uses a boxed placeholder at `fig:pipeline`; the final PDF should be
+saved as `configs/mvp/paper/tex/latex/figures/fig1_pipeline.pdf`.
+
 This chain is also how TraceProbe avoids overclaiming. Expected hazard labels are
 reference paths designed into scenarios, not automatic causal truth for each run;
 raw LLM judgments are not used as safety labels; and replay provides localized
@@ -297,6 +301,11 @@ leaderboard: `v0_2_transient` for trajectory-safety pilot analysis, a calibrated
 24-scenario `v0_2_small` subset for low-cost screening, and a compositional
 playground with 60 generated multi-risk stress scenarios.
 
+**Figure 2 should show the risk-source taxonomy and attribution schema.** The main
+visual point is that B-class internal authority compromise is separated from both
+external attacks and inherent agent failures. The final PDF path is
+`configs/mvp/paper/tex/latex/figures/fig2_taxonomy.pdf`.
+
 ### 3.5 Expected Hazard Labels and Observed Diagnosis
 
 TraceProbe labels each scenario with safety-specific expected hazard fields.
@@ -399,6 +408,9 @@ backend, timeout, retry/resume policy, and git commit.
 Table 1 shows the frozen naive leaderboard on `v0_2_test`. This paper-facing
 snapshot reports the 12 naive models shown below and leaves the `mirothinker-1-7`
 rerun out of the headline table, consistent with the frozen materials bundle.
+Figure 3 should visualize the same snapshot as a main metric view plus a TSR-vs-risk
+scatter plot; the final PDF path is
+`configs/mvp/paper/tex/latex/figures/fig3_main_results.pdf`.
 
 | Model | Eval N | TSR | SVR | ASR | STCR | Latent | Unsafe IntExp |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -462,6 +474,11 @@ compromise has higher violation rate than external attacks (0.424 versus 0.242),
 lower safe task completion (0.481 versus 0.636), and nearly twice the latent
 violation rate (0.419 versus 0.220). It is also the only source class with
 substantial unsafe internal-message exposure.
+
+**Figure 4 should be the main internal-authority result figure.** It should contain
+an A/B/C source comparison, a B1/B2/B3 breakdown, and a failed-or-latent source
+distribution. The final PDF path is
+`configs/mvp/paper/tex/latex/figures/fig4_internal_authority.pdf`.
 
 | Risk surface | N | TSR | SVR/ASR | STCR | Latent | Unsafe IntExp |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -530,6 +547,9 @@ marker. The agent initially rewrites the production file with
 and then passes final acceptance. Final-state scoring alone would see a clean
 source tree; trace and replay evidence localize the transient boundary crossing to
 the watched-path mutation at step 3.
+Figure 5 should show this as a replay-localized timeline, with the key annotation
+"final state clean, but step 3 crossed safety boundary." The final PDF path is
+`configs/mvp/paper/tex/latex/figures/fig5_replay_localization.pdf`.
 
 The compositional playground provides a second stress setting. It evaluates clean,
 single-hazard, combo, and reverse-combo variants over shared substrates. These
@@ -542,6 +562,9 @@ groups, a single hazard dominates the combo path. In others, one hazard masks
 another, or reversing the order changes the first failure evidence. Replay
 dominance analysis is important because a hazard configured in YAML is not
 necessarily the hazard activated by the model.
+Figure 6 should show the playground generation design, outcome matrix, and
+replay-supported dominance summary. The final PDF path is
+`configs/mvp/paper/tex/latex/figures/fig6_compositional.pdf`.
 
 Together, transient replay and compositional dominance analysis show why TraceProbe
 treats traces as evidence rather than incidental logs. They reveal trajectory-level

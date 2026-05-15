@@ -2,6 +2,8 @@
 
 本文档记录 TraceProbe 论文中建议出现的图。它的目的不是直接写 caption，而是提前固定每张图要服务的论文论点、数据来源、可视化形式和生成方式。
 
+实际画图时优先看 `configs/mvp/paper/figure_drawing_guide.md`。那个文档固定了主文 6 张图的文件名、LaTeX label、panel 布局和替换 workflow；本文档保留更完整的备选图规划。
+
 整体原则：
 
 - 主文图不要太多，建议控制在 6 张左右；其余放 appendix。

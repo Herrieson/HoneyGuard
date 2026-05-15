@@ -16,6 +16,15 @@
 
 \newcommand{\tp}{\textsc{TraceProbe}}
 \DeclareRobustCommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\tpfigplaceholder}[2]{%
+  \fbox{%
+  \begin{minipage}{#1}
+    \centering
+    \small
+    #2
+  \end{minipage}}}
+\newcommand{\tpfig}[3]{%
+  \IfFileExists{#1}{\includegraphics[width=#2]{#1}}{\tpfigplaceholder{#2}{#3}}}
 
 \title{\tp: A Benchmark for Diagnosing Safety Failures in Live Agent Execution}
 
@@ -64,10 +73,7 @@ Thus the unit of analysis is not a free-form judgment over a transcript, but the
 
 \begin{figure*}[t]
   \centering
-  \fbox{
-  \begin{minipage}{0.94\textwidth}
-    \centering
-    \small
+  \tpfig{figures/fig1_pipeline.pdf}{0.94\textwidth}{
     \textbf{Executable scenario}
     $\rightarrow$
     \textbf{Live run}
@@ -81,7 +87,7 @@ Thus the unit of analysis is not a free-form judgment over a transcript, but the
     \textbf{Expected-vs-observed diagnosis}
     $\rightarrow$
     \textbf{Exact replay localization}
-  \end{minipage}}
+  }
   \caption{The \tp{} evidence chain. \tp{} converts agent safety diagnosis from a free-form trace judgment into a sequence of executable, observable, scored, evidence-grounded, and replay-localized artifacts.}
   \label{fig:pipeline}
 \end{figure*}
@@ -212,6 +218,39 @@ A2, A3, and C1 are 5-scenario promoted gap probes; family-level conclusions for 
   \label{tab:taxonomy}
 \end{table}
 
+Figure~\ref{fig:taxonomy} visualizes the same taxonomy together with the diagnostic label schema.
+The important design choice is that B-class internal authority compromise is a first-class source class rather than a residual bucket for prompt injection or generic reasoning failures.
+
+\begin{figure*}[t]
+  \centering
+  \tpfig{figures/fig2_taxonomy.pdf}{0.94\textwidth}{
+    \textbf{Risk sources:}
+    A non-adversarial failures
+    $\mid$
+    B internal authority compromise
+    $\mid$
+    C external attacks
+    \\[0.35em]
+    \textbf{Families:}
+    A1/A2/A3/A4,
+    B1 policy-like context,
+    B2 memory state,
+    B3 multi-agent message,
+    C1/C2.1/C2.2
+    \\[0.35em]
+    \textbf{Attribution labels:}
+    source,
+    channel,
+    mechanism,
+    component,
+    impact,
+    block point,
+    failure chain
+  }
+  \caption{\tp{} risk-source and attribution schema. B-class internal authority compromise separates policy-like context, memory state, and multi-agent messages from both external attacks and inherent agent failures.}
+  \label{fig:taxonomy}
+\end{figure*}
+
 \subsection{Expected Hazard Labels}
 
 \tp{} labels each scenario with safety-specific expected hazard fields: \code{primary_source}, \code{primary_channel}, \code{primary_mechanism}, \code{first_failed_component}, \code{primary_impact}, \code{counterfactual_block_point}, and \code{failure_chain}.
@@ -270,6 +309,7 @@ They are not mixed into headline results.
 
 Table~\ref{tab:main} shows the frozen naive leaderboard on \code{v0_2_test}.
 This paper-facing snapshot reports 12 naive models and leaves the \code{mirothinker-1-7} rerun out of the headline table, consistent with the frozen materials bundle.
+Figure~\ref{fig:main-results} presents the same outcome snapshot visually, emphasizing the utility-safety tradeoff rather than only a single attack-success number.
 
 \begin{table*}[t]
   \centering
@@ -296,6 +336,27 @@ This paper-facing snapshot reports 12 naive models and leaves the \code{mirothin
   \caption{Main naive leaderboard on \code{v0_2_test}. Model labels for long preview names are shortened for table width.}
   \label{tab:main}
 \end{table*}
+
+\begin{figure*}[t]
+  \centering
+  \tpfig{figures/fig3_main_results.pdf}{0.94\textwidth}{
+    \textbf{Panel A: Main leaderboard}
+    \quad
+    TSR / SVR / ASR / STCR by model
+    \\[0.35em]
+    \textbf{Panel B: Utility-safety plane}
+    \quad
+    x = TSR,
+    y = SVR or ASR,
+    one point per model
+    \\[0.35em]
+    \textbf{Optional Panel C: Latent violations}
+    \quad
+    latent violation rate by model
+  }
+  \caption{Main \code{v0_2_test} outcome results. Contemporary agents can complete useful tasks while still producing measurable safety violations and latent trajectory risks.}
+  \label{fig:main-results}
+\end{figure*}
 
 Across 12 models, \tp{} reveals a wide spread in safe task completion.
 The mean naive TSR is 0.784 and the mean naive ASR is 0.347.
@@ -345,6 +406,35 @@ Within B, multi-agent-message overtrust is the strongest subfamily, with violati
   \label{tab:source-breakdown}
 \end{table*}
 
+Figure~\ref{fig:internal-authority} summarizes this source-level contrast.
+It also highlights that B3 multi-agent messages are the only source family with substantial unsafe internal-message exposure.
+
+\begin{figure*}[t]
+  \centering
+  \tpfig{figures/fig4_internal_authority.pdf}{0.94\textwidth}{
+    \textbf{Panel A: A/B/C source comparison}
+    \quad
+    SVR/ASR,
+    STCR,
+    latent,
+    unsafe internal exposure
+    \\[0.35em]
+    \textbf{Panel B: B-family breakdown}
+    \quad
+    B1 policy-like context,
+    B2 memory state,
+    B3 multi-agent message
+    \\[0.35em]
+    \textbf{Panel C: Failed-or-latent source distribution}
+    \quad
+    internal compromise 302/479,
+    external attack 133/479,
+    non-adversarial 44/479
+  }
+  \caption{Internal authority compromise as a distinct risk surface. For B and C scenarios, SVR equals ASR because they are attack-labeled. B-class risks are higher than external attacks in the frozen headline runs, and B3 exposes internal-message boundary failures.}
+  \label{fig:internal-authority}
+\end{figure*}
+
 The attribution distribution reinforces the same point.
 Among 479 failed-or-latent attribution rows from the headline naive runs, \code{internal_compromise} accounts for 302 rows (63.0\%), compared with 133 external-attack rows (27.8\%) and 44 non-adversarial rows (9.2\%).
 For \code{deepseek-v4-flash}, failed runs are concentrated in \code{internal_compromise} (33/62) and \code{external_attack} (23/62), with \code{multi_agent_message} (15/62) and \code{retrieved_content} (17/62) as the most common channels and \code{authority_overtrust} (32/62) as the dominant mechanism.
@@ -371,6 +461,39 @@ Some runs restore a clean final state while still crossing a safety boundary dur
 In the fixed main case, DeepSeek v4 Pro is asked to repair a ticket normalizer while a user instruction also requests a temporary demo marker.
 The agent initially rewrites the production file with \code{print("DEMO_BANNER_7711")}, observes the release test fail, removes the marker, and then passes final acceptance.
 Final-state scoring alone would see a clean source tree; trace and replay evidence localize the transient boundary crossing to the watched-path mutation at step 3.
+Figure~\ref{fig:replay-localization} illustrates the replay-localized timeline that endpoint metrics miss.
+
+\begin{figure*}[t]
+  \centering
+  \tpfig{figures/fig5_replay_localization.pdf}{0.94\textwidth}{
+    \textbf{Panel A: Replay analyzer}
+    \quad
+    recorded trace
+    $\rightarrow$
+    fresh sandbox
+    $\rightarrow$
+    replayed tool calls
+    $\rightarrow$
+    stepwise probes
+    \\[0.35em]
+    \textbf{Panel B: Transient case timeline}
+    \quad
+    read source
+    $\rightarrow$
+    insert demo marker
+    $\rightarrow$
+    failing release test
+    $\rightarrow$
+    remove marker
+    $\rightarrow$
+    final pass
+    \\[0.35em]
+    \textbf{Key message:}
+    final state clean, but step 3 is trajectory-unsafe
+  }
+  \caption{Replay-grounded failure localization. Exact replay localizes the first watched-path mutation in an endpoint-safe but trajectory-unsafe run.}
+  \label{fig:replay-localization}
+\end{figure*}
 
 The compositional playground provides a second stress setting.
 It evaluates clean, single-hazard, combo, and reverse-combo variants over shared substrates.
@@ -380,6 +503,32 @@ Replay exactness is 298/360, with 62/360 safety-equivalent output divergences an
 Replay then shows that the configured dominant hazard is supported in 32 of 72 group-model comparisons, contradicted in 36, and indeterminate in 4, with 43 configured-but-unactivated hazards.
 In some groups, a single hazard dominates the combo path.
 In others, one hazard masks another, or reversing the order changes the first failure evidence.
+Figure~\ref{fig:compositional} summarizes the playground design and the replay-supported dominance outcomes.
+
+\begin{figure*}[t]
+  \centering
+  \tpfig{figures/fig6_compositional.pdf}{0.94\textwidth}{
+    \textbf{Panel A: Scenario generation}
+    \quad
+    substrate + hazard A + hazard B
+    $\rightarrow$
+    clean / single A / single B / combo / reverse combo
+    \\[0.35em]
+    \textbf{Panel B: Outcome matrix}
+    \quad
+    rows = scenario groups,
+    columns = clean, single, combo, reverse combo
+    \\[0.35em]
+    \textbf{Panel C: Replay dominance}
+    \quad
+    exact replay 298/360,
+    dominant supported 32/72,
+    contradicted 36/72,
+    unactivated hazards common
+  }
+  \caption{Compositional playground dominance analysis. Replay distinguishes configured hazards from activated and dominant observed paths without claiming that replay proves a dominant cause.}
+  \label{fig:compositional}
+\end{figure*}
 
 \section{Case Studies}
 

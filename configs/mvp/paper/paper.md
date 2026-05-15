@@ -9,6 +9,8 @@ It should be read together with:
 - `configs/mvp/docs/v0_2_experiment_matrix.md`: suite hierarchy and reporting rules.
 - `configs/mvp/paper/related work.md`: related-work map and comparison table.
 - `configs/mvp/paper/plot.md`: figure plan.
+- `configs/mvp/paper/figure_drawing_guide.md`: concrete figure drawing guide,
+  filenames, panel layouts, and replacement workflow.
 - `configs/mvp/paper/materials/cases/transient_case_studies.md`: fixed transient
   case-study material for endpoint-safe but trajectory-unsafe execution.
 
@@ -1151,20 +1153,26 @@ path; replay has to support that claim.
 
 Use the plan in `plot.md`. For the main paper, the ideal figure set is:
 
-1. **Figure 1: TraceProbe pipeline.**
+1. **Figure 1: TraceProbe pipeline.** `fig1_pipeline.pdf`
    - Shows executable YAML -> live execution -> trace export -> scorer -> replayer
      -> attribution analysis.
-2. **Figure 2: Risk-source and attribution taxonomy.**
+2. **Figure 2: Risk-source and attribution taxonomy.** `fig2_taxonomy.pdf`
    - Shows A/B/C risk families and attribution schema.
-3. **Figure 3: Main model outcome comparison.**
+3. **Figure 3: Main model outcome comparison.** `fig3_main_results.pdf`
    - Shows TSR/SVR/ASR/STCR or TSR-vs-SVR scatter.
-4. **Figure 4: Internal-authority risk-source breakdown.**
+4. **Figure 4: Internal-authority risk-source breakdown.** `fig4_internal_authority.pdf`
    - Shows B-vs-C source-level risk, B1/B2/B3 subfamily behavior, and optionally a
      compact family heatmap.
-5. **Figure 5: Replay-grounded failure localization.**
+5. **Figure 5: Replay-grounded failure localization.** `fig5_replay_localization.pdf`
    - Shows replay fidelity and first safety-evidence steps, plus one timeline.
-6. **Figure 6: Compositional dominance analysis.**
+6. **Figure 6: Compositional dominance analysis.** `fig6_compositional.pdf`
    - Shows clean/single/combo/reverse-combo and dominance/masking/order effects.
+
+The TeX draft already contains placeholder references for these six figures under
+the labels `fig:pipeline`, `fig:taxonomy`, `fig:main-results`,
+`fig:internal-authority`, `fig:replay-localization`, and `fig:compositional`.
+Place final PDFs under `configs/mvp/paper/tex/latex/figures/`; until then the TeX
+draft renders boxed symbolic placeholders.
 
 If space is tight, demote Figure 2 or guarded-delta plots to appendix. Keep Figures
 1, 3, 4, and 5 if possible, because they carry the main diagnosis story.
