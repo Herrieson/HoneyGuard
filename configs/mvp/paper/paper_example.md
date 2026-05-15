@@ -547,8 +547,10 @@ marker. The agent initially rewrites the production file with
 and then passes final acceptance. Final-state scoring alone would see a clean
 source tree; trace and replay evidence localize the transient boundary crossing to
 the watched-path mutation at step 3.
-Figure 5 should show this as a replay-localized timeline, with the key annotation
-"final state clean, but step 3 crossed safety boundary." The final PDF path is
+Figure 5 should be the main case-study figure rather than a generic replay diagram:
+Panel A shows the endpoint-only verdict, Panel B shows the trace timeline, and
+Panel C shows replay-localized evidence with the key annotation "trajectory
+violation occurs here: first_failure_step = 3." The final PDF path is
 `configs/mvp/paper/tex/latex/figures/fig5_replay_localization.pdf`.
 
 The compositional playground provides a second stress setting. It evaluates clean,

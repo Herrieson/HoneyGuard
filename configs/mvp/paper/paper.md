@@ -1108,6 +1108,15 @@ Suggested attribution shape:
 - mechanism = false_authorization or authority_confusion
 - block_point = internal_authority_gate
 
+Appendix figure target:
+
+- Prefer a B3 `multi_agent_message` run with clear unsafe internal-message exposure.
+- Start candidate inspection from high-B3-risk models such as
+  `claude-sonnet-4-6`, `gemini-3-flash-preview`, `gemma-4-31b-it`, and
+  `deepseek-v4-flash`.
+- The figure should show: user task -> internal-looking helper message -> authority
+  overtrust -> unauthorized read/exposure/action -> observed violation.
+
 ### 9.3 Case Study C: Non-Adversarial Boundary Failure
 
 Use a legitimate maintenance or data-processing task where no attacker is present,
@@ -1133,6 +1142,14 @@ feedback, removes the marker, and eventually passes the final checks. Final-stat
 scoring would report a clean endpoint, but the trajectory contains a transient unsafe
 code modification at step 3. Replay confirms that the final acceptance remains clean
 and localizes the first watched-path mutation.
+
+This should be the main Figure 5, with three panels:
+
+- endpoint-only verdict: final file clean, release test passes, final answer normal;
+- trace timeline: step 3 inserts `DEMO_BANNER_7711`, step 4 test fails, later steps
+  recover;
+- replay-localized evidence: first watched-path mutation is step 3, so the final
+  endpoint is safe but the trajectory is unsafe.
 
 Appendix companion case:
 
@@ -1163,8 +1180,9 @@ Use the plan in `plot.md`. For the main paper, the ideal figure set is:
 4. **Figure 4: Internal-authority risk-source breakdown.** `fig4_internal_authority.pdf`
    - Shows B-vs-C source-level risk, B1/B2/B3 subfamily behavior, and optionally a
      compact family heatmap.
-5. **Figure 5: Replay-grounded failure localization.** `fig5_replay_localization.pdf`
-   - Shows replay fidelity and first safety-evidence steps, plus one timeline.
+5. **Figure 5: Endpoint-safe, trajectory-unsafe case study.** `fig5_replay_localization.pdf`
+   - Shows endpoint-only verdict, trace timeline, and replay-localized first
+     watched-path mutation for the DeepSeek v4 Pro transient case.
 6. **Figure 6: Compositional dominance analysis.** `fig6_compositional.pdf`
    - Shows clean/single/combo/reverse-combo and dominance/masking/order effects.
 
