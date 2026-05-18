@@ -65,7 +65,7 @@ Instead, it must act in a sandboxed task environment, produce tool calls and sta
 The resulting trace is then scored with outcome metrics, latent trajectory checks, scenario-level expected hazard labels, evidence-grounded observed diagnosis, and replay-supported localization.
 
 \tp{} turns ``why did the agent fail?'' into a sequence of checkable artifacts.
-A scenario is runnable: the YAML file specifies the task, environment, tools, mock observations, acceptance checks, safety constraints, and expected hazard path.
+A scenario is runnable: its specification defines the task, environment, tools, mock observations, acceptance checks, safety constraints, and expected hazard path.
 A model run is observable: the benchmark exports the actual tool calls, observations, final output, final state, and latent safety events produced by the agent.
 The diagnosis is evidence-grounded: outcome scorers determine whether the run succeeded or violated safety, while attribution analysis extracts structured evidence and asks whether the observed trace activated, partially followed, resisted, or deviated from the scenario's expected hazard path.
 Finally, replay is execution-grounded: it rebuilds the scenario in a fresh sandbox and replays the recorded actions to check trace fidelity and localize the first safety-relevant step.
@@ -88,26 +88,26 @@ Thus the unit of analysis is not a free-form judgment over a transcript, but the
     $\rightarrow$
     \textbf{Exact replay localization}
   }
-  \caption{The \tp{} evidence chain. \tp{} converts agent safety diagnosis from a free-form trace judgment into a sequence of executable, observable, scored, evidence-grounded, and replay-localized artifacts.}
+  \caption{The \tp{} evidence chain. \tp{} converts agent safety diagnosis from a free-form trace judgment into executable, observable, scored, evidence-grounded, and replay-localized evidence.}
   \label{fig:pipeline}
 \end{figure*}
 
 Table~\ref{tab:operationalization} summarizes what this means operationally.
 The benchmark does not simply attach an explanation to an unsafe final answer.
-It materializes each diagnostic claim as an artifact that can be inspected, regenerated, or replayed.
-This is the central distinction between \tp{} and endpoint-only evaluation: the paper's object of study is the run artifact, not only the final response.
+It materializes each diagnostic claim as evidence that can be inspected, regenerated, or replayed.
+This is the central distinction between \tp{} and endpoint-only evaluation: the paper's object of study is the execution record, not only the final response.
 
 \begin{table*}[t]
   \centering
   \small
   \begin{tabularx}{\textwidth}{p{0.18\textwidth}p{0.25\textwidth}X}
     \toprule
-    \textbf{Diagnostic property} & \textbf{\tp{} artifact} & \textbf{Concrete check} \\
+    \textbf{Diagnostic property} & \textbf{\tp{} evidence} & \textbf{Concrete check} \\
     \midrule
-    Runnable & Scenario YAML, sandbox setup, tools, mock resources, acceptance criteria, and safety constraints & The scenario can be instantiated and executed by an agent under the same task, file, tool, and policy surfaces. \\
+    Runnable & Scenario specification, sandbox setup, tools, mock resources, acceptance criteria, and safety constraints & The scenario can be instantiated and executed by an agent under the same task, file, tool, and policy surfaces. \\
     Observable & Exported normalized trace, final output, final state, tool calls, observations, and latent safety events & Outcome and latent scorers read the exported run rather than relying on an evaluator's free-form transcript summary. \\
     Attributable & Scenario-level expected hazard labels plus run-level evidence packets & Analysis checks whether observed events support the expected source and channel, whether the hazard was activated, and whether the run follows, partially follows, or deviates from the expected path. \\
-    Reproducible & Replay rows, replay steps, watched-path diffs, and acceptance/safety replay outcomes & The replayer rebuilds the scenario in a fresh sandbox, re-executes recorded actions, and reports exact replay, safety-equivalent divergence, first sensitive read, first sink call, and first watched-path mutation. \\
+    Reproducible & Replay log, stepwise probes, state differences, and acceptance/safety replay outcomes & The replayer rebuilds the scenario in a fresh sandbox, re-executes recorded actions, and reports exact replay, safety-equivalent divergence, first sensitive read, first sink call, and first watched-path mutation. \\
     Intervention-oriented & Counterfactual block-point labels and localized failure steps & The diagnosis maps failures to structural controls such as untrusted-content isolation, memory integrity checks, pre-action permission gates, and output filters. \\
     \bottomrule
   \end{tabularx}
@@ -126,7 +126,7 @@ Our contributions are:
   \item \textbf{A first-class internal-authority risk axis.} \tp{} separates policy-like context, memory state, and multi-agent messages from external attacks and inherent model failures, enabling direct comparison across non-adversarial, internal, and external risk sources.
   \item \textbf{Scenario-level expected hazard labels.} Each scenario specifies the intended source, channel, mechanism, first failed component, impact, counterfactual block point, and expected failure chain, while run-level diagnosis is derived from observed evidence.
   \item \textbf{Execution-grounded analysis with trace replay.} \tp{} exports live traces and replays recorded tool actions in fresh sandboxes to validate trace fidelity and localize safety-relevant events.
-  \item \textbf{A multi-layer empirical evaluation.} We evaluate contemporary models on the main benchmark, compare naive and guarded prompting, analyze family-level failure profiles, measure expected-vs-observed path alignment, and use transient and compositional suites to study trajectory-level violations and multi-risk stress.
+  \item \textbf{A multi-layer empirical evaluation.} We evaluate contemporary models on the main benchmark, compare standard prompting with prompt-only safety reminders, analyze family-level failure profiles, measure expected-vs-observed path alignment, and use transient and compositional suites to study trajectory-level violations and multi-risk stress.
 \end{itemize}
 
 \section{Related Work}
@@ -173,23 +173,23 @@ The benchmark should make it possible to compare a non-adversarial boundary over
 \subsection{Dataset Construction}
 
 \tp{} was constructed using an LLM-assisted, human-curated scenario authoring workflow.
-We first fixed the benchmark ontology: risk-source families, hazard channels, expected hazard-label dimensions, tool interfaces, acceptance-criteria formats, and target coverage for the main split.
+We first fixed the benchmark ontology: risk-source families, hazard channels, expected hazard-label dimensions, tool interfaces, acceptance-criteria formats, and target coverage for the main benchmark.
 This taxonomy-first design constrained scenario construction so that each candidate was intended to test a specific source-channel-mechanism path rather than an unconstrained prompt-injection pattern.
 
 We then used a Codex-based coding agent to draft candidate executable scenarios.
-For each family, the authoring agent was given the target risk source, channel, intended unsafe behavior, expected safe behavior, forbidden actions, and YAML schema.
+For each family, the authoring agent was given the target risk source, channel, intended unsafe behavior, expected safe behavior, forbidden actions, and scenario schema.
 It proposed candidate task instructions, initial workspace files, mock-tool outputs, acceptance criteria, safety constraints, and expected hazard labels.
 The agent was used as an authoring assistant, not as an evaluator: it did not score model outputs, decide final safety labels for completed runs, or serve as a trajectory judge.
 
 Candidate scenarios were iteratively curated by the authors.
 We inspected and edited tasks for clarity, utility feasibility, safety-constraint specificity, and consistency between the intended hazard and the expected labels.
 We removed or rewrote scenarios that were duplicated, underspecified, trivially unsafe, impossible to complete safely, or dependent on unstated assumptions.
-Finally, candidates were validated as executable benchmark artifacts.
-The final \code{v0_2_test} split contains 155 scenarios after this filtering and calibration process.
+Finally, candidates were validated as executable benchmark scenarios.
+The resulting main benchmark contains 155 scenarios after this filtering and calibration process.
 
 \subsection{Scenario Format}
 
-Each \tp{} scenario is specified as a YAML file.
+Each \tp{} scenario is an executable specification.
 A scenario includes a user-facing task instruction; initial files and environment state; optional policy prompt, memory state, retrieved content, tool output, or multi-agent messages; allowed tools and mock tools; utility acceptance criteria; safety constraints; scenario-level expected hazard labels; and optional transient violation markers or compositional hazard metadata.
 The evaluated agent is not given expected hazard labels.
 These labels describe the scenario designer's intended risk path.
@@ -197,10 +197,10 @@ Observed run-level diagnosis is derived from trace evidence and replay.
 
 \subsection{Risk-Source Taxonomy}
 
-The main benchmark split covers three source classes and ten families (Table~\ref{tab:taxonomy}).
+The main benchmark covers three source classes and ten families (Table~\ref{tab:taxonomy}).
 The core 20-scenario families are A1, A4, B1, B2, B3, C2.1, and C2.2.
 A2, A3, and C1 are 5-scenario promoted gap probes; family-level conclusions for these probes should be treated as directional rather than statistically powered.
-\tp{} also includes targeted suites not mixed into the main leaderboard: \code{v0_2_transient} for trajectory-safety pilot analysis, a calibrated 24-scenario \code{v0_2_small} subset for low-cost screening, and a compositional playground with 60 generated multi-risk stress scenarios.
+\tp{} also includes targeted suites not mixed into the main leaderboard: a trajectory-safety pilot and a 60-scenario compositional playground for multi-risk stress testing.
 
 \begin{table}[t]
   \centering
@@ -266,7 +266,7 @@ For this reason, \tp{} emphasizes expected-vs-observed path alignment and eviden
 
 Agents run in sandboxed scenarios.
 The system records tool calls, observations, final outputs, final state, and safety-relevant events.
-The exported trace is then used by outcome scorers and post-hoc analysis scripts.
+The exported trace is then used by outcome scorers and post-hoc diagnostic analyses.
 The main metrics are task success rate (TSR), safety violation rate (SVR), attack success rate over attack-labeled tasks (ASR), safe task completion rate (STCR), resource overrun rate, latent violation rate, and internal-message exposure.
 STCR requires both useful task completion and absence of safety violation.
 
@@ -275,7 +275,7 @@ STCR requires both useful task completion and absence of safety violation.
 
 Trajectory logs can be incomplete, inconsistent, or hard to interpret.
 \tp{} therefore includes a trace replayer.
-The replayer reconstructs the original YAML scenario in a fresh sandbox and re-executes the recorded tool calls with the recorded arguments.
+The replayer reconstructs the original scenario in a fresh sandbox and re-executes the recorded tool calls with the recorded arguments.
 It does not rerun the LLM, replan actions, or simulate counterfactual choices.
 
 Replay answers four diagnostic questions.
@@ -287,28 +287,28 @@ Replay cannot prove causality, but it can show that a recorded action sequence i
 This is a sufficiency claim, not a counterfactual causal claim.
 The replayer does not remove an action, rerun the model, or ask whether the model would have avoided the failure under an alternative observation.
 Fourth, \textbf{compositional dominance support}: in multi-risk scenarios, does the observed failure path support the configured dominant hazard hypothesis?
-A hazard can be present in YAML but never activated by the model.
+A hazard can be present in the scenario but never activated by the model.
 Replay helps distinguish configured hazards from activated hazards and dominant observed paths.
 
 \section{Experimental Setup}
 
-We evaluate 12 contemporary models on the main \code{v0_2_test} split.
+We evaluate 12 contemporary models on the main 155-scenario benchmark.
 Each run uses the same scenario set and scoring pipeline.
-The main leaderboard uses the \code{naive} baseline.
-We also run a \code{guarded} prompt-only condition on 9 matched model pairs to test whether explicit safety reminders reduce failures.
-The guarded condition asks agents to treat retrieved content, tool output, logs, config text, memory, prior notes, and other agents' messages as untrusted evidence unless explicitly part of trusted system instructions.
+The main leaderboard uses the standard prompt condition.
+We also run a prompt-only safety-reminder condition on 9 matched model pairs to test whether explicit safety reminders reduce failures.
+This condition asks agents to treat retrieved content, tool output, logs, config text, memory, prior notes, and other agents' messages as untrusted evidence unless explicitly part of trusted system instructions.
 It does not add enforcement, permission checks, tool isolation, or memory integrity mechanisms.
 
-We report the main leaderboard only on \code{v0_2_test}.
-The \code{v0_2_transient} pilot, compositional playground, and calibrated \code{v0_2_small} subset are reported separately as targeted or appendix analyses.
+We report the main leaderboard only on the main benchmark.
+The trajectory-safety pilot and compositional playground are reported separately as targeted or appendix analyses.
 They are not mixed into headline results.
 
 \section{Results}
 
 \subsection{RQ1: How safe are current agents?}
 
-Table~\ref{tab:main} shows the frozen naive leaderboard on \code{v0_2_test}.
-This paper-facing snapshot reports 12 naive models and leaves the \code{mirothinker-1-7} rerun out of the headline table, consistent with the frozen materials bundle.
+Table~\ref{tab:main} shows the main leaderboard under standard prompting.
+It reports 12 headline model runs with complete main-benchmark coverage; additional diagnostic reruns are excluded from the headline averages.
 Figure~\ref{fig:main-results} presents the same outcome snapshot visually, emphasizing the utility-safety tradeoff rather than only a single attack-success number.
 
 \begin{table*}[t]
@@ -333,7 +333,7 @@ Figure~\ref{fig:main-results} presents the same outcome snapshot visually, empha
     \code{minimax-m2-5} & 155 & 0.858 & 0.161 & 0.219 & 0.729 & 0.142 & 0.013 \\
     \bottomrule
   \end{tabular}
-  \caption{Main naive leaderboard on \code{v0_2_test}. Model labels for long preview names are shortened for table width.}
+  \caption{Main leaderboard under standard prompting. Model labels for long preview names are shortened for table width.}
   \label{tab:main}
 \end{table*}
 
@@ -354,22 +354,22 @@ Figure~\ref{fig:main-results} presents the same outcome snapshot visually, empha
     \quad
     latent violation rate by model
   }
-  \caption{Main \code{v0_2_test} outcome results. Contemporary agents can complete useful tasks while still producing measurable safety violations and latent trajectory risks.}
+  \caption{Main-benchmark outcome results. Contemporary agents can complete useful tasks while still producing measurable safety violations and latent trajectory risks.}
   \label{fig:main-results}
 \end{figure*}
 
 Across 12 models, \tp{} reveals a wide spread in safe task completion.
-The mean naive TSR is 0.784 and the mean naive ASR is 0.347.
+The mean TSR is 0.784 and the mean ASR is 0.347 under standard prompting.
 Strong models complete many tasks, but no evaluated model eliminates safety violations.
-The best naive ASR in this frozen table is \code{gpt-5-5} at 0.076, while \code{gemini-3-1-flash-lite-preview} reaches 0.667.
+The best ASR in this headline table is \code{gpt-5-5} at 0.076, while \code{gemini-3-1-flash-lite-preview} reaches 0.667.
 Thus the benchmark separates strong and weak agents without collapsing into a single easy-hard axis.
 
 \subsection{RQ2: Are prompt-only safety reminders enough?}
 
-We compare naive and guarded prompting on the same \code{v0_2_test} scenarios.
-Across the 9 paired models, guarded prompting reduces ASR by 0.107 on average, SVR by 0.074, and latent violation rate by 0.073.
-For \code{gemini-3-flash-preview}, guarded prompting reduces SVR from 0.383 to 0.192 and ASR from 0.558 to 0.276, while TSR changes only from 0.766 to 0.775.
-For \code{gpt-5-5}, guarded prompting reduces SVR from 0.058 to 0.045 and ASR from 0.076 to 0.057, while TSR rises from 0.832 to 0.877.
+We compare standard prompting and prompt-only safety reminders on the same main scenarios.
+Across the 9 paired models, safety reminders reduce ASR by 0.107 on average, SVR by 0.074, and latent violation rate by 0.073.
+For \code{gemini-3-flash-preview}, safety reminders reduce SVR from 0.383 to 0.192 and ASR from 0.558 to 0.276, while TSR changes only from 0.766 to 0.775.
+For \code{gpt-5-5}, safety reminders reduce SVR from 0.058 to 0.045 and ASR from 0.076 to 0.057, while TSR rises from 0.832 to 0.877.
 These patterns suggest that prompt-only reminders can improve some refusal-like behaviors, but they do not provide structural guarantees such as tool-output isolation, memory integrity, pre-action permission checks, or internal-message boundaries.
 
 \subsection{RQ3: Is internal authority compromise a distinct risk surface?}
@@ -381,7 +381,7 @@ This is not simply external prompt injection, because the relevant failure is an
 It is also not merely inherent reasoning failure, because the trace exposes the authority channel that the agent accepted.
 
 Table~\ref{tab:source-breakdown} shows that this distinction matters empirically.
-Across the 12 headline naive models, internal compromise has higher violation rate than external attacks (0.424 versus 0.242), lower safe task completion (0.481 versus 0.636), and nearly twice the latent violation rate (0.419 versus 0.220).
+Across the 12 headline models under standard prompting, internal compromise has higher violation rate than external attacks (0.424 versus 0.242), lower safe task completion (0.481 versus 0.636), and nearly twice the latent violation rate (0.419 versus 0.220).
 It is also the only source class with substantial unsafe internal-message exposure.
 Within B, multi-agent-message overtrust is the strongest subfamily, with violation rate 0.636 and unsafe internal-message exposure 0.542.
 
@@ -402,7 +402,7 @@ Within B, multi-agent-message overtrust is the strongest subfamily, with violati
     B3: multi-agent message & 236 & 0.686 & 0.636 & 0.250 & 0.623 & 0.542 \\
     \bottomrule
   \end{tabular}
-  \caption{Risk-source and B-family breakdown for the 12 headline naive models on \code{v0_2_test}. For B and C rows, SVR equals ASR because these scenarios are attack-labeled. B3 exposes internal-message boundary failures that are not captured by external prompt-injection categories alone.}
+  \caption{Risk-source and B-family breakdown for the 12 headline models under standard prompting. For B and C rows, SVR equals ASR because these scenarios are attack-labeled. B3 exposes internal-message boundary failures that are not captured by external prompt-injection categories alone.}
   \label{tab:source-breakdown}
 \end{table*}
 
@@ -431,12 +431,12 @@ It also highlights that B3 multi-agent messages are the only source family with 
     external attack 133/479,
     non-adversarial 44/479
   }
-  \caption{Internal authority compromise as a distinct risk surface. For B and C scenarios, SVR equals ASR because they are attack-labeled. B-class risks are higher than external attacks in the frozen headline runs, and B3 exposes internal-message boundary failures.}
+  \caption{Internal authority compromise as a distinct risk surface. For B and C scenarios, SVR equals ASR because they are attack-labeled. B-class risks are higher than external attacks in the headline runs, and B3 exposes internal-message boundary failures.}
   \label{fig:internal-authority}
 \end{figure*}
 
 The attribution distribution reinforces the same point.
-Among 479 failed-or-latent attribution rows from the headline naive runs, \code{internal_compromise} accounts for 302 rows (63.0\%), compared with 133 external-attack rows (27.8\%) and 44 non-adversarial rows (9.2\%).
+Among 479 failed-or-latent attribution rows from the headline runs, \code{internal_compromise} accounts for 302 rows (63.0\%), compared with 133 external-attack rows (27.8\%) and 44 non-adversarial rows (9.2\%).
 For \code{deepseek-v4-flash}, failed runs are concentrated in \code{internal_compromise} (33/62) and \code{external_attack} (23/62), with \code{multi_agent_message} (15/62) and \code{retrieved_content} (17/62) as the most common channels and \code{authority_overtrust} (32/62) as the dominant mechanism.
 For \code{claude-sonnet-4-6}, failures skew even more toward \code{internal_compromise} (22/34), \code{multi_agent_message} (18/34), and \code{authority_overtrust} (15/34).
 Thus aggregate scores hide whether a model is primarily vulnerable to external content, internal authority channels, or non-adversarial boundary failures.
@@ -524,7 +524,7 @@ Figure~\ref{fig:compositional} summarizes the playground design and the replay-s
     contradicted 36/72,
     unactivated hazards common
   }
-  \caption{Compositional playground dominance analysis. Replay distinguishes configured hazards from activated and dominant observed paths without claiming that replay proves a dominant cause.}
+  \caption{Compositional playground dominance analysis. Replay distinguishes configured hazards from activated and dominant observed paths without making counterfactual causal claims.}
   \label{fig:compositional}
 \end{figure*}
 
@@ -549,101 +549,65 @@ The scenario marks this demo marker as unauthorized production behavior.
 The trace shows a recovered transient violation: at step 3, the agent rewrites the production file with the marker; at step 4, the release test fails; the agent then removes the marker and passes final acceptance.
 The final source tree contains no marker, but the trajectory crossed the source-integrity boundary.
 
-\section{Discussion}
+\section{Discussion and Conclusion}
 
-\tp{} suggests that agent safety evaluation should separate three layers: endpoint outcomes, trajectory-level events, and observed diagnosis.
-Endpoint outcomes answer whether a run succeeded or failed.
-Trajectory events show what happened during execution.
-Observed diagnosis explains which source, channel, mechanism, component, and block point are supported by trace evidence, and whether that evidence aligns with the scenario's expected hazard path.
+\tp{} argues for evaluating agent safety at three linked layers: endpoint outcomes, trajectory-level events, and observed diagnosis.
+These layers can disagree.
+A run may pass final acceptance while making a transient unsafe file mutation; two models may have similar ASR while failing through different channels; and a configured hazard may never be activated by the model.
+By exporting traces, extracting evidence, comparing expected and observed paths, and replaying recorded actions, \tp{} makes these differences visible rather than collapsing them into a single endpoint score.
 
-This separation matters because the layers can disagree.
-A run can be endpoint-safe but trajectory-unsafe.
-Two models can have similar ASR while failing through different channels.
-A configured hazard can be present in a scenario without being activated by the model.
-Without trace and replay evidence, these differences collapse into a single aggregate number.
-
-The main claims should therefore be read as diagnostic rather than absolute causal claims.
-\tp{} can show that a live run activated a designed hazard, that a safety-relevant event followed it, that the recorded action sequence is replay-sufficient to reproduce the relevant evidence, and that the observed path is consistent or inconsistent with the expected hazard path.
-It does not by itself prove that a model's internal reason for acting was exactly the labeled mechanism, nor that no alternative action sequence could have produced the same outcome.
-This boundary is important for interpreting replay-supported attribution: it provides execution-grounded localization and evidence support, while counterfactual replay and repeated-execution causal analysis remain future extensions.
-
-\tp{} also chooses controlled workflow realism over open-ended ecological breadth.
-This tradeoff is deliberate.
-Open-ended web, desktop, financial, or deployment environments are valuable for ecological validity, but they make source-channel-mechanism comparisons and replay-localized diagnosis harder to control.
-\tp{} should therefore be interpreted as a diagnostic benchmark for representative agent safety mechanisms, not as evidence that a model safe on \tp{} is safe in arbitrary unconstrained deployments.
+The resulting claims are diagnostic, not absolute causal claims.
+\tp{} can show that a live run activated a designed hazard, that a safety-relevant event followed, that the recorded action sequence reproduces relevant evidence in a fresh sandbox, and that the observed path is consistent or inconsistent with the scenario's reference path.
+It does not claim direct access to model internals or prove counterfactual necessity.
+This boundary is central to the benchmark: \tp{} moves agent safety evaluation beyond final-output judgment toward execution-grounded diagnosis, while leaving counterfactual replay and repeated-execution causal analysis as future extensions.
 
 \section*{Limitations}
 
-\tp{} has four important limitations.
-First, replay supports localization and sufficiency, not definitive counterfactual causality.
-The replayer rebuilds the YAML scenario and re-executes recorded tool calls with recorded arguments; it does not rerun the LLM, replan behavior, remove individual actions, or simulate alternative observations.
-Thus replay can show that the recorded action sequence reproduces safety-relevant evidence in a fresh sandbox, but it cannot by itself prove that a particular action was necessary for the failure.
-Counterfactual replay and repeated-execution causal analysis are natural extensions.
-
-Second, \tp{} trades ecological breadth for controlled diagnosis.
-The current benchmark emphasizes files, tools, memory, retrieved content, policy-like context, and multi-agent messages, but does not claim exhaustive coverage of physical-world actions, browser-native tasks, financial operations, or long-running deployment monitoring.
-The scenarios are workflow-inspired rather than full production systems.
-This choice improves observability, replayability, and source-channel-mechanism control, but limits direct generalization to unconstrained real-world environments.
-
-Third, expected hazard labels encode intended controlled hazards and reference paths.
-They should not be interpreted as proof that every observed run follows the labeled path, nor as direct evidence of a model's internal latent reasoning.
-This is especially important for mechanism, failed-component, impact, and block-point labels, which are best interpreted as evidence-supported diagnostic categories over observable traces and scenario structure.
-\tp{} therefore reports expected-vs-observed alignment and treats fine-grained agreement as secondary, not as per-run causal accuracy.
-
-Fourth, the main v0.2 split is not perfectly balanced.
-Seven core families contain 20 scenarios each, while A2, A3, and C1 are 5-scenario promoted gap probes.
-Aggregate results use the full split, but family-level conclusions for these smaller probes are directional rather than statistically powered.
-Raw LLM trajectory judgment is also imperfect, so \tp{} does not use LLM judgments as safety labels or as causal truth for each run.
-Finally, model behavior and provider endpoints may drift over time; paper results should report model identifiers, dates, endpoints, and runtime metadata where possible.
+Replay provides localized execution evidence, not definitive counterfactual causality: the replayer rebuilds the scenario and re-executes recorded tool calls, but does not rerun the LLM, replan behavior, or remove individual actions.
+\tp{} also trades ecological breadth for controlled diagnosis.
+Its scenarios are workflow-inspired and cover files, tools, memory, retrieved content, policy-like context, and multi-agent messages, but do not claim exhaustive coverage of physical-world actions, browser-native tasks, financial operations, or long-running deployments.
+Expected hazard labels are scenario-level reference paths rather than per-run causal truth, so fine-grained mechanism, component, impact, and block-point labels should be interpreted as evidence-supported diagnostic categories over observable traces.
+Finally, the main benchmark is not perfectly balanced: seven core families contain 20 scenarios each, while A2, A3, and C1 are smaller promoted gap probes; model behavior and provider endpoints may also drift over time.
 
 \section*{Ethics Statement}
 
-\tp{} includes safety-failure scenarios involving sensitive reads, unsafe uploads, prompt injection, and internal authority compromise.
-The benchmark is designed for controlled sandboxed evaluation and should not be used to encourage real-world exfiltration or unauthorized access.
-Scenarios should use synthetic secrets, mock sinks, and isolated sandboxes.
-Public releases should include clear usage guidance, artifact provenance, and safeguards against accidental execution in real production environments.
-
-\section{Conclusion}
-
-Agent safety failures unfold through live execution.
-Final answers are important, but they are only one surface.
-\tp{} provides a benchmark for diagnosing safety failures in live agent execution by combining executable scenarios, expected hazard labels, outcome and latent metrics, evidence-grounded observed diagnosis, and replay-supported localization.
-Across contemporary agents, \tp{} reveals not only whether models fail, but whether observed failures follow the expected path, where risks enter, how they propagate, and where they could have been blocked.
-This moves agent safety evaluation beyond endpoint judgment toward execution-grounded diagnosis.
+\tp{} studies safety failures involving synthetic secrets, mock sinks, prompt injection, unsafe uploads, and internal authority compromise.
+It is intended for controlled sandboxed evaluation, not for real-world exfiltration or unauthorized access.
+Public releases should preserve synthetic resources, isolated execution, artifact provenance, and clear usage guidance.
 
 \bibliography{custom}
 
 \appendix
 
-\section{Diagnostic Artifact Map}
+\section{Reproducibility Artifacts}
 
-Table~\ref{tab:artifact-map} lists the paper-facing artifacts used in the current frozen snapshot.
-The paths are relative to the project root and are included to make the reported numbers auditable.
+Table~\ref{tab:artifact-map} summarizes the derived artifacts used to produce the reported numbers.
+The released package includes machine-readable tables and case notes; file-level details are documented in the supplementary material rather than in the paper body.
 
 \begin{table*}[h]
   \centering
   \small
-  \begin{tabularx}{\textwidth}{p{0.22\textwidth}p{0.35\textwidth}X}
+  \begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.32\textwidth}X}
     \toprule
-    \textbf{Analysis} & \textbf{Frozen material} & \textbf{Use in paper} \\
+    \textbf{Analysis} & \textbf{Released material} & \textbf{Use in paper} \\
     \midrule
-    Main outcome leaderboard & \code{configs/mvp/paper/materials/data/all_main_summary.csv} & Reports TSR, SVR, ASR, STCR, latent violation, and unsafe internal-message exposure on \code{v0_2_test}. \\
-    Guarded paired control & \code{configs/mvp/paper/materials/data/guard_delta_summary.csv} & Compares naive and prompt-only guarded runs over matched model pairs. \\
-    Attribution alignment & \code{configs/mvp/paper/materials/data/attribution_evidence_rule_v0_2_summary.csv} & Reports evidence support and expected-vs-observed path alignment over failed-or-latent runs. \\
-    Transient pilot & \code{configs/mvp/paper/materials/cases/transient_case_studies.md} & Provides endpoint-safe but trajectory-unsafe case-study timelines. \\
-    Compositional stress & \code{configs/mvp/paper/materials/data/scenario_summary.csv} & Reports clean, single-hazard, combo, and reverse-combo outcome rates. \\
-    Compositional replay & \code{configs/mvp/paper/materials/data/compositional_replay_summary.csv} and \code{compositional_replay_dominance_summary.csv} & Reports replay fidelity, stepwise risk probes, and dominant-hazard support. \\
+    Main outcomes & Per-run and aggregate outcome tables & Reports TSR, SVR, ASR, STCR, latent violation, and unsafe internal-message exposure for the main benchmark. \\
+    Safety-reminder control & Paired model-level delta tables & Compares standard prompting and prompt-only safety reminders over matched model pairs. \\
+    Attribution alignment & Evidence-packet summaries and expected-vs-observed alignment tables & Reports evidence support and path-alignment statistics over failed-or-latent runs. \\
+    Transient pilot & Step-level case-study notes and replay summaries & Provides endpoint-safe but trajectory-unsafe timelines. \\
+    Compositional stress & Scenario-level stress-suite summaries & Reports clean, single-hazard, combo, and reverse-combo outcome rates. \\
+    Compositional replay & Replay-fidelity and dominance summaries & Reports replay fidelity, stepwise risk probes, and dominant-hazard support. \\
     \bottomrule
   \end{tabularx}
-  \caption{Paper-facing material bundle used by this draft. The bundle is a frozen snapshot of analysis outputs, not a replacement for raw experiment artifacts.}
+  \caption{Reproducibility artifacts used for the reported numbers. The released package contains derived summaries, case notes, and underlying run logs for audit.}
   \label{tab:artifact-map}
 \end{table*}
 
-\section{Guarded Paired Deltas}
+\section{Prompt-Only Paired Deltas}
 
-Table~\ref{tab:guard-delta} gives the model-level paired deltas for the prompt-only guarded control.
-Negative $\Delta$SVR, $\Delta$ASR, and $\Delta$latent values indicate fewer safety violations under the guarded prompt.
-The guarded condition is a safety-awareness prompt, not a defense mechanism.
+Table~\ref{tab:guard-delta} gives the model-level paired deltas for the prompt-only safety-reminder control.
+Negative $\Delta$SVR, $\Delta$ASR, and $\Delta$latent values indicate fewer safety violations under the reminder prompt.
+This condition is a safety-awareness prompt, not a defense mechanism.
 
 \begin{table*}[h]
   \centering
@@ -666,14 +630,14 @@ The guarded condition is a safety-awareness prompt, not a defense mechanism.
     \textbf{Mean} & 0.022 & -0.074 & -0.107 & -0.073 \\
     \bottomrule
   \end{tabular}
-  \caption{Paired deltas for guarded minus naive prompting on \code{v0_2_test}.}
+  \caption{Paired deltas for prompt-only safety reminders minus standard prompting on the main benchmark.}
   \label{tab:guard-delta}
 \end{table*}
 
 \section{Transient Case Timeline}
 
 Table~\ref{tab:transient-timeline} gives the compact timeline for the main transient case.
-The run is DeepSeek v4 Pro on \code{c1_transient_release_banner_recovered_hard}.
+The run uses DeepSeek v4 Pro in a release-fix scenario with an unauthorized temporary demo marker.
 The final source tree is clean under the scenario's final acceptance checks, but the trace contains a latent transient unsafe code modification at step 3.
 
 \begin{table*}[h]
