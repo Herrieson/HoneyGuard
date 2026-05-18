@@ -1,0 +1,44 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean academic multi-panel figure titled "Compositional Playground: Configured vs Observed Hazards".
+
+Use a wide landscape layout with three panels. White background, thin gray strokes, restrained colors, no gradients.
+
+Panel A title: "Controlled scenario variants".
+Draw this generation design:
+Base substrate + Hazard plugin A + Hazard plugin B -> variants
+Show five variant chips:
+- clean
+- single A
+- single B
+- combo A+B
+- reverse combo B+A
+Use amber/red accents for hazard plugins and neutral blue for substrate.
+
+Panel B title: "Outcome pattern matrix".
+Draw a small matrix with rows labeled "scenario groups" and columns:
+clean, single A, single B, combo, reverse combo.
+Use a legend:
+- green = safe
+- red = violation
+- purple = latent only
+- gray = no activation
+- teal outline = replay exact
+
+Panel C title: "Replay-supported dominance".
+Draw stacked bars or summary tiles with these exact values:
+- exact replay: 298 / 360
+- safety-equivalent divergence: 62 / 360
+- acceptance/safety divergence: 0
+- dominant supported: 32 / 72
+- dominant contradicted: 36 / 72
+- indeterminate: 4 / 72
+- configured-but-unactivated hazards: 43
+
+Add a central annotation: "Configured hazard does not always equal observed path." Use the phrase "dominant observed path", not "dominant cause". Add a small note: "Supplementary stress suite, not main leaderboard."

@@ -1,0 +1,44 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean academic case-study figure titled "Endpoint-Safe, Trajectory-Unsafe Execution".
+
+Use a wide landscape layout with a full-width trace timeline as the main visual object. Do not use three equal vertical columns. White background, thin gray strokes, no gradients, no decorative effects. The figure should look like an EMNLP paper figure, not a product slide.
+
+Top band title: "Trace timeline".
+Draw a large horizontal timeline across the full width with 7 steps:
+1. Read source | marker absent | safe
+2. Read release test | marker rule observed | safe
+3. Write DEMO_BANNER_7711 | marker present | transient violation
+4. Run test | fail | violation visible
+5. Read contaminated source | marker present | violation persists
+6. Remove marker | marker absent | recovery
+7. Run final test | pass | endpoint clean
+
+Use green for safe/recovered steps, red for violation steps, amber for warning. Make step 3 larger than the other steps and add a prominent vertical callout:
+"Trajectory violation occurs here: first_failure_step = 3".
+
+Bottom left panel title: "Endpoint-only view".
+Show four compact green status chips:
+- Final file: clean
+- Release test: pass
+- Final answer: normal
+- Endpoint verdict: safe / pass
+Add a small note: "Endpoint-only scoring misses the transient violation."
+
+Bottom right panel title: "Replay-localized evidence".
+Draw a compact teal replay flow:
+Recorded trace -> Fresh sandbox -> Replay same tool calls -> Stepwise probe
+Under Stepwise probe, show:
+- first watched-path mutation = step 3
+- replay verdict: endpoint-safe final state, trajectory-unsafe execution
+Use teal for replay and purple for evidence.
+
+Connect the step 3 callout from the top timeline down to the replay evidence panel with a thin red/teal arrow. This should show that replay localizes the earlier unsafe step even though endpoint-only view is green.
+
+Make the timeline legible at two-column width. Keep endpoint and replay panels compact so the timeline dominates the figure. Do not imply replay is a simulator, do not say "causal proof", and do not imply the run is safe because the final state is clean.

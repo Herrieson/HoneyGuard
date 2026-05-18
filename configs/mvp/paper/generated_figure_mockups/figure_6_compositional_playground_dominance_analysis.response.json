@@ -1,0 +1,14 @@
+{
+  "created": 1779089333,
+  "data": [
+    {
+      "url": "https://file2.aitohumanize.com/file/d3f9ae6a328f4d6a942bba69aa55c425.png"
+    }
+  ],
+  "usage": {
+    "total_tokens": 6712,
+    "input_tokens": 462,
+    "output_tokens": 6250,
+    "input_tokens_details": {}
+  }
+}

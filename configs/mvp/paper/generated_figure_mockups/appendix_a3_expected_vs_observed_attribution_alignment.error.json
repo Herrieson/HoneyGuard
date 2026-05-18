@@ -1,0 +1,7 @@
+{
+  "attempt": 1,
+  "error_type": "ImageRequestError",
+  "error": "HTTP 524 for Appendix A3: Expected-vs-Observed Attribution Alignment: error code: 524",
+  "status_code": 524,
+  "body": "error code: 524"
+}

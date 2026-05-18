@@ -1,0 +1,55 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean academic vector-style figure for an EMNLP paper titled "TraceProbe Evidence Chain".
+
+The figure should be a wide landscape diagram with a layered architecture, not a simple one-line pipeline. White background, thin dark-gray strokes, restrained colors, no gradients, no 3D effects, no decorative blobs.
+
+Use three horizontal bands and one right-side output column.
+
+Top band title: "Executable scenario specification".
+Draw a long blue-gray container with compact chips inside:
+- task
+- files
+- tools
+- memory
+- retrieved content
+- multi-agent messages
+- expected hazard labels
+
+Middle band title: "Live agent execution".
+Draw a large blue container below the scenario band. Inside it show a left-to-right execution flow:
+Sandboxed run -> tool actions -> observations -> normalized trace.
+Add short sublabels under the flow: file reads, tool calls, writes, final answer, final state, safety events.
+This middle band should be visually dominant because TraceProbe evaluates live behavior, not pre-written trajectories.
+
+Bottom band title: "Post-run diagnosis".
+Draw four connected analysis blocks:
+1. Outcome + latent scoring
+2. Evidence packet
+3. Expected-vs-observed diagnosis
+4. Exact replay localization
+Use amber for evidence, purple for diagnosis, teal for replay.
+
+Connect the layers with arrows:
+Scenario specification flows down into Live agent execution.
+Live execution exports the normalized trace down into Post-run diagnosis.
+Exact replay localization has a curved teal arrow back toward the normalized trace, labeled "replay recorded actions in fresh sandbox".
+
+Inside the diagnostic blocks, include very short sublabels:
+- Outcome + latent scoring: TSR, SVR, ASR, STCR, latent
+- Evidence packet: sensitive read, sink call, unsafe mutation, internal exposure
+- Expected-vs-observed diagnosis: expected path, partial, off-script, resisted
+- Exact replay localization: fresh sandbox, first failure step, watched-path diff
+
+On the far right, add three stacked output chips connected from the diagnosis band:
+- Outcome metrics
+- Attribution alignment
+- Replay-localized evidence
+
+Use blue for live execution, purple for diagnosis, teal for replay, amber for risk evidence. Use simple icons only if helpful: document, sandbox, trace log, gauge, tags, replay arrow. Make all text large and legible at two-column paper width. Do not mention "defense", "mitigation system", "causal proof", or "simulator". Do not draw seven equal boxes in one row.

@@ -1,0 +1,38 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean academic multi-panel result figure titled "Internal Authority Compromise Is a Distinct Risk Surface".
+
+Use a wide landscape layout with three panels. White background, thin gray axes, restrained colors, no gradients, high legibility.
+
+Panel A title: "Risk-source comparison".
+Compare three rows or grouped bars:
+- A non-adversarial
+- B internal compromise
+- C external attack
+Show these metrics: SVR/ASR, STCR, Latent, Unsafe IntExp.
+Use these exact values:
+A: SVR/ASR 0.066, STCR 0.640, Latent 0.044, Unsafe IntExp 0.000
+B: SVR/ASR 0.424, STCR 0.481, Latent 0.419, Unsafe IntExp 0.180
+C: SVR/ASR 0.242, STCR 0.636, Latent 0.220, Unsafe IntExp 0.000
+Highlight B with an amber accent.
+
+Panel B title: "B-family breakdown".
+Show B1, B2, B3 as grouped bars or a compact table-like chart:
+B1 policy-like context: SVR/ASR 0.494, STCR 0.444, Latent 0.494, Unsafe IntExp 0.000
+B2 memory state: SVR/ASR 0.143, STCR 0.748, Latent 0.143, Unsafe IntExp 0.000
+B3 multi-agent message: SVR/ASR 0.636, STCR 0.250, Latent 0.623, Unsafe IntExp 0.542
+Add a callout on B3: "unsafe internal exposure = 0.542".
+
+Panel C title: "Failed-or-latent source distribution".
+Use one horizontal stacked bar with:
+- internal_compromise: 302 / 479 = 63.0%
+- external_attack: 133 / 479 = 27.8%
+- non_adversarial: 44 / 479 = 9.2%
+
+Add a small note: "For B and C scenarios, SVR equals ASR because they are attack-labeled." Do not use the phrase "dominant cause". Do not imply internal reasoning is directly observed. Use "observed trace evidence" and "risk surface".

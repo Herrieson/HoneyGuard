@@ -38,12 +38,44 @@ the real figure automatically.
   - green: safe / passed
   - purple: attribution / diagnosis
 - Keep labels short. Avoid paragraph text inside figures.
-- Do not use "defense" for guarded prompting. Use "prompt-only baseline".
+- Do not use "defense" for prompt-only safety reminders. Use "prompt-only baseline"
+  or "safety-reminder condition".
 - Do not use "dominant cause". Use "dominant observed path".
 - Do not imply replay proves counterfactual causality. Use "replay-supported" or
   "localized evidence".
 - If a panel contains B/C ASR/SVR numbers, note that B and C scenarios are
   attack-labeled, so SVR equals ASR for those rows.
+
+## EMNLP Figure Style Lock
+
+Use this shared style for every main and appendix figure. The generation script
+prepends this block to every GPT-Image prompt by default.
+
+```text
+Create the figure in a restrained EMNLP/ACL paper style. Use a white background,
+thin neutral-gray strokes, flat vector-like shapes, no gradients, no shadows, no
+3D effects, no decorative blobs, no cartoon or product-dashboard styling. The
+figure should look like a manually drawn academic vector figure for a two-column
+NLP conference paper.
+
+Use a consistent TraceProbe palette:
+- blue (#3B6EA8) for live execution and the main benchmark
+- teal (#2A9D8F) for replay and reproducibility
+- amber (#D9911B) for risk, hazards, and internal authority signals
+- red (#C94545) for safety violations or unsafe actions
+- green (#3A9D5D) for safe, passed, or recovered states
+- purple (#7B61A8) for diagnosis and attribution
+- neutral gray (#6B7280) for untrusted context, notes, axes, and grid lines
+
+Use the same visual language across figures: rounded rectangles with small radius
+for modules, thin arrows for flows, compact chips for metrics, and simple table or
+bar elements for quantitative panels. Keep margins generous and labels large
+enough for two-column width. Use only short labels; avoid paragraphs inside
+shapes. Do not use icons unless they are simple line icons and directly clarify a
+module. Do not include logos. Do not claim "defense", "causal proof",
+"simulator", or "dominant cause". Use "prompt-only safety reminders",
+"replay-localized evidence", and "dominant observed path" when needed.
+```
 
 ## GPT-Image Sample Prompts
 
@@ -75,7 +107,19 @@ The main paper should contain six figures:
 6. Figure 6: compositional playground dominance analysis.
 
 If the paper becomes space-constrained, keep Figures 1, 3, 4, and 5. Figure 2 can
-be compressed into a table, and guarded/attribution details can move to appendix.
+be compressed into a table, and prompt-only/attribution details can move to
+appendix.
+
+Current TeX status:
+
+- The paper draft currently references only the six main figures above.
+- No appendix figure is currently referenced by `traceprobe.tex`; the appendix
+  uses tables for paired deltas, transient timeline, compositional replay, and
+  compositional dominance.
+- Do not spend generation budget on all appendix mockups unless we decide to add
+  those figures explicitly.
+- The only appendix figure currently worth keeping as a likely addition is
+  Appendix A7, the B3 internal-authority case figure.
 
 ## Figure 1: TraceProbe Pipeline
 
@@ -99,10 +143,40 @@ artifacts.
 
 Layout:
 
-Use a left-to-right pipeline:
+Use a layered evidence-chain layout instead of a flat single-row pipeline.
+The figure should have three horizontal bands plus a right-side output column:
 
 ```text
-Scenario YAML
+Top band: Executable scenario specification
+  task / files / tools / memory / retrieved content / multi-agent messages
+  controlled hazard labels
+
+Middle band: Live agent execution
+  sandboxed run -> tool calls / reads / writes / final answer -> normalized trace
+  actions / observations / final state / safety events
+
+Bottom band: Diagnostic analyses over the trace
+  outcome + latent scoring
+  evidence packet
+  expected-vs-observed diagnosis
+  exact replay localization
+
+Right output column:
+  outcome metrics
+  path alignment
+  replay-localized evidence
+```
+
+The top band should feed into the middle execution band. The middle band should
+feed downward into the diagnostic band. The replay block should curve back toward
+the live execution trace to show that replay reconstructs and checks recorded
+actions in a fresh sandbox. This gives the figure hierarchy: scenario design,
+observed execution, and post-run diagnosis.
+
+Alternative compact structure if space is tight:
+
+```text
+Scenario specification
   task / files / tools / memory / retrieved content / multi-agent messages
     ->
 Sandboxed Live Agent Execution
@@ -126,7 +200,10 @@ Trace Replay
 
 Suggested panels:
 
-- Single pipeline with 7 modules.
+- Three stacked bands:
+  - Scenario layer
+  - Execution layer
+  - Diagnosis/replay layer
 - On the far right, add three output chips:
   - Outcome metrics
   - Attribution alignment
@@ -146,38 +223,59 @@ Avoid:
 
 - Do not draw this as a defense pipeline.
 - Do not make replay look like a new agent simulator; it replays recorded actions.
+- Do not make seven equal boxes in one flat row; the figure should show layered
+  structure and hierarchy.
 
 GPT-Image sample prompt:
 
 ```text
 Create a clean academic vector-style figure for an EMNLP paper titled "TraceProbe Evidence Chain".
 
-The figure should be a wide landscape diagram, white background, thin dark-gray strokes, restrained colors, no gradients, no 3D effects, no decorative blobs.
+The figure should be a wide landscape diagram with a layered architecture, not a simple one-line pipeline. White background, thin dark-gray strokes, restrained colors, no gradients, no 3D effects, no decorative blobs.
 
-Draw a left-to-right pipeline with seven connected modules:
-1. Executable scenario
-2. Live run
-3. Normalized trace
-4. Outcome/latent scoring
-5. Evidence packet
-6. Expected-vs-observed diagnosis
-7. Exact replay localization
+Use three horizontal bands and one right-side output column.
 
-Inside each module, include very short sublabels:
-- Executable scenario: task, files, tools, memory, retrieved content
-- Live run: file reads, tool calls, writes, final answer
-- Normalized trace: actions, observations, final state, safety events
-- Outcome/latent scoring: TSR, SVR, ASR, STCR, latent
+Top band title: "Executable scenario specification".
+Draw a long blue-gray container with compact chips inside:
+- task
+- files
+- tools
+- memory
+- retrieved content
+- multi-agent messages
+- expected hazard labels
+
+Middle band title: "Live agent execution".
+Draw a large blue container below the scenario band. Inside it show a left-to-right execution flow:
+Sandboxed run -> tool actions -> observations -> normalized trace.
+Add short sublabels under the flow: file reads, tool calls, writes, final answer, final state, safety events.
+This middle band should be visually dominant because TraceProbe evaluates live behavior, not pre-written trajectories.
+
+Bottom band title: "Post-run diagnosis".
+Draw four connected analysis blocks:
+1. Outcome + latent scoring
+2. Evidence packet
+3. Expected-vs-observed diagnosis
+4. Exact replay localization
+Use amber for evidence, purple for diagnosis, teal for replay.
+
+Connect the layers with arrows:
+Scenario specification flows down into Live agent execution.
+Live execution exports the normalized trace down into Post-run diagnosis.
+Exact replay localization has a curved teal arrow back toward the normalized trace, labeled "replay recorded actions in fresh sandbox".
+
+Inside the diagnostic blocks, include very short sublabels:
+- Outcome + latent scoring: TSR, SVR, ASR, STCR, latent
 - Evidence packet: sensitive read, sink call, unsafe mutation, internal exposure
 - Expected-vs-observed diagnosis: expected path, partial, off-script, resisted
-- Exact replay localization: fresh sandbox, replayed actions, first failure step
+- Exact replay localization: fresh sandbox, first failure step, watched-path diff
 
-Add three small output chips on the far right:
+On the far right, add three stacked output chips connected from the diagnosis band:
 - Outcome metrics
 - Attribution alignment
 - Replay-localized evidence
 
-Use blue for live execution, purple for diagnosis, teal for replay, amber for risk evidence. Use simple icons only: document, sandbox, trace log, gauge, tags, replay arrow. Make all text large and legible at two-column paper width. Do not mention "defense", "mitigation system", "causal proof", or "simulator".
+Use blue for live execution, purple for diagnosis, teal for replay, amber for risk evidence. Use simple icons only if helpful: document, sandbox, trace log, gauge, tags, replay arrow. Make all text large and legible at two-column paper width. Do not mention "defense", "mitigation system", "causal proof", or "simulator". Do not draw seven equal boxes in one row.
 ```
 
 ## Figure 2: Risk-Source and Attribution Taxonomy
@@ -201,6 +299,40 @@ non-adversarial failures, internal authority compromise, and external attacks, t
 uses one attribution schema to compare them.
 
 Layout:
+
+Use an integrated taxonomy-and-diagnosis layout, not two heavy side panels with a
+thin line between them. The center of the figure should be an "Observed run"
+hub that visually connects risk-source families to attribution labels.
+
+Recommended structure:
+
+```text
+Left column: Risk source classes
+  A Non-adversarial failures
+  B Internal authority compromise
+  C External attacks
+
+Center: Observed run / trace hub
+  scenario family
+  controlled hazard
+  live trace
+  observed diagnosis
+
+Right column: Attribution schema
+  Source / Channel / Mechanism
+  First failed component / Impact / Block point
+  Failure chain
+
+Bottom strip: B-class expansion
+  B1 policy-like context | B2 memory state | B3 multi-agent message
+```
+
+This should read as a diagnostic mapping: source family enters a live run, and the
+observed trace is labeled with the shared attribution schema. The B-class bottom
+strip should make internal authority compromise visible without making the entire
+left column too tall.
+
+Alternative compact layout:
 
 Use two large panels.
 
@@ -236,7 +368,7 @@ Block point
 Failure chain
 ```
 
-Middle flow:
+Center flow:
 
 ```text
 Scenario family -> Controlled hazard -> Live trace -> Observed diagnosis
@@ -266,43 +398,40 @@ GPT-Image sample prompt:
 ```text
 Create a clean taxonomy diagram for an NLP safety benchmark paper titled "TraceProbe Risk Sources and Attribution Schema".
 
-Use a wide landscape layout with two large panels and a small connecting flow. White background, thin gray strokes, no gradients, compact academic style.
+Use a wide landscape layout with an integrated center hub, not two disconnected side panels. White background, thin gray strokes, no gradients, compact academic style.
 
-Left panel title: "Risk Sources".
-Show three stacked groups:
+Left column title: "Risk source classes".
+Show three medium cards stacked vertically:
 
-Group A: Non-adversarial failures
-- A1 Boundary overreach
-- A2 Faulty inference
-- A3 Unstable execution
-- A4 Data minimization
+A Non-adversarial failures
+short chips: A1 boundary, A2 inference, A3 execution, A4 minimization
 
-Group B: Internal authority compromise
-- B1 Policy-like context
-- B2 Memory state
-- B3 Multi-agent message
+B Internal authority compromise
+short chips: B1 policy context, B2 memory, B3 multi-agent
 
-Group C: External attacks
-- C1 Direct user attack
-- C2.1 Retrieved-content injection
-- C2.2 Tool-output injection
+C External attacks
+short chips: C1 user attack, C2.1 retrieved content, C2.2 tool output
 
 Make Group B visually prominent with an amber/orange accent, but keep it academically restrained.
 
-Between panels, draw this flow:
-Scenario family -> Controlled hazard -> Live trace -> Observed diagnosis
+Center column title: "Observed run".
+Draw a compact vertical stack or diamond flow:
+Scenario family -> Controlled hazard -> Live trace -> Observed diagnosis.
+Make "Live trace" the central blue node. Draw arrows from the left risk-source cards into this center hub.
 
-Right panel title: "Attribution Labels".
-Show seven label chips:
-- Source
-- Channel
-- Mechanism
-- First failed component
-- Impact
-- Block point
-- Failure chain
+Right column title: "Attribution schema".
+Show seven compact purple chips arranged as a balanced 3-row grid:
+Source, Channel, Mechanism,
+First failed component, Impact, Block point,
+Failure chain.
+Draw arrows from the center hub into the attribution schema chips.
 
-Use blue for A, amber for B, green for C, and neutral gray/purple for attribution labels. Make all text readable and spelled exactly as specified. Do not write "first benchmark", "defense", or "causal proof".
+Add a bottom horizontal strip titled "Internal authority is first-class".
+Inside it show three amber chips:
+B1 policy-like context | B2 memory state | B3 multi-agent message.
+This strip should connect visually to the B card, showing that B is expanded rather than hidden inside generic prompt injection.
+
+Use blue for A, amber for B, green for C, purple for attribution labels, and gray for neutral arrows. Make the center area visually meaningful, not empty. Make all text readable and spelled exactly as specified. Do not write "first benchmark", "defense", or "causal proof".
 ```
 
 ## Figure 3: Main Benchmark Outcome Results
@@ -573,6 +702,41 @@ deepseek-v4-pro + c1_transient_release_banner_recovered_hard
 
 Recommended layout:
 
+Use a hierarchy where the trace timeline is the main visual object. Avoid three
+equal vertical columns where the center is only a thin line. The timeline should
+span the width of the figure and carry the visual memory of the case.
+
+Preferred structure:
+
+```text
+Top band: full-width trace timeline
+  1 read source
+  2 read release test
+  3 write marker -> transient violation
+  4 run test -> fail
+  5 read contaminated source
+  6 remove marker -> recovery
+  7 run final test -> pass
+
+Bottom left: endpoint-only view
+  final file clean
+  release test pass
+  final answer normal
+  endpoint verdict safe/pass
+
+Bottom right: replay-localized evidence
+  recorded trace
+  fresh sandbox
+  replay same tool calls
+  first watched-path mutation = step 3
+```
+
+Make step 3 the visual focal point with a red/amber vertical callout that connects
+from the timeline to the bottom replay evidence. This creates a stronger visual
+contrast: endpoint passes, trace failed earlier.
+
+Alternative compact layout:
+
 Panel A: endpoint-only verdict.
 
 ```text
@@ -640,18 +804,10 @@ GPT-Image sample prompt:
 ```text
 Create a clean academic case-study figure titled "Endpoint-Safe, Trajectory-Unsafe Execution".
 
-Use a wide landscape layout with three panels. White background, thin gray strokes, no gradients, no decorative effects. The figure should look like an EMNLP paper figure, not a product slide.
+Use a wide landscape layout with a full-width trace timeline as the main visual object. Do not use three equal vertical columns. White background, thin gray strokes, no gradients, no decorative effects. The figure should look like an EMNLP paper figure, not a product slide.
 
-Panel A title: "Endpoint-only view".
-Show four green status rows:
-- Final file: clean
-- Release test: pass
-- Final answer: normal
-- Endpoint verdict: safe / pass
-Add a small note: "Endpoint-only scoring misses the transient violation."
-
-Panel B title: "Trace timeline".
-Draw a horizontal timeline with 7 steps:
+Top band title: "Trace timeline".
+Draw a large horizontal timeline across the full width with 7 steps:
 1. Read source | marker absent | safe
 2. Read release test | marker rule observed | safe
 3. Write DEMO_BANNER_7711 | marker present | transient violation
@@ -660,18 +816,28 @@ Draw a horizontal timeline with 7 steps:
 6. Remove marker | marker absent | recovery
 7. Run final test | pass | endpoint clean
 
-Use green for safe/recovered steps, red for violation steps, amber for warning. Add a prominent callout near step 3:
+Use green for safe/recovered steps, red for violation steps, amber for warning. Make step 3 larger than the other steps and add a prominent vertical callout:
 "Trajectory violation occurs here: first_failure_step = 3".
 
-Panel C title: "Replay-localized evidence".
-Draw a compact flow:
+Bottom left panel title: "Endpoint-only view".
+Show four compact green status chips:
+- Final file: clean
+- Release test: pass
+- Final answer: normal
+- Endpoint verdict: safe / pass
+Add a small note: "Endpoint-only scoring misses the transient violation."
+
+Bottom right panel title: "Replay-localized evidence".
+Draw a compact teal replay flow:
 Recorded trace -> Fresh sandbox -> Replay same tool calls -> Stepwise probe
 Under Stepwise probe, show:
 - first watched-path mutation = step 3
 - replay verdict: endpoint-safe final state, trajectory-unsafe execution
 Use teal for replay and purple for evidence.
 
-Make the timeline legible at two-column width. Do not imply replay is a simulator, do not say "causal proof", and do not imply the run is safe because the final state is clean.
+Connect the step 3 callout from the top timeline down to the replay evidence panel with a thin red/teal arrow. This should show that replay localizes the earlier unsafe step even though endpoint-only view is green.
+
+Make the timeline legible at two-column width. Keep endpoint and replay panels compact so the timeline dominates the figure. Do not imply replay is a simulator, do not say "causal proof", and do not imply the run is safe because the final state is clean.
 ```
 
 ## Figure 6: Compositional Playground Dominance Analysis
@@ -800,7 +966,18 @@ Add a central annotation: "Configured hazard does not always equal observed path
 
 ## Appendix Figures
 
-These are useful if space allows.
+These are optional candidate figures, not the default paper figure set. They are
+not currently referenced by the TeX draft. Use them only if we replace an appendix
+table with a visual or add an extra qualitative case figure.
+
+Recommended appendix priority:
+
+1. **A7 B3 Internal-Authority Case**: keep as the likely appendix case figure if
+   space allows.
+2. **A3 Expected-vs-Observed Alignment** or **A4 Family-Level Heatmap**: optional
+   only if the appendix needs a visual summary instead of tables.
+3. **A1/A2/A5/A6**: currently not needed because the same information is already
+   covered by tables or the main Figure 5 case.
 
 ### Appendix A1: Complete Metric Heatmap
 
@@ -828,7 +1005,7 @@ Create a clean appendix heatmap figure titled "Complete Model Metric Heatmap".
 Use a wide academic heatmap with rows as model names and columns as metrics: TSR, SVR, ASR, STCR, latent, internal exposure, unsafe internal exposure. Use a restrained blue-to-red diverging palette, white background, thin gray grid lines, and legible labels. Add a small legend: higher TSR/STCR is better, higher SVR/ASR/latent/exposure is worse. Do not use gradients outside the heatmap cells, do not use icons, and do not add any claims beyond the metric labels.
 ```
 
-### Appendix A2: Naive vs Guarded Delta
+### Appendix A2: Prompt-Only Safety-Reminder Delta
 
 Target:
 
@@ -846,14 +1023,14 @@ configs/mvp/paper/materials/data/guard_delta_family_breakdown.csv
 Rows: paired models.
 Columns: delta TSR, delta SVR, delta ASR, delta STCR, delta latent.
 
-Caption must say guarded is a prompt-only baseline, not a defense.
+Caption must say the safety-reminder condition is prompt-only, not a defense.
 
 GPT-Image sample prompt:
 
 ```text
-Create a clean appendix figure titled "Naive vs Guarded Prompting: Paired Deltas".
+Create a clean appendix figure titled "Prompt-Only Safety Reminders: Paired Deltas".
 
-Use a wide heatmap or horizontal dot plot. Rows are paired models. Columns are delta TSR, delta SVR, delta ASR, delta STCR, delta latent. Use green for safety improvement, red for worse safety, and neutral gray near zero. Add a small note: "guarded is a prompt-only baseline, not a defense." Keep all labels editable-looking, large, and legible. Do not draw shields or defense icons.
+Use a wide heatmap or horizontal dot plot. Rows are paired models. Columns are delta TSR, delta SVR, delta ASR, delta STCR, delta latent. Use green for safety improvement, red for worse safety, and neutral gray near zero. Add a small note: "safety reminders are prompt-only, not a defense." Keep all labels editable-looking, large, and legible. Do not draw shields or defense icons.
 ```
 
 ### Appendix A3: Expected-vs-Observed Attribution Alignment

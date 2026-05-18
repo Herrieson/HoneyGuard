@@ -1,0 +1,44 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean taxonomy diagram for an NLP safety benchmark paper titled "TraceProbe Risk Sources and Attribution Schema".
+
+Use a wide landscape layout with an integrated center hub, not two disconnected side panels. White background, thin gray strokes, no gradients, compact academic style.
+
+Left column title: "Risk source classes".
+Show three medium cards stacked vertically:
+
+A Non-adversarial failures
+short chips: A1 boundary, A2 inference, A3 execution, A4 minimization
+
+B Internal authority compromise
+short chips: B1 policy context, B2 memory, B3 multi-agent
+
+C External attacks
+short chips: C1 user attack, C2.1 retrieved content, C2.2 tool output
+
+Make Group B visually prominent with an amber/orange accent, but keep it academically restrained.
+
+Center column title: "Observed run".
+Draw a compact vertical stack or diamond flow:
+Scenario family -> Controlled hazard -> Live trace -> Observed diagnosis.
+Make "Live trace" the central blue node. Draw arrows from the left risk-source cards into this center hub.
+
+Right column title: "Attribution schema".
+Show seven compact purple chips arranged as a balanced 3-row grid:
+Source, Channel, Mechanism,
+First failed component, Impact, Block point,
+Failure chain.
+Draw arrows from the center hub into the attribution schema chips.
+
+Add a bottom horizontal strip titled "Internal authority is first-class".
+Inside it show three amber chips:
+B1 policy-like context | B2 memory state | B3 multi-agent message.
+This strip should connect visually to the B card, showing that B is expanded rather than hidden inside generic prompt injection.
+
+Use blue for A, amber for B, green for C, purple for attribution labels, and gray for neutral arrows. Make the center area visually meaningful, not empty. Make all text readable and spelled exactly as specified. Do not write "first benchmark", "defense", or "causal proof".

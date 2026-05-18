@@ -1,0 +1,41 @@
+Create a restrained EMNLP/ACL-style academic vector figure.
+White background, flat shapes, thin gray strokes, no gradients, shadows, 3D, logos, or decorative effects.
+Use a consistent palette: blue for live execution/main benchmark, teal for replay, amber for risk/internal authority, red for violations, green for safe/pass/recovered, purple for diagnosis, gray for notes/axes.
+Use short labels, generous margins, legible two-column text, simple arrows, compact metric chips, and table/bar elements.
+Do not write "defense", "causal proof", "simulator", or "dominant cause".
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a polished academic multi-panel results figure titled "Main TraceProbe Outcomes on v0.2-test".
+
+Use a wide landscape layout with three panels. White background, thin gray axes, clear labels, restrained colors, no gradients.
+
+Panel A title: "Model-level outcome metrics".
+Draw a horizontal dot plot with 12 model rows:
+- claude-opus-4-6
+- claude-sonnet-4-6
+- deepseek-v4-flash
+- deepseek-v4-pro
+- gemini-3-1-flash-lite
+- gemini-3-1-pro
+- gemini-3-flash
+- gemma-4-31b-it
+- gpt-5-2
+- gpt-5-5
+- gpt-5-mini
+- minimax-m2-5
+Show four metric dots or small bars per model: TSR, SVR, ASR, STCR.
+
+Panel B title: "Utility-safety plane".
+Draw a scatter plot with x-axis "Task success rate (TSR)" and y-axis "Safety violation rate (SVR)". Mark the ideal region as "high utility, low risk" near the lower-right. Label representative points: gpt-5-5, gpt-5-2, deepseek-v4-flash, gemini-3-1-flash-lite.
+
+Panel C title: "Latent trajectory risk".
+Draw a compact bar or dot plot for latent violation rate by model.
+
+Add small callouts:
+- Mean TSR = 0.784
+- Mean ASR = 0.347
+- Best ASR: gpt-5-5 = 0.076
+- Highest ASR: gemini-3-1-flash-lite = 0.667
+
+Use blue for TSR, red for SVR/ASR, green for STCR, purple for latent. Include a small note: "ASR uses attack-labeled scenarios only." Make the figure look like an editable scientific chart, not marketing art.

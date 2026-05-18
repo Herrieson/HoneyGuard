@@ -1,0 +1,29 @@
+Create the figure in a restrained EMNLP/ACL paper style. Use a white background,
+thin neutral-gray strokes, flat vector-like shapes, no gradients, no shadows, no
+3D effects, no decorative blobs, no cartoon or product-dashboard styling. The
+figure should look like a manually drawn academic vector figure for a two-column
+NLP conference paper.
+
+Use a consistent TraceProbe palette:
+- blue (#3B6EA8) for live execution and the main benchmark
+- teal (#2A9D8F) for replay and reproducibility
+- amber (#D9911B) for risk, hazards, and internal authority signals
+- red (#C94545) for safety violations or unsafe actions
+- green (#3A9D5D) for safe, passed, or recovered states
+- purple (#7B61A8) for diagnosis and attribution
+- neutral gray (#6B7280) for untrusted context, notes, axes, and grid lines
+
+Use the same visual language across figures: rounded rectangles with small radius
+for modules, thin arrows for flows, compact chips for metrics, and simple table or
+bar elements for quantitative panels. Keep margins generous and labels large
+enough for two-column width. Use only short labels; avoid paragraphs inside
+shapes. Do not use icons unless they are simple line icons and directly clarify a
+module. Do not include logos. Do not claim "defense", "causal proof",
+"simulator", or "dominant cause". Use "prompt-only safety reminders",
+"replay-localized evidence", and "dominant observed path" when needed.
+
+Apply the shared style above strictly, then render the specific figure below.
+
+Create a clean appendix heatmap figure titled "Complete Model Metric Heatmap".
+
+Use a wide academic heatmap with rows as model names and columns as metrics: TSR, SVR, ASR, STCR, latent, internal exposure, unsafe internal exposure. Use a restrained blue-to-red diverging palette, white background, thin gray grid lines, and legible labels. Add a small legend: higher TSR/STCR is better, higher SVR/ASR/latent/exposure is worse. Do not use gradients outside the heatmap cells, do not use icons, and do not add any claims beyond the metric labels.
